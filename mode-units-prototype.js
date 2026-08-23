@@ -133,15 +133,17 @@
 
     function initializeForm(row = null) {
       const section = sections[state.section];
+      const savedConfig = row?.config || {};
       state.form = {
-        name: row?.name || '', code: row?.code || '', description: row?.description || '', extra: row?.[section.extraKey] || '',
         suction: '', suctionStep: '', gearCount: '', frequencyStrategy: '', speedEnabled: false, speedLevels: '', fixedFrequency: '', startFrequency: '', frequencyStep: '', minimumFrequency: '',
         durationStrategy: '', pressureTime: '', pressureRatio: '', intervalTime: '',
         project: row?.project || '', motorType: '', pumpType: '', valveType: '', frequencyMin: '', frequencyMax: '', holdMin: '', holdMax: '', intervalMin: '', intervalMax: '',
-        modeType: '', source: row?.source || '', tags: row?.tags || '', modalSelection: '', modalAmount: '3'
+        modeType: '', source: row?.source || '', tags: row?.tags || '', modalSelection: '', modalAmount: '3',
+        ...savedConfig,
+        name: row?.name || '', code: row?.code || '', description: row?.description || '', extra: savedConfig.extra || row?.[section.extraKey] || ''
       };
       state.ruleStep = 1;
-      state.generated = false;
+      state.generated = Boolean(row?.generated);
       state.modal = null;
       state.modeUnits = [];
       state.rhythmModes = [];
@@ -327,6 +329,9 @@
 
     function detailResults(editable = false) {
       const speedCount = state.form.speedEnabled ? Number.parseInt(state.form.speedLevels, 10) || 1 : 0;
+      const speedViewSummary = !editable && speedCount
+        ? `<div class="new-feature view-speed-summary"><strong>Speed 分档已启用</strong><span>共 ${speedCount} 档，以下各列展示对应档位的实际运行频率（CPM）</span></div>`
+        : '';
       const frequencyHeaders = speedCount
         ? Array.from({ length: speedCount }, (_, index) => `<th class="new-feature-column">Speed ${index + 1}<span class="column-unit">频率 CPM</span></th>`).join('')
         : '<th>频率 CPM</th>';
@@ -343,7 +348,7 @@
           : `<td><input ${editable ? '' : 'disabled'} value="${baseFrequency}"></td>`;
         return `<tr><td>${i + 1}</td><td><select>${suctionOptions}</select></td><td><select>${pressureOptions}</select></td><td><input ${editable ? '' : 'disabled'} value="0.${70 + i}"></td><td><input ${editable ? '' : 'disabled'} value="${hold}"></td><td><input ${editable ? '' : 'disabled'} value="${24 + i * 2}"></td><td><input ${editable ? '' : 'disabled'} value="10"></td>${frequencyCells}<td><input ${editable ? '' : 'disabled'} value="${total}"></td></tr>`;
       }).join('');
-      return `<section class="form-card"><h2>生成结果表格，在表格中进行微调</h2><div class="detail-table table-shell"><table class="data-table" style="min-width:${950 + Math.max(speedCount - 1, 0) * 110}px"><thead><tr><th>档位</th><th>吸力 kPa</th><th>建压时间 ms</th><th>建压占空比 %</th><th>保压时间 ms</th><th>卸压时间 ms</th><th>间歇时间 ms</th>${frequencyHeaders}<th>总时长 ms</th></tr></thead><tbody>${detailRows}</tbody></table></div></section>`;
+      return `<section class="form-card"><h2>生成结果表格，在表格中进行微调</h2>${speedViewSummary}<div class="detail-table table-shell"><table class="data-table" style="min-width:${950 + Math.max(speedCount - 1, 0) * 110}px"><thead><tr><th>档位</th><th>吸力 kPa</th><th>建压时间 ms</th><th>建压占空比 %</th><th>保压时间 ms</th><th>卸压时间 ms</th><th>间歇时间 ms</th>${frequencyHeaders}<th>总时长 ms</th></tr></thead><tbody>${detailRows}</tbody></table></div></section>`;
     }
 
     function formView() {
@@ -464,8 +469,33 @@
         }));
         document.querySelector('#back').addEventListener('click', returnToList);
         document.querySelector('#cancel').addEventListener('click', returnToList);
-        document.querySelector('#save')?.addEventListener('click', () => { showToast('保存成功'); returnToList(); });
+        document.querySelector('#save')?.addEventListener('click', saveCurrentForm);
       }
+    }
+
+    function currentTimestamp() {
+      const now = new Date();
+      const part = value => String(value).padStart(2, '0');
+      return `${now.getFullYear()}-${part(now.getMonth() + 1)}-${part(now.getDate())} ${part(now.getHours())}:${part(now.getMinutes())}:${part(now.getSeconds())}`;
+    }
+
+    function saveCurrentForm() {
+      if (state.section === 'mode-units') {
+        const values = {
+          name: state.form.name || 'Speed 模式单元',
+          code: state.form.code || `SPEED-${Math.max(...rows.map(row => row.id)) + 1}`,
+          source: state.form.extra,
+          description: state.form.description,
+          updater: '刘媛媛',
+          time: currentTimestamp(),
+          config: { ...state.form },
+          generated: state.generated
+        };
+        if (state.selected) Object.assign(state.selected, values);
+        else rows.unshift({ id: Math.max(...rows.map(row => row.id)) + 1, status: '草稿', ...values });
+      }
+      showToast('保存成功');
+      returnToList();
     }
 
     function returnToList() { state.view = 'list'; state.selected = null; state.modal = null; render(); window.scrollTo(0, 0); }
