@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Ceres</title>
+  <link rel="icon" href="data:,">
   <style>
     :root {
       color-scheme: light;
@@ -302,7 +303,7 @@
     .required { color: var(--danger); font-style: normal; }
     textarea.control { height: 94px; padding: 10px 12px; resize: vertical; }
     .control:disabled { color: #a8abb2; background: #f5f7fa; cursor: not-allowed; }
-    .rule-workflow { min-height: 290px; display: grid; grid-template-columns: 170px minmax(0, 1fr); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+    .rule-workflow { min-height: 330px; display: grid; grid-template-columns: 170px minmax(0, 1fr); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
     .step-list { background: #dfe7f2; }
     .step-button { width: 100%; height: 55px; padding: 0 16px; border: 0; border-bottom: 1px solid #cbd5e1; color: #111827; background: #f8fafc; text-align: left; font-size: 13px; font-weight: 600; cursor: pointer; }
     .step-button.is-active { color: #fff; background: #409eff; }
@@ -325,6 +326,16 @@
     .detail-table select:not(:disabled) { cursor: pointer; }
     .new-feature { padding: 10px; border: 1px solid #e6bd39; border-radius: 6px; background: #fff6bf; }
     .new-feature .control { border-color: #d9af2f; background: #fffbea; }
+    .new-feature-step:not(.is-active) { color: #7a5a00; background: #fff6bf; }
+    .speed-tab-panel { margin-top: 14px; }
+    .speed-tabs { display: flex; flex-wrap: wrap; gap: 8px; }
+    .speed-tab { min-width: 86px; height: 34px; padding: 0 14px; border: 1px solid #d9af2f; border-radius: 4px; color: #7a5a00; background: #fffbea; font-weight: 600; cursor: pointer; }
+    .speed-tab.is-active { color: #fff; border-color: #d3a20f; background: #d3a20f; }
+    .speed-frequency-fields { margin-top: 14px; }
+    .result-speed-bar { margin-bottom: 14px; display: grid; gap: 10px; }
+    .result-speed-summary { display: flex; align-items: center; gap: 12px; }
+    .result-speed-summary strong { color: #664d03; font-size: 13px; }
+    .result-speed-summary span { color: #7a5a00; font-size: 12px; }
     .speed-feature-config { margin-top: 14px; }
     .speed-feature-heading { min-height: 40px; display: flex; align-items: center; justify-content: space-between; gap: 18px; }
     .speed-feature-heading > div { display: grid; gap: 4px; }
@@ -419,6 +430,6 @@
   </div>
   <div class="toast" id="toast">操作成功</div>
 
-  <script src="./mode-units-prototype.js?v=20260823-15" defer></script>
+  <script src="./mode-units-prototype.js?v=20260828-1" defer></script>
 </body>
 </html>

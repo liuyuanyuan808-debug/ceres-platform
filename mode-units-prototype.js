@@ -49,7 +49,7 @@
     };
 
     const initialSection = sections[window.location.hash.slice(1)] ? window.location.hash.slice(1) : 'mode-units';
-    const state = { view: 'list', section: initialSection, collapsed: false, menuExpanded: true, query: '', status: 'all', selected: null, ruleStep: 1, generated: false, form: {}, modal: null, modeUnits: [], rhythmModes: [], powerImports: { pressure: false, relief: false } };
+    const state = { view: 'list', section: initialSection, collapsed: false, menuExpanded: true, query: '', status: 'all', selected: null, ruleStep: 1, frequencySpeedTab: 1, resultSpeedTab: 1, generated: false, form: {}, modal: null, modeUnits: [], rhythmModes: [], powerImports: { pressure: false, relief: false } };
     const app = document.querySelector('#app');
     const overlay = document.querySelector('#overlay');
     const dialogMessage = document.querySelector('#dialog-message');
@@ -135,14 +135,17 @@
       const section = sections[state.section];
       const savedConfig = row?.config || {};
       state.form = {
-        suction: '', suctionStep: '', gearCount: '', frequencyStrategy: '', speedEnabled: false, speedLevels: '', fixedFrequency: '', startFrequency: '', frequencyStep: '', minimumFrequency: '',
+        suction: '', suctionStep: '', gearCount: '', speedStrategy: '不启用 Speed', speedLevels: '', frequencyStrategy: '', fixedFrequency: '', startFrequency: '', frequencyStep: '', minimumFrequency: '',
         durationStrategy: '', pressureTime: '', pressureRatio: '', intervalTime: '',
         project: row?.project || '', motorType: '', pumpType: '', valveType: '', frequencyMin: '', frequencyMax: '', holdMin: '', holdMax: '', intervalMin: '', intervalMax: '',
         modeType: '', source: row?.source || '', tags: row?.tags || '', modalSelection: '', modalAmount: '3',
         ...savedConfig,
         name: row?.name || '', code: row?.code || '', description: row?.description || '', extra: savedConfig.extra || row?.[section.extraKey] || ''
       };
+      if (savedConfig.speedEnabled && !savedConfig.speedStrategy) state.form.speedStrategy = '按 Speed 档位配置';
       state.ruleStep = 1;
+      state.frequencySpeedTab = 1;
+      state.resultSpeedTab = 1;
       state.generated = Boolean(row?.generated);
       state.modal = null;
       state.modeUnits = [];
@@ -258,6 +261,57 @@
       return { start, count, end };
     }
 
+    function speedIsEnabled() {
+      return state.form.speedStrategy === '按 Speed 档位配置';
+    }
+
+    function selectedSpeedCount() {
+      return speedIsEnabled() ? Number.parseInt(state.form.speedLevels, 10) || 1 : 0;
+    }
+
+    function clampSpeedTab(value) {
+      return Math.min(Math.max(Number(value) || 1, 1), Math.max(selectedSpeedCount(), 1));
+    }
+
+    function frequencyFieldKey(base, speedIndex = 0) {
+      return speedIsEnabled() ? `${base}Speed${speedIndex || 1}` : base;
+    }
+
+    function speedTabButtons(type, activeIndex, count) {
+      const attribute = type === 'frequency' ? 'data-frequency-speed-tab' : 'data-result-speed-tab';
+      return `<div class="speed-tabs" role="tablist" aria-label="Speed 档位">${Array.from({ length: count }, (_, index) => {
+        const speedIndex = index + 1;
+        return `<button class="speed-tab${activeIndex === speedIndex ? ' is-active' : ''}" type="button" role="tab" aria-selected="${activeIndex === speedIndex}" ${attribute}="${speedIndex}">Speed ${speedIndex}</button>`;
+      }).join('')}</div>`;
+    }
+
+    function frequencyConfigText(speedIndex = 0) {
+      const prefix = speedIsEnabled() ? `Speed ${speedIndex}：` : '';
+      if (state.form.frequencyStrategy === '固定频率') {
+        const value = state.form[frequencyFieldKey('fixedFrequency', speedIndex)] || '未填写';
+        return `${prefix}固定频率 ${value} CPM`;
+      }
+      if (state.form.frequencyStrategy === '随吸力递减') {
+        const start = state.form[frequencyFieldKey('startFrequency', speedIndex)] || '未选择';
+        const step = state.form[frequencyFieldKey('frequencyStep', speedIndex)] || '未选择';
+        const minimum = state.form[frequencyFieldKey('minimumFrequency', speedIndex)] || '未选择';
+        return `${prefix}随吸力递减，起始 ${start}，步进 ${step}，最低 ${minimum}`;
+      }
+      return `${prefix}未选择频率策略`;
+    }
+
+    function frequencyAt(rowIndex, speedIndex = 0) {
+      const offset = Math.max(speedIndex - 1, 0);
+      if (state.form.frequencyStrategy === '随吸力递减') {
+        const start = Number.parseInt(state.form[frequencyFieldKey('startFrequency', speedIndex)], 10) || 70 + offset * 5;
+        const step = Number.parseInt(state.form[frequencyFieldKey('frequencyStep', speedIndex)], 10) || 2;
+        const minimum = Number.parseInt(state.form[frequencyFieldKey('minimumFrequency', speedIndex)], 10) || 40 + offset * 5;
+        return Math.max(start - rowIndex * step, minimum);
+      }
+      const fixed = Number.parseInt(state.form[frequencyFieldKey('fixedFrequency', speedIndex)], 10);
+      return Number.isFinite(fixed) && fixed > 0 ? fixed : 60 + offset * 5;
+    }
+
     function ruleCard() {
       const suctionOptions = Array.from({ length: 15 }, (_, index) => String(index + 10));
       const suctionSteps = ['1（1倍）', '2（2倍）', '3（3倍）', '4（4倍）', '5（5倍）'];
@@ -273,17 +327,32 @@
         supplementary = `<div class="estimate"><strong>预计生成吸力列表</strong><span>${estimate}</span></div>`;
         action = '<button class="btn btn--primary step-next" type="button">下一步</button>';
       } else if (state.ruleStep === 2) {
-        fields = selectField('频率策略', 'frequencyStrategy', ['手动设置', '固定频率', '随吸力递减'], state.form.frequencyStrategy);
-        if (state.form.frequencyStrategy === '固定频率') fields += textField('固定频率（单位：CPM）', 'fixedFrequency', state.form.fixedFrequency, false, false, false, 'number');
-        if (state.form.frequencyStrategy === '随吸力递减') {
-          fields += selectField('起始频率', 'startFrequency', frequencyOptions, state.form.startFrequency);
-          fields += selectField('频率步进', 'frequencyStep', ['1 CPM', '2 CPM', '3 CPM', '4 CPM', '5 CPM'], state.form.frequencyStep);
-          fields += selectField('最小频率', 'minimumFrequency', frequencyOptions, state.form.minimumFrequency);
+        fields = selectField('Speed 策略', 'speedStrategy', ['不启用 Speed', '按 Speed 档位配置'], state.form.speedStrategy, false, true, 'new-feature');
+        if (speedIsEnabled()) fields += selectField('Speed 档位数量', 'speedLevels', ['1档', '2档', '3档', '4档', '5档'], state.form.speedLevels, false, true, 'new-feature');
+        action = '<button class="btn btn--primary step-next" type="button">下一步</button>';
+      } else if (state.ruleStep === 3) {
+        fields = selectField('频率策略', 'frequencyStrategy', ['固定频率', '随吸力递减'], state.form.frequencyStrategy);
+        const speedCount = selectedSpeedCount();
+        const activeSpeed = speedCount ? clampSpeedTab(state.frequencySpeedTab) : 0;
+        state.frequencySpeedTab = activeSpeed || 1;
+        let frequencyFields = '';
+        if (state.form.frequencyStrategy === '固定频率') {
+          const key = frequencyFieldKey('fixedFrequency', activeSpeed);
+          frequencyFields = textField('固定频率（单位：CPM）', key, state.form[key], false, false, false, 'number');
         }
-        supplementary = `<div class="new-feature speed-feature-config">
-          <div class="speed-feature-heading"><div><strong>启用 Speed 档位</strong><span>可选；按 Speed 档位配置对应的实际频率</span></div><label class="switch-control"><input type="checkbox" data-speed-toggle${state.form.speedEnabled ? ' checked' : ''}><span class="switch-track" aria-hidden="true"></span><span class="switch-text">${state.form.speedEnabled ? '已启用' : '未启用'}</span></label></div>
-          ${state.form.speedEnabled ? `<div class="speed-feature-fields">${selectField('Speed 档位数量', 'speedLevels', ['1档', '2档', '3档', '4档', '5档'], state.form.speedLevels, false, false)}</div>` : ''}
-        </div>`;
+        if (state.form.frequencyStrategy === '随吸力递减') {
+          const startKey = frequencyFieldKey('startFrequency', activeSpeed);
+          const stepKey = frequencyFieldKey('frequencyStep', activeSpeed);
+          const minimumKey = frequencyFieldKey('minimumFrequency', activeSpeed);
+          frequencyFields = selectField('起始频率', startKey, frequencyOptions, state.form[startKey]);
+          frequencyFields += selectField('频率步进', stepKey, ['1 CPM', '2 CPM', '3 CPM', '4 CPM', '5 CPM'], state.form[stepKey]);
+          frequencyFields += selectField('最小频率', minimumKey, frequencyOptions, state.form[minimumKey]);
+        }
+        if (speedCount) {
+          supplementary = `<div class="new-feature speed-tab-panel">${speedTabButtons('frequency', activeSpeed, speedCount)}${frequencyFields ? `<div class="rule-fields speed-frequency-fields">${frequencyFields}</div>` : ''}</div>`;
+        } else {
+          fields += frequencyFields;
+        }
         action = '<button class="btn btn--primary step-next" type="button">下一步</button>';
       } else {
         fields = selectField('阶段时长策略', 'durationStrategy', ['手动设置', '固定比例', '固定时长'], state.form.durationStrategy);
@@ -299,7 +368,7 @@
         action = '<button class="btn btn--primary" id="generate" type="button">生成</button>';
       }
       return `<section class="form-card"><h2>模式单元生成规则</h2><div class="rule-workflow">
-        <div class="step-list"><button class="step-button${state.ruleStep === 1 ? ' is-active' : ''}" data-step="1" type="button">步骤1: 吸力档位</button><button class="step-button${state.ruleStep === 2 ? ' is-active' : ''}" data-step="2" type="button">步骤2: 频率策略</button><button class="step-button${state.ruleStep === 3 ? ' is-active' : ''}" data-step="3" type="button">步骤3: 阶段时长</button></div>
+        <div class="step-list"><button class="step-button${state.ruleStep === 1 ? ' is-active' : ''}" data-step="1" type="button">步骤1: 吸力档位</button><button class="step-button new-feature-step${state.ruleStep === 2 ? ' is-active' : ''}" data-step="2" type="button">步骤2: Speed 策略</button><button class="step-button${state.ruleStep === 3 ? ' is-active' : ''}" data-step="3" type="button">步骤3: 频率策略</button><button class="step-button${state.ruleStep === 4 ? ' is-active' : ''}" data-step="4" type="button">步骤4: 阶段时长</button></div>
         <div class="step-content"><div class="rule-fields">${fields}</div>${supplementary}<div class="next-wrap">${action}</div></div>
       </div></section>`;
     }
@@ -307,13 +376,11 @@
     function emptyResults() {
       const { start, count, end } = suctionRange();
       const suctionSummary = end ? `${start}-${end} kPa / ${count} 档，用于生成结果表格的吸力行` : '请选择起始吸力、吸力步进和档位数量，用于生成结果表格的吸力行';
-      let frequencySummary = '未选择频率策略';
-      if (state.form.frequencyStrategy === '手动设置') frequencySummary = '手动设置频率：用户填入频率后自动换算总时长 = 60000ms / 频率';
-      if (state.form.frequencyStrategy === '固定频率') frequencySummary = `固定频率 ${state.form.fixedFrequency || '未填写'} CPM`;
-      if (state.form.frequencyStrategy === '随吸力递减') frequencySummary = `随吸力递减：${state.form.startFrequency || '未选择'}，步进 ${state.form.frequencyStep || '未选择'}，最小 ${state.form.minimumFrequency || '未选择'}`;
-      const speedSummary = state.form.speedEnabled
-        ? `已启用，生成 Speed 1（CPM）至 Speed ${Number.parseInt(state.form.speedLevels, 10) || 1}（CPM），用于配置各档对应的实际频率`
-        : '未启用，生成表保留单列“频率 CPM”';
+      const speedCount = selectedSpeedCount();
+      const speedSummary = speedCount ? `按 Speed 档位配置，共 ${speedCount} 档` : '不启用 Speed，生成单一频率结果表';
+      const frequencySummary = speedCount && state.form.frequencyStrategy
+        ? Array.from({ length: speedCount }, (_, index) => frequencyConfigText(index + 1)).join('；')
+        : frequencyConfigText(0);
       let durationSummary = '未选择阶段时长策略';
       if (state.form.durationStrategy === '手动设置') durationSummary = '手动设置阶段时长';
       if (state.form.durationStrategy === '固定比例') durationSummary = `固定比例：建压 ${state.form.pressureTime || '未选择'}，保压 ${state.form.pressureRatio || '未选择'}，间歇 ${state.form.intervalTime || '未填写'} ms`;
@@ -321,34 +388,42 @@
       return `<section class="form-card"><h2>生成结果表格，在表格中进行微调</h2><div class="rule-summary">
         <div>1. 吸力档位：${suctionSummary}</div>
         <div>吸力步进：根据起始吸力与导入建压表中下一个吸力的差值，提供 1 到 5 倍选择</div>
-        <div>2. 频率策略：${frequencySummary}</div><div class="new-feature-summary">Speed 分档：${speedSummary}</div><div>3. 阶段时长：${durationSummary}</div>
+        <div class="new-feature-summary">2. Speed 策略：${speedSummary}</div><div>3. 频率策略：${frequencySummary}</div><div>4. 阶段时长：${durationSummary}</div>
         <div>最终结果：建压时间从关联动力源“${state.form.extra || '未选择'}”的建压表下拉选择，建压占空比按吸力 + 建压时间自动带出</div>
         <div>最终结果：卸压时间不可编辑，按吸力从关联动力源卸压表自动带出；用户仍可在表格中微调未锁定字段</div>
       </div><div class="result-layout"><div class="blank-panel">暂无数据，请配置规则后点击「生成」</div><div class="chart-panel"><h3>选中行曲线</h3><div class="blank-panel">暂无曲线数据，请先生成配置</div></div></div><div class="overview-empty"><h2>全档位吸力曲线总览</h2><p>暂无曲线数据，请先生成配置</p></div></section>`;
     }
 
     function detailResults(editable = false) {
-      const speedCount = state.form.speedEnabled ? Number.parseInt(state.form.speedLevels, 10) || 1 : 0;
-      const speedViewSummary = !editable && speedCount
-        ? `<div class="new-feature view-speed-summary"><strong>Speed 分档已启用</strong><span>共 ${speedCount} 档，以下各列展示对应档位的实际运行频率（CPM）</span></div>`
+      const speedCount = selectedSpeedCount();
+      const activeSpeed = speedCount ? clampSpeedTab(state.resultSpeedTab) : 0;
+      state.resultSpeedTab = activeSpeed || 1;
+      const strategyLabel = state.form.frequencyStrategy === '随吸力递减'
+        ? '随吸力递减'
+        : `固定频率 ${frequencyAt(0, activeSpeed)} CPM`;
+      const speedBar = speedCount
+        ? `<div class="result-speed-bar">${speedTabButtons('result', activeSpeed, speedCount)}<div class="new-feature result-speed-summary"><strong>当前 Speed：Speed ${activeSpeed}</strong><span>频率策略：${strategyLabel}</span></div></div>`
         : '';
-      const frequencyHeaders = speedCount
-        ? Array.from({ length: speedCount }, (_, index) => `<th class="new-feature-column">Speed ${index + 1}<span class="column-unit">频率 CPM</span></th>`).join('')
+      const frequencyHeader = speedCount
+        ? `<th class="new-feature-column">频率 CPM<span class="column-unit">Speed ${activeSpeed}</span></th>`
         : '<th>频率 CPM</th>';
-      const detailRows = Array.from({ length: 8 }, (_, i) => {
-        const suction = 10 + i;
-        const total = i === 0 ? 1000 : 6000;
-        const hold = i === 0 ? 916 : 5916 - i * 2;
+      const rowCount = Math.min(Math.max(Number(state.form.gearCount) || 8, 1), 15);
+      const suctionStart = Number(state.form.suction) || 10;
+      const suctionStep = Number.parseInt(state.form.suctionStep, 10) || 1;
+      const detailRows = Array.from({ length: rowCount }, (_, i) => {
+        const suction = suctionStart + i * suctionStep;
+        const frequency = frequencyAt(i, activeSpeed);
+        const pressure = 50;
+        const relief = 24 + i * 2;
+        const interval = Number.parseInt(state.form.intervalTime, 10) || 10;
+        const total = Math.round(60000 / frequency);
+        const hold = Math.max(total - pressure - relief - interval, 0);
         const suctionOptions = Array.from({ length: 15 }, (_, index) => index + 10).map(value => `<option${value === suction ? ' selected' : ''}>${value}</option>`).join('');
-        const pressureOptions = [30, 40, 50, 60, 70, 80].map(value => `<option${value === 50 ? ' selected' : ''}>${value}</option>`).join('');
-        const configuredFrequency = Number.parseInt(state.form.fixedFrequency || state.form.startFrequency, 10);
-        const baseFrequency = Number.isFinite(configuredFrequency) ? configuredFrequency : 60;
-        const frequencyCells = speedCount
-          ? Array.from({ length: speedCount }, (_, index) => `<td class="new-feature-column"><input ${editable ? '' : 'disabled'} value="${baseFrequency + index * 5}"></td>`).join('')
-          : `<td><input ${editable ? '' : 'disabled'} value="${baseFrequency}"></td>`;
-        return `<tr><td>${i + 1}</td><td><select>${suctionOptions}</select></td><td><select>${pressureOptions}</select></td><td><input ${editable ? '' : 'disabled'} value="0.${70 + i}"></td><td><input ${editable ? '' : 'disabled'} value="${hold}"></td><td><input ${editable ? '' : 'disabled'} value="${24 + i * 2}"></td><td><input ${editable ? '' : 'disabled'} value="10"></td>${frequencyCells}<td><input ${editable ? '' : 'disabled'} value="${total}"></td></tr>`;
+        const pressureOptions = [30, 40, 50, 60, 70, 80].map(value => `<option${value === pressure ? ' selected' : ''}>${value}</option>`).join('');
+        const disabled = editable ? '' : 'disabled';
+        return `<tr><td>${i + 1}</td><td><select ${disabled}>${suctionOptions}</select></td><td><select ${disabled}>${pressureOptions}</select></td><td><input ${disabled} value="0.${70 + i}"></td><td><input ${disabled} value="${hold}"></td><td><input ${disabled} value="${relief}"></td><td><input ${disabled} value="${interval}"></td><td class="${speedCount ? 'new-feature-column' : ''}"><input ${disabled} value="${frequency}"></td><td><input ${disabled} value="${total}"></td></tr>`;
       }).join('');
-      return `<section class="form-card"><h2>生成结果表格，在表格中进行微调</h2>${speedViewSummary}<div class="detail-table table-shell"><table class="data-table" style="min-width:${950 + Math.max(speedCount - 1, 0) * 110}px"><thead><tr><th>档位</th><th>吸力 kPa</th><th>建压时间 ms</th><th>建压占空比 %</th><th>保压时间 ms</th><th>卸压时间 ms</th><th>间歇时间 ms</th>${frequencyHeaders}<th>总时长 ms</th></tr></thead><tbody>${detailRows}</tbody></table></div></section>`;
+      return `<section class="form-card"><h2>生成结果表格，在表格中进行微调</h2>${speedBar}<div class="detail-table table-shell"><table class="data-table" style="min-width:950px"><thead><tr><th>档位</th><th>吸力 kPa</th><th>建压时间 ms</th><th>建压占空比 %</th><th>保压时间 ms</th><th>卸压时间 ms</th><th>间歇时间 ms</th>${frequencyHeader}<th>总时长 ms</th></tr></thead><tbody>${detailRows}</tbody></table></div></section>`;
     }
 
     function formView() {
@@ -422,17 +497,22 @@
           control.addEventListener('input', updateValue);
           control.addEventListener('change', event => {
             updateValue(event);
-            if (['suction', 'suctionStep', 'gearCount', 'frequencyStrategy', 'speedLevels', 'durationStrategy'].includes(event.currentTarget.dataset.field)) render();
+            const field = event.currentTarget.dataset.field;
+            if (field === 'speedStrategy' && speedIsEnabled() && !state.form.speedLevels) state.form.speedLevels = '1档';
+            if (['suction', 'suctionStep', 'speedStrategy', 'frequencyStrategy', 'speedLevels', 'durationStrategy'].includes(field)) render();
           });
         });
         document.querySelectorAll('.step-button').forEach(button => button.addEventListener('click', () => { state.ruleStep = Number(button.dataset.step); render(); }));
-        document.querySelector('[data-speed-toggle]')?.addEventListener('change', event => {
-          state.form.speedEnabled = event.currentTarget.checked;
-          if (state.form.speedEnabled && !state.form.speedLevels) state.form.speedLevels = '1档';
+        document.querySelectorAll('[data-frequency-speed-tab]').forEach(button => button.addEventListener('click', () => {
+          state.frequencySpeedTab = Number(button.dataset.frequencySpeedTab);
           render();
-        });
-        document.querySelector('.step-next')?.addEventListener('click', () => { state.ruleStep = Math.min(3, state.ruleStep + 1); render(); });
-        document.querySelector('#generate')?.addEventListener('click', () => { state.generated = true; render(); showToast('生成成功'); });
+        }));
+        document.querySelectorAll('[data-result-speed-tab]').forEach(button => button.addEventListener('click', () => {
+          state.resultSpeedTab = Number(button.dataset.resultSpeedTab);
+          render();
+        }));
+        document.querySelector('.step-next')?.addEventListener('click', () => { state.ruleStep = Math.min(4, state.ruleStep + 1); render(); });
+        document.querySelector('#generate')?.addEventListener('click', () => { state.generated = true; state.resultSpeedTab = 1; render(); showToast('生成成功'); });
         document.querySelectorAll('[data-export]').forEach(button => button.addEventListener('click', () => showToast('模版已导出')));
         document.querySelectorAll('[data-import]').forEach(button => button.addEventListener('click', () => { state.powerImports[button.dataset.import] = true; render(); showToast('导入成功'); }));
         document.querySelector('#add-combination')?.addEventListener('click', () => {
