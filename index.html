@@ -327,11 +327,18 @@
     .new-feature { padding: 10px; border: 1px solid #e6bd39; border-radius: 6px; background: #fff6bf; }
     .new-feature .control { border-color: #d9af2f; background: #fffbea; }
     .new-feature-step:not(.is-active) { color: #7a5a00; background: #fff6bf; }
-    .speed-tab-panel { margin-top: 14px; }
+    .speed-frequency-matrix { margin-top: 14px; overflow-x: auto; }
+    .speed-frequency-grid { display: grid; gap: 1px; min-width: 560px; overflow: hidden; border: 1px solid #e6bd39; border-radius: 4px; background: #e6bd39; }
+    .speed-frequency-grid--fixed { grid-template-columns: 150px minmax(240px, 1fr); max-width: 680px; }
+    .speed-frequency-grid--decreasing { grid-template-columns: 140px repeat(3, minmax(180px, 1fr)); min-width: 800px; }
+    .speed-frequency-cell { min-height: 58px; padding: 9px 12px; display: flex; align-items: center; background: #fffbea; }
+    .speed-frequency-head { min-height: 42px; color: #664d03; background: #fff3ad; font-size: 13px; }
+    .speed-frequency-label { color: #664d03; background: #fff6bf; font-size: 14px; }
+    .speed-frequency-cell .select-wrap, .speed-frequency-cell .control { width: 100%; }
+    .speed-frequency-cell .control { height: 38px; border-color: #d9af2f; background: #fffef7; }
     .speed-tabs { display: flex; flex-wrap: wrap; gap: 8px; }
     .speed-tab { min-width: 86px; height: 34px; padding: 0 14px; border: 1px solid #d9af2f; border-radius: 4px; color: #7a5a00; background: #fffbea; font-weight: 600; cursor: pointer; }
     .speed-tab.is-active { color: #fff; border-color: #d3a20f; background: #d3a20f; }
-    .speed-frequency-fields { margin-top: 14px; }
     .result-speed-bar { margin-bottom: 14px; display: grid; gap: 10px; }
     .result-speed-summary { display: flex; align-items: center; gap: 12px; }
     .result-speed-summary strong { color: #664d03; font-size: 13px; }
@@ -430,6 +437,6 @@
   </div>
   <div class="toast" id="toast">操作成功</div>
 
-  <script src="./mode-units-prototype.js?v=20260828-1" defer></script>
+  <script src="./mode-units-prototype.js?v=20260828-2" defer></script>
 </body>
 </html>

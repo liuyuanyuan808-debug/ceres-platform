@@ -49,7 +49,7 @@
     };
 
     const initialSection = sections[window.location.hash.slice(1)] ? window.location.hash.slice(1) : 'mode-units';
-    const state = { view: 'list', section: initialSection, collapsed: false, menuExpanded: true, query: '', status: 'all', selected: null, ruleStep: 1, frequencySpeedTab: 1, resultSpeedTab: 1, generated: false, form: {}, modal: null, modeUnits: [], rhythmModes: [], powerImports: { pressure: false, relief: false } };
+    const state = { view: 'list', section: initialSection, collapsed: false, menuExpanded: true, query: '', status: 'all', selected: null, ruleStep: 1, resultSpeedTab: 1, generated: false, form: {}, modal: null, modeUnits: [], rhythmModes: [], powerImports: { pressure: false, relief: false } };
     const app = document.querySelector('#app');
     const overlay = document.querySelector('#overlay');
     const dialogMessage = document.querySelector('#dialog-message');
@@ -144,7 +144,6 @@
       };
       if (savedConfig.speedEnabled && !savedConfig.speedStrategy) state.form.speedStrategy = '按 Speed 档位配置';
       state.ruleStep = 1;
-      state.frequencySpeedTab = 1;
       state.resultSpeedTab = 1;
       state.generated = Boolean(row?.generated);
       state.modal = null;
@@ -277,12 +276,15 @@
       return speedIsEnabled() ? `${base}Speed${speedIndex || 1}` : base;
     }
 
-    function speedTabButtons(type, activeIndex, count) {
-      const attribute = type === 'frequency' ? 'data-frequency-speed-tab' : 'data-result-speed-tab';
+    function speedTabButtons(activeIndex, count) {
       return `<div class="speed-tabs" role="tablist" aria-label="Speed 档位">${Array.from({ length: count }, (_, index) => {
         const speedIndex = index + 1;
-        return `<button class="speed-tab${activeIndex === speedIndex ? ' is-active' : ''}" type="button" role="tab" aria-selected="${activeIndex === speedIndex}" ${attribute}="${speedIndex}">Speed ${speedIndex}</button>`;
+        return `<button class="speed-tab${activeIndex === speedIndex ? ' is-active' : ''}" type="button" role="tab" aria-selected="${activeIndex === speedIndex}" data-result-speed-tab="${speedIndex}">Speed ${speedIndex}</button>`;
       }).join('')}</div>`;
+    }
+
+    function matrixSelect(key, options, selected, label) {
+      return `<div class="select-wrap"><select class="control" data-field="${key}" aria-label="${label}">${optionList(options, selected)}</select><svg class="select-caret" viewBox="0 0 1024 1024" aria-hidden="true"><path fill="currentColor" d="M831.872 340.864 512 652.672 192.128 340.864a30.59 30.59 0 0 0-42.752 0 29.12 29.12 0 0 0 0 41.6L489.664 714.24a32 32 0 0 0 44.672 0l340.288-331.712a29.12 29.12 0 0 0 0-41.728 30.59 30.59 0 0 0-42.752 0z"></path></svg></div>`;
     }
 
     function frequencyConfigText(speedIndex = 0) {
@@ -312,6 +314,26 @@
       return Number.isFinite(fixed) && fixed > 0 ? fixed : 60 + offset * 5;
     }
 
+    function frequencyMatrix(speedCount, frequencyOptions) {
+      if (!state.form.frequencyStrategy) return '';
+      const isFixed = state.form.frequencyStrategy === '固定频率';
+      const headers = isFixed
+        ? ['Speed 档位', '固定频率']
+        : ['Speed 档位', '起始频率', '频率步进', '最小频率'];
+      const rows = Array.from({ length: speedCount }, (_, index) => {
+        const speedIndex = index + 1;
+        if (isFixed) {
+          const key = frequencyFieldKey('fixedFrequency', speedIndex);
+          return `<strong class="speed-frequency-cell speed-frequency-label">Speed ${speedIndex}</strong><div class="speed-frequency-cell"><input class="control" data-field="${key}" type="number" placeholder="请输入" value="${state.form[key] || ''}" aria-label="Speed ${speedIndex} 固定频率"></div>`;
+        }
+        const startKey = frequencyFieldKey('startFrequency', speedIndex);
+        const stepKey = frequencyFieldKey('frequencyStep', speedIndex);
+        const minimumKey = frequencyFieldKey('minimumFrequency', speedIndex);
+        return `<strong class="speed-frequency-cell speed-frequency-label">Speed ${speedIndex}</strong><div class="speed-frequency-cell">${matrixSelect(startKey, frequencyOptions, state.form[startKey], `Speed ${speedIndex} 起始频率`)}</div><div class="speed-frequency-cell">${matrixSelect(stepKey, ['1 CPM', '2 CPM', '3 CPM', '4 CPM', '5 CPM'], state.form[stepKey], `Speed ${speedIndex} 频率步进`)}</div><div class="speed-frequency-cell">${matrixSelect(minimumKey, frequencyOptions, state.form[minimumKey], `Speed ${speedIndex} 最小频率`)}</div>`;
+      }).join('');
+      return `<div class="new-feature speed-frequency-matrix"><div class="speed-frequency-grid speed-frequency-grid--${isFixed ? 'fixed' : 'decreasing'}">${headers.map(header => `<strong class="speed-frequency-cell speed-frequency-head">${header}<em class="required"> *</em></strong>`).join('')}${rows}</div></div>`;
+    }
+
     function ruleCard() {
       const suctionOptions = Array.from({ length: 15 }, (_, index) => String(index + 10));
       const suctionSteps = ['1（1倍）', '2（2倍）', '3（3倍）', '4（4倍）', '5（5倍）'];
@@ -333,26 +355,17 @@
       } else if (state.ruleStep === 3) {
         fields = selectField('频率策略', 'frequencyStrategy', ['固定频率', '随吸力递减'], state.form.frequencyStrategy);
         const speedCount = selectedSpeedCount();
-        const activeSpeed = speedCount ? clampSpeedTab(state.frequencySpeedTab) : 0;
-        state.frequencySpeedTab = activeSpeed || 1;
         let frequencyFields = '';
-        if (state.form.frequencyStrategy === '固定频率') {
-          const key = frequencyFieldKey('fixedFrequency', activeSpeed);
-          frequencyFields = textField('固定频率（单位：CPM）', key, state.form[key], false, false, false, 'number');
+        if (!speedCount && state.form.frequencyStrategy === '固定频率') {
+          frequencyFields = textField('固定频率（单位：CPM）', 'fixedFrequency', state.form.fixedFrequency, false, false, false, 'number');
         }
-        if (state.form.frequencyStrategy === '随吸力递减') {
-          const startKey = frequencyFieldKey('startFrequency', activeSpeed);
-          const stepKey = frequencyFieldKey('frequencyStep', activeSpeed);
-          const minimumKey = frequencyFieldKey('minimumFrequency', activeSpeed);
-          frequencyFields = selectField('起始频率', startKey, frequencyOptions, state.form[startKey]);
-          frequencyFields += selectField('频率步进', stepKey, ['1 CPM', '2 CPM', '3 CPM', '4 CPM', '5 CPM'], state.form[stepKey]);
-          frequencyFields += selectField('最小频率', minimumKey, frequencyOptions, state.form[minimumKey]);
+        if (!speedCount && state.form.frequencyStrategy === '随吸力递减') {
+          frequencyFields = selectField('起始频率', 'startFrequency', frequencyOptions, state.form.startFrequency);
+          frequencyFields += selectField('频率步进', 'frequencyStep', ['1 CPM', '2 CPM', '3 CPM', '4 CPM', '5 CPM'], state.form.frequencyStep);
+          frequencyFields += selectField('最小频率', 'minimumFrequency', frequencyOptions, state.form.minimumFrequency);
         }
-        if (speedCount) {
-          supplementary = `<div class="new-feature speed-tab-panel">${speedTabButtons('frequency', activeSpeed, speedCount)}${frequencyFields ? `<div class="rule-fields speed-frequency-fields">${frequencyFields}</div>` : ''}</div>`;
-        } else {
-          fields += frequencyFields;
-        }
+        if (speedCount) supplementary = frequencyMatrix(speedCount, frequencyOptions);
+        else fields += frequencyFields;
         action = '<button class="btn btn--primary step-next" type="button">下一步</button>';
       } else {
         fields = selectField('阶段时长策略', 'durationStrategy', ['手动设置', '固定比例', '固定时长'], state.form.durationStrategy);
@@ -402,7 +415,7 @@
         ? '随吸力递减'
         : `固定频率 ${frequencyAt(0, activeSpeed)} CPM`;
       const speedBar = speedCount
-        ? `<div class="result-speed-bar">${speedTabButtons('result', activeSpeed, speedCount)}<div class="new-feature result-speed-summary"><strong>当前 Speed：Speed ${activeSpeed}</strong><span>频率策略：${strategyLabel}</span></div></div>`
+        ? `<div class="result-speed-bar">${speedTabButtons(activeSpeed, speedCount)}<div class="new-feature result-speed-summary"><strong>当前 Speed：Speed ${activeSpeed}</strong><span>频率策略：${strategyLabel}</span></div></div>`
         : '';
       const frequencyHeader = speedCount
         ? `<th class="new-feature-column">频率 CPM<span class="column-unit">Speed ${activeSpeed}</span></th>`
@@ -503,10 +516,6 @@
           });
         });
         document.querySelectorAll('.step-button').forEach(button => button.addEventListener('click', () => { state.ruleStep = Number(button.dataset.step); render(); }));
-        document.querySelectorAll('[data-frequency-speed-tab]').forEach(button => button.addEventListener('click', () => {
-          state.frequencySpeedTab = Number(button.dataset.frequencySpeedTab);
-          render();
-        }));
         document.querySelectorAll('[data-result-speed-tab]').forEach(button => button.addEventListener('click', () => {
           state.resultSpeedTab = Number(button.dataset.resultSpeedTab);
           render();
