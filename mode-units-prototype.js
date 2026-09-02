@@ -49,7 +49,7 @@
     };
 
     const initialSection = sections[window.location.hash.slice(1)] ? window.location.hash.slice(1) : 'mode-units';
-    const state = { view: 'list', section: initialSection, collapsed: false, menuExpanded: true, query: '', status: 'all', selected: null, ruleStep: 1, resultSpeedTab: 1, generated: false, form: {}, modal: null, modeUnits: [], rhythmModes: [], powerImports: { pressure: false, relief: false } };
+    const state = { view: 'list', section: initialSection, collapsed: false, menuExpanded: true, query: '', status: 'all', selected: null, ruleStep: 1, resultSpeedTab: 1, generated: false, form: {}, modal: null, modeUnits: [], rhythmModes: [], powerImports: { pressure: '', relief: '' } };
     const app = document.querySelector('#app');
     const overlay = document.querySelector('#overlay');
     const dialogMessage = document.querySelector('#dialog-message');
@@ -127,6 +127,11 @@
       return `<option value="">请选择</option>${values.map(option => `<option value="${option}"${option === selected ? ' selected' : ''}>${option}</option>`).join('')}`;
     }
 
+    function escapeHtml(value) {
+      const entities = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+      return String(value).replace(/[&<>"']/g, character => entities[character]);
+    }
+
     function selectField(label, key, options, selected = '', wide = false, required = true, className = '') {
       return `<label class="form-field${wide ? ' form-field--wide' : ''}${className ? ` ${className}` : ''}"><span>${label}${required ? '<em class="required"> *</em>' : ''}</span><div class="select-wrap"><select class="control" data-field="${key}">${optionList(options, selected)}</select><svg class="select-caret" viewBox="0 0 1024 1024" aria-hidden="true"><path fill="currentColor" d="M831.872 340.864 512 652.672 192.128 340.864a30.59 30.59 0 0 0-42.752 0 29.12 29.12 0 0 0 0 41.6L489.664 714.24a32 32 0 0 0 44.672 0l340.288-331.712a29.12 29.12 0 0 0 0-41.728 30.59 30.59 0 0 0-42.752 0z"></path></svg></div></label>`;
     }
@@ -149,7 +154,7 @@
       state.modal = null;
       state.modeUnits = [];
       state.rhythmModes = [];
-      state.powerImports = { pressure: false, relief: false };
+      state.powerImports = { pressure: '', relief: '' };
     }
 
     function openForm(view, row = null) {
@@ -172,14 +177,16 @@
 
     function mappingPanel(type) {
       const isPressure = type === 'pressure';
-      const imported = state.powerImports[type];
+      const importedFile = state.powerImports[type];
+      const imported = Boolean(importedFile);
+      const importedName = imported ? escapeHtml(importedFile) : '';
       const title = isPressure ? '导入泵建压映射表' : '导入阀卸压映射表';
       const description = isPressure ? '行是多个吸力值，列是多个时间 ms，中间的值是泵工作的占空比百分比。' : '行表示吸力点，列表示对应卸压时间 ms。';
       const sample = isPressure
         ? `<div class="mapping-table table-shell"><table class="data-table"><thead><tr><th>吸力 kPa</th><th>30 ms</th><th>40 ms</th><th>50 ms</th><th>60 ms</th></tr></thead><tbody><tr><td>10</td><td>42%</td><td>48%</td><td>55%</td><td>62%</td></tr><tr><td>15</td><td>51%</td><td>58%</td><td>64%</td><td>70%</td></tr><tr><td>20</td><td>60%</td><td>67%</td><td>73%</td><td>80%</td></tr></tbody></table></div>`
         : `<div class="mapping-table table-shell"><table class="data-table"><thead><tr><th>吸力 kPa</th><th>卸压时间 ms</th></tr></thead><tbody><tr><td>10</td><td>24</td></tr><tr><td>15</td><td>34</td></tr><tr><td>20</td><td>44</td></tr></tbody></table></div>`;
-      return `<section class="form-card mapping-card"><div class="form-card__header"><h2>${title}</h2><div class="card-actions"><button class="btn btn--outline" type="button" data-export="${type}">导出模版</button><button class="btn btn--primary" type="button" data-import="${type}">导入表格</button></div></div><p class="mapping-description">${description}</p>
-        ${imported ? sample : '<div class="mapping-empty">暂无数据，请先导入表格</div>'}
+      return `<section class="form-card mapping-card"><div class="form-card__header"><h2>${title}</h2><div class="card-actions"><button class="btn btn--outline" type="button" data-export="${type}">导出模版</button><button class="btn btn--primary" type="button" data-import="${type}">${imported ? '重新导入' : '导入表格'}</button></div></div><input class="mapping-file-input" type="file" accept=".xlsx,.xls,.csv" data-import-file="${type}" aria-label="${title}"><p class="mapping-description">${description}</p>
+        ${imported ? `<div class="mapping-import-status" role="status"><span>导入成功</span><strong title="${importedName}">${importedName}</strong></div>${sample}` : '<div class="mapping-empty">暂无数据，请先导入表格</div>'}
         <div class="mapping-stats"><div class="mapping-stat"><span>吸力范围</span><strong>${imported ? '10-20' : '-'} <em>kPa</em></strong></div><div class="mapping-stat"><span>时间范围</span><strong>${imported ? (isPressure ? '30-60' : '24-44') : '-'} <em>ms</em></strong></div></div>
       </section>`;
     }
@@ -522,8 +529,37 @@
         }));
         document.querySelector('.step-next')?.addEventListener('click', () => { state.ruleStep = Math.min(4, state.ruleStep + 1); render(); });
         document.querySelector('#generate')?.addEventListener('click', () => { state.generated = true; state.resultSpeedTab = 1; render(); showToast('生成成功'); });
-        document.querySelectorAll('[data-export]').forEach(button => button.addEventListener('click', () => showToast('模版已导出')));
-        document.querySelectorAll('[data-import]').forEach(button => button.addEventListener('click', () => { state.powerImports[button.dataset.import] = true; render(); showToast('导入成功'); }));
+        document.querySelectorAll('[data-export]').forEach(button => button.addEventListener('click', () => {
+          const templates = {
+            pressure: { href: './assets/templates/pump-pressure-mapping-template.xlsx', filename: '泵建压映射表导入模板.xlsx' },
+            relief: { href: './assets/templates/valve-relief-mapping-template.xlsx', filename: '阀卸压映射表导入模板.xlsx' }
+          };
+          const template = templates[button.dataset.export];
+          if (!template) return;
+          const link = document.createElement('a');
+          link.href = template.href;
+          link.download = template.filename;
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          showToast('模版已导出');
+        }));
+        document.querySelectorAll('[data-import]').forEach(button => button.addEventListener('click', () => {
+          document.querySelector(`[data-import-file="${button.dataset.import}"]`)?.click();
+        }));
+        document.querySelectorAll('[data-import-file]').forEach(input => input.addEventListener('change', event => {
+          const file = event.currentTarget.files?.[0];
+          if (!file) return;
+          const extension = file.name.split('.').pop()?.toLowerCase();
+          if (!['xlsx', 'xls', 'csv'].includes(extension)) {
+            event.currentTarget.value = '';
+            showToast('仅支持 xlsx、xls 或 csv 文件');
+            return;
+          }
+          state.powerImports[event.currentTarget.dataset.importFile] = file.name;
+          render();
+          showToast('导入成功');
+        }));
         document.querySelector('#add-combination')?.addEventListener('click', () => {
           state.modal = state.section === 'mode-libraries' ? 'mode-unit' : 'rhythm';
           state.form.modalSelection = '';

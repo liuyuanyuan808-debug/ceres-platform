@@ -366,6 +366,10 @@
     .view-speed-summary span { color: #7a5a00; font-size: 12px; }
 
     .mapping-description { margin: 0 0 14px; color: var(--muted); font-size: 12px; }
+    .mapping-file-input { display: none; }
+    .mapping-import-status { min-height: 40px; margin-bottom: 12px; padding: 8px 12px; display: flex; align-items: center; gap: 12px; border: 1px solid #b3e19d; border-radius: 6px; background: #f0f9eb; }
+    .mapping-import-status span { flex: 0 0 auto; color: #529b2e; font-size: 12px; font-weight: 600; }
+    .mapping-import-status strong { min-width: 0; overflow: hidden; color: #374151; font-size: 13px; font-weight: 500; text-overflow: ellipsis; white-space: nowrap; }
     .mapping-empty { min-height: 190px; display: grid; place-items: center; color: #909399; border: 1px solid var(--line); border-radius: 6px; background: #fff; }
     .mapping-table { max-height: 220px; overflow: auto; }
     .mapping-table .data-table { min-width: 580px; }
@@ -437,6 +441,6 @@
   </div>
   <div class="toast" id="toast">操作成功</div>
 
-  <script src="./mode-units-prototype.js?v=20260902-2" defer></script>
+  <script src="./mode-units-prototype.js?v=20260902-3" defer></script>
 </body>
 </html>
