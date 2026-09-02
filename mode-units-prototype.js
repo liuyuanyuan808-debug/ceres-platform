@@ -37,21 +37,21 @@
       },
       {
         id: 102, name: 'Air2直线电机', code: '1001', project: 'Air 2', status: '发布', updater: '池浩', time: '2026-08-18 15:37:43', description: '',
-        config: { motorType: '直线电机', pumpType: '隔膜泵', valveType: '电磁阀', frequencyMin: '40', frequencyMax: '80', holdMin: '20', holdMax: '500', intervalMin: '0', intervalMax: '500' },
+        config: { motorType: '直线电机', pumpType: '隔膜泵', valveType: '电磁阀', pulseCount: '4', frequencyMin: '40', frequencyMax: '80', holdMin: '20', holdMax: '500', intervalMin: '0', intervalMax: '500' },
         pressureRows: air2LinearPressureRows,
         reliefRows: air2ReliefRows,
         powerImports: { pressure: 'air2-linear-pressure.xlsx', relief: 'air2-valve-relief.xlsx' }
       },
       {
         id: 103, name: 'new air2直线电机方案', code: 'NEW-AIR2-LINEAR', project: 'Air 2', status: '草稿', updater: '刘媛媛', time: '2026-09-02 13:50:00', description: '直线电机四段驱动参数方案',
-        config: { motorType: '直线电机', pumpType: '隔膜泵', valveType: '电磁阀', frequencyMin: '30', frequencyMax: '120', holdMin: '20', holdMax: '300', intervalMin: '0', intervalMax: '500' },
+        config: { motorType: '直线电机', pumpType: '隔膜泵', valveType: '电磁阀', pulseCount: '4', frequencyMin: '30', frequencyMax: '120', holdMin: '20', holdMax: '300', intervalMin: '0', intervalMax: '500' },
         pressureRows: linearMotorPressureRows,
         reliefRows: standardReliefRows,
         powerImports: { pressure: 'new-air2-linear-pressure.xlsx', relief: 'new-air2-valve-relief.xlsx' }
       },
       {
         id: 104, name: 'L2直线方案New', code: 'L2-LINEAR-NEW', project: 'L2', status: '草稿', updater: '刘媛媛', time: '2026-09-02 14:20:00', description: 'L2直线电机脉冲频率数组方案',
-        config: { motorType: '直线电机', pumpType: '隔膜泵', valveType: '电磁阀', frequencyMin: '35', frequencyMax: '90', holdMin: '20', holdMax: '420', intervalMin: '0', intervalMax: '450' },
+        config: { motorType: '直线电机', pumpType: '隔膜泵', valveType: '电磁阀', pulseCount: '4', frequencyMin: '35', frequencyMax: '90', holdMin: '20', holdMax: '420', intervalMin: '0', intervalMax: '450' },
         pressureRows: l2LinearPressureRows,
         reliefRows: [['10', '20'], ['15', '29'], ['20', '38']],
         powerImports: { pressure: 'l2-linear-new-pressure.xlsx', relief: 'l2-linear-new-relief.xlsx' }
@@ -192,7 +192,7 @@
       state.form = {
         suction: '', suctionStep: '', gearCount: '', speedStrategy: '不启用 Speed', speedLevels: '', frequencyStrategy: '', fixedFrequency: '', startFrequency: '', frequencyStep: '', minimumFrequency: '',
         durationStrategy: '', pressureTime: '', pressureRatio: '', intervalTime: '',
-        project: row?.project || '', motorType: '', pumpType: '', valveType: '', frequencyMin: '', frequencyMax: '', holdMin: '', holdMax: '', intervalMin: '', intervalMax: '',
+        project: row?.project || '', motorType: '', pumpType: '', valveType: '', pulseCount: '4', frequencyMin: '', frequencyMax: '', holdMin: '', holdMax: '', intervalMin: '', intervalMax: '',
         modeType: '', source: row?.source || '', tags: row?.tags || '', modalSelection: '', modalAmount: '3',
         ...savedConfig,
         name: row?.name || '', code: row?.code || '', description: row?.description || '', extra: savedConfig.extra || row?.[section.extraKey] || ''
@@ -234,7 +234,18 @@
       const importedFile = state.powerImports[type];
       const imported = Boolean(importedFile);
       const importedName = imported ? escapeHtml(importedFile) : '';
-      const pressureRows = state.selected?.pressureRows || (isLinearMotorPressure ? linearMotorPressureRows : percentagePressureRows);
+      const pulseCount = Math.min(5, Math.max(1, Number.parseInt(state.form.pulseCount, 10) || 4));
+      const fitPulseArray = value => {
+        const numbers = String(value).match(/-?\d+(?:\.\d+)?/g)?.map(Number) || [];
+        while (numbers.length < pulseCount) {
+          const last = numbers.at(-1) || 0;
+          const previous = numbers.at(-2) ?? last - 8;
+          numbers.push(last + Math.max(1, last - previous));
+        }
+        return `[${numbers.slice(0, pulseCount).join(', ')}]`;
+      };
+      const sourcePressureRows = state.selected?.pressureRows || (isLinearMotorPressure ? linearMotorPressureRows : percentagePressureRows);
+      const pressureRows = isLinearMotorPressure ? sourcePressureRows.map(row => [row[0], ...row.slice(1).map(fitPulseArray)]) : sourcePressureRows;
       const reliefRows = state.selected?.reliefRows || standardReliefRows;
       const activeRows = isPressure ? pressureRows : reliefRows;
       const suctionValues = activeRows.map(row => Number(row[0])).filter(Number.isFinite);
@@ -242,7 +253,7 @@
       const rangeText = values => values.length ? `${Math.min(...values)}-${Math.max(...values)}` : '-';
       const title = isPressure ? '导入泵建压映射表' : '导入阀卸压映射表';
       const description = isLinearMotorPressure
-        ? '直线电机新增规则：行是多个吸力值，列是多个建压时间 ms；每个映射值为包含四个数的脉冲频率数组，不使用占空比百分比。导出与导入保持相同格式。'
+        ? `直线电机新增规则：行是多个吸力值，列是多个建压时间 ms；每个映射值为包含 ${pulseCount} 个数的脉冲频率数组，不使用占空比百分比。导出与导入保持相同格式。`
         : isPressure ? '行是多个吸力值，列是多个时间 ms，中间的值是泵工作的占空比百分比。' : '行表示吸力点，列表示对应卸压时间 ms。';
       const pressureBody = pressureRows.map(row => `<tr>${row.map((value, index) => `<td${isLinearMotorPressure && index ? ' class="linear-array-cell"' : ''}>${value}</td>`).join('')}</tr>`).join('');
       const reliefBody = reliefRows.map(row => `<tr><td>${row[0]}</td><td>${row[1]}</td></tr>`).join('');
@@ -251,7 +262,7 @@
         : `<div class="mapping-table table-shell"><table class="data-table"><thead><tr><th>吸力 kPa</th><th>卸压时间 ms</th></tr></thead><tbody>${reliefBody}</tbody></table></div>`;
       const actions = isView ? '' : `<div class="card-actions"><button class="btn btn--outline" type="button" data-export="${type}">导出模版</button><button class="btn btn--primary" type="button" data-import="${type}">${imported ? '重新导入' : '导入表格'}</button></div>`;
       const importStatus = imported && !isView ? `<div class="mapping-import-status" role="status"><span>导入成功</span><strong title="${importedName}">${importedName}</strong></div>` : '';
-      return `<section class="form-card mapping-card${isLinearMotorPressure ? ' linear-motor-feature' : ''}"><div class="form-card__header"><h2>${title}${isLinearMotorPressure ? '<span class="new-requirement-tag">脉冲频率数组</span>' : ''}</h2>${actions}</div><input class="mapping-file-input" type="file" accept=".xlsx,.xls,.csv" data-import-file="${type}" aria-label="${title}"><p class="mapping-description">${description}</p>
+      return `<section class="form-card mapping-card${isLinearMotorPressure ? ' linear-motor-feature' : ''}"><div class="form-card__header"><h2>${title}${isLinearMotorPressure ? `<span class="new-requirement-tag">脉冲频率数组 · ${pulseCount} 组</span>` : ''}</h2>${actions}</div><input class="mapping-file-input" type="file" accept=".xlsx,.xls,.csv" data-import-file="${type}" aria-label="${title}"><p class="mapping-description">${description}</p>
         ${imported ? `${importStatus}${sample}` : '<div class="mapping-empty">暂无数据，请先导入表格</div>'}
         <div class="mapping-stats"><div class="mapping-stat"><span>吸力范围</span><strong>${imported ? rangeText(suctionValues) : '-'} <em>kPa</em></strong></div><div class="mapping-stat"><span>时间范围</span><strong>${imported ? rangeText(secondaryValues) : '-'} <em>ms</em></strong></div></div>
       </section>`;
@@ -321,10 +332,14 @@
       const isPump = config.type === 'pressure';
       const isLinear = isPump && state.form.motorType === '直线电机';
       const numericInput = (label, key) => `<label><span>${label}</span><input class="control" data-export-config="${key}" type="number" min="${key.endsWith('Count') ? '1' : ''}" step="${key.endsWith('Count') ? '1' : 'any'}" value="${config[key]}"></label>`;
+      const pulseOptions = Array.from({ length: 5 }, (_, index) => {
+        const count = index + 1;
+        return `<button class="pulse-count-option${Number(config.pulseCount) === count ? ' is-active' : ''}" type="button" data-pulse-count="${count}" aria-pressed="${Number(config.pulseCount) === count}"><strong>${count}</strong>${count === 3 || count === 4 ? '<span>推荐</span>' : ''}</button>`;
+      }).join('');
       return `<div class="form-modal-overlay export-dialog-backdrop"><section class="form-modal export-template-dialog" role="dialog" aria-modal="true" aria-label="配置导出模版"><header><h2>配置导出模版</h2><button class="dialog-close" id="export-modal-close" type="button" aria-label="关闭" ${config.generating ? 'disabled' : ''}>×</button></header><div class="form-modal__body export-template-form">
         <section class="export-config-group"><header class="export-config-group__header"><h3>吸力 kPa</h3><span>全部为数值输入</span></header><div class="export-config-inputs">${numericInput('起始吸力', 'suctionStart')}${numericInput('步进', 'suctionStep')}${numericInput('数量', 'suctionCount')}</div></section>
         ${isPump ? `<section class="export-config-group"><header class="export-config-group__header"><h3>时间 ms</h3><span>全部为数值输入</span></header><div class="export-config-inputs">${numericInput('起始时间', 'timeStart')}${numericInput('步进时间', 'timeStep')}${numericInput('数量', 'timeCount')}</div></section>` : ''}
-        ${isLinear ? '<aside class="export-linear-note">新增需求：直线电机模板中的映射值为四个数的脉冲频率数组 [a, b, c, d]，不使用占空比。</aside>' : ''}
+        ${isLinear ? `<section class="export-config-group pulse-count-group"><header class="export-config-group__header"><h3>脉冲频率数组</h3><span>可选 1～5，推荐 3 或 4</span></header><div class="pulse-count-options" role="group" aria-label="脉冲频率数组组数">${pulseOptions}</div></section><aside class="export-linear-note">新增需求：直线电机模板中的映射值为 ${config.pulseCount} 个数的脉冲频率数组 [${Array.from({ length: Number(config.pulseCount) || 4 }, (_, index) => String.fromCharCode(97 + index)).join(', ')}]，不使用占空比。</aside>` : ''}
         ${state.exportError ? `<p class="export-dialog-error">${escapeHtml(state.exportError)}</p>` : ''}
       </div><footer><button class="btn btn--outline" id="export-modal-cancel" type="button" ${config.generating ? 'disabled' : ''}>取消</button><button class="btn btn--primary" id="export-download" type="button" ${config.generating ? 'disabled' : ''}>${config.generating ? '生成中...' : '下载'}</button></footer></section></div>`;
     }
@@ -414,8 +429,10 @@
       const isPump = type === 'pressure';
       const timeValues = isPump ? numericSequence(config.timeStart, config.timeStep, config.timeCount) : [];
       const isLinear = isPump && state.form.motorType === '直线电机';
+      const pulseCount = Math.min(5, Math.max(1, Number.parseInt(config.pulseCount, 10) || 4));
+      const emptyPulseArray = `[${Array.from({ length: pulseCount }, () => 0).join(', ')}]`;
       const matrix = isPump
-        ? [['吸力 kPa', ...timeValues], ...suctionValues.map(suction => [suction, ...timeValues.map(() => isLinear ? '[0, 0, 0, 0]' : '')])]
+        ? [['吸力 kPa', ...timeValues], ...suctionValues.map(suction => [suction, ...timeValues.map(() => isLinear ? emptyPulseArray : '')])]
         : [['吸力 kPa', '卸压时间'], ...suctionValues.map(suction => [suction, ''])];
       const cells = matrix.map((row, rowIndex) => `<row r="${rowIndex + 1}">${row.map((value, columnIndex) => {
         const reference = `${excelColumn(columnIndex)}${rowIndex + 1}`;
@@ -737,6 +754,7 @@
             timeStart: 0,
             timeStep: 100,
             timeCount: 10,
+            pulseCount: Number.parseInt(state.form.pulseCount, 10) || 4,
             generating: false
           };
           state.exportError = '';
@@ -744,6 +762,12 @@
         }));
         document.querySelectorAll('[data-export-config]').forEach(input => input.addEventListener('input', event => {
           if (state.exportConfig) state.exportConfig[event.currentTarget.dataset.exportConfig] = event.currentTarget.value;
+        }));
+        document.querySelectorAll('[data-pulse-count]').forEach(button => button.addEventListener('click', () => {
+          if (!state.exportConfig || state.exportConfig.generating) return;
+          state.exportConfig.pulseCount = Number(button.dataset.pulseCount);
+          state.exportError = '';
+          render();
         }));
         const closeExportModal = () => {
           if (state.exportConfig?.generating) return;
@@ -761,6 +785,7 @@
           try {
             numericSequence(config.suctionStart, config.suctionStep, config.suctionCount);
             if (config.type === 'pressure') numericSequence(config.timeStart, config.timeStep, config.timeCount);
+            if (config.type === 'pressure' && state.form.motorType === '直线电机' && (!Number.isInteger(Number(config.pulseCount)) || Number(config.pulseCount) < 1 || Number(config.pulseCount) > 5)) throw new Error('脉冲频率数组组数必须是 1～5 的整数');
           } catch (error) {
             state.exportError = error.message;
             render();
@@ -771,6 +796,7 @@
           render();
           window.setTimeout(() => {
             try {
+              if (config.type === 'pressure' && state.form.motorType === '直线电机') state.form.pulseCount = String(config.pulseCount);
               downloadMappingTemplate(config.type, config);
               state.exportConfig = null;
               render();
