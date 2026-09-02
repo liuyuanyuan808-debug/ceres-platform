@@ -189,9 +189,9 @@
         ${textField('动力源名称', 'name', state.form.name, false, false, isView)}
         ${textField('动力源编码', 'code', state.form.code, false, false, isView)}
         ${selectField('关联项目', 'project', sections['power-sources'].options, state.form.project)}
-        ${selectField('电机类型', 'motorType', ['有刷电机', '无刷电机', 'test', '12341134'], state.form.motorType)}
-        ${selectField('泵类型', 'pumpType', ['隔膜泵', '活塞泵'], state.form.pumpType)}
-        ${selectField('阀类型', 'valveType', ['单向阀', '止回阀', '旋转阀门'], state.form.valveType)}
+        ${selectField('电机类型', 'motorType', ['直线电机'], state.form.motorType)}
+        ${selectField('泵类型', 'pumpType', ['隔膜泵', '压电泵'], state.form.pumpType)}
+        ${selectField('阀类型', 'valveType', ['电磁阀'], state.form.valveType)}
         ${textField('描述', 'description', state.form.description, true, true, isView)}
       </div></section>`}${mappingPanel('pressure')}${mappingPanel('relief')}<section class="form-card"><h2>边界配置</h2><div class="boundary-grid">
         <section class="boundary-group"><h3>频率</h3><div class="boundary-fields">${textField('最小值 CPM', 'frequencyMin', state.form.frequencyMin, false, false, isView)}${textField('最大值 CPM', 'frequencyMax', state.form.frequencyMax, false, false, isView)}</div></section>
