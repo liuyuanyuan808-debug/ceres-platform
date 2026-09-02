@@ -19,6 +19,11 @@
       ['15', '[18, 25, 33, 43]', '[20, 28, 37, 48]', '[22, 31, 41, 53]', '[24, 34, 45, 58]'],
       ['20', '[24, 32, 42, 54]', '[26, 35, 46, 59]', '[28, 38, 50, 64]', '[30, 41, 54, 69]']
     ];
+    const l2LinearPressureRows = [
+      ['10', '[36, 48, 60, 72]', '[40, 52, 64, 76]', '[44, 56, 68, 80]', '[48, 60, 72, 84]'],
+      ['15', '[42, 54, 66, 78]', '[46, 58, 70, 82]', '[50, 62, 74, 86]', '[54, 66, 78, 90]'],
+      ['20', '[48, 60, 72, 84]', '[52, 64, 76, 88]', '[56, 68, 80, 92]', '[60, 72, 84, 96]']
+    ];
     const standardReliefRows = [['10', '24'], ['15', '34'], ['20', '44']];
     const air2ReliefRows = [['10', '22'], ['15', '31'], ['20', '41']];
 
@@ -43,6 +48,13 @@
         pressureRows: linearMotorPressureRows,
         reliefRows: standardReliefRows,
         powerImports: { pressure: 'new-air2-linear-pressure.xlsx', relief: 'new-air2-valve-relief.xlsx' }
+      },
+      {
+        id: 104, name: 'L2直线方案New', code: 'L2-LINEAR-NEW', project: 'L2', status: '草稿', updater: '刘媛媛', time: '2026-09-02 14:20:00', description: 'L2直线电机脉冲频率数组方案',
+        config: { motorType: '直线电机', pumpType: '隔膜泵', valveType: '电磁阀', frequencyMin: '35', frequencyMax: '90', holdMin: '20', holdMax: '420', intervalMin: '0', intervalMax: '450' },
+        pressureRows: l2LinearPressureRows,
+        reliefRows: [['10', '20'], ['15', '29'], ['20', '38']],
+        powerImports: { pressure: 'l2-linear-new-pressure.xlsx', relief: 'l2-linear-new-relief.xlsx' }
       }
     ];
 
@@ -65,7 +77,7 @@
     const sections = {
       'power-sources': {
         label: '动力源方案管理', title: '动力源列表管理', addLabel: '新增动力源', formTitle: '项目动力源配置', extraLabel: '关联项目', extraKey: 'project', rows: powerSourceRows,
-        options: ['M5 Smart', 'M9', 'M10', 'Air 1', 'M8', 'V3', 'V3 Pro', 'M10 Lite', 'Air 2'],
+        options: ['M5 Smart', 'M9', 'M10', 'Air 1', 'M8', 'V3', 'V3 Pro', 'M10 Lite', 'Air 2', 'L2'],
         columns: [['name', '名称'], ['code', '编码'], ['project', '关联项目'], ['status', '状态'], ['updater', '更新人'], ['time', '更新时间']]
       },
       'mode-units': {
@@ -230,7 +242,7 @@
       const rangeText = values => values.length ? `${Math.min(...values)}-${Math.max(...values)}` : '-';
       const title = isPressure ? '导入泵建压映射表' : '导入阀卸压映射表';
       const description = isLinearMotorPressure
-        ? '直线电机新增规则：行是多个吸力值，列是多个建压时间 ms；每个映射值为包含四个数的驱动参数数组，不使用占空比百分比。导出与导入保持相同格式。'
+        ? '直线电机新增规则：行是多个吸力值，列是多个建压时间 ms；每个映射值为包含四个数的脉冲频率数组，不使用占空比百分比。导出与导入保持相同格式。'
         : isPressure ? '行是多个吸力值，列是多个时间 ms，中间的值是泵工作的占空比百分比。' : '行表示吸力点，列表示对应卸压时间 ms。';
       const pressureBody = pressureRows.map(row => `<tr>${row.map((value, index) => `<td${isLinearMotorPressure && index ? ' class="linear-array-cell"' : ''}>${value}</td>`).join('')}</tr>`).join('');
       const reliefBody = reliefRows.map(row => `<tr><td>${row[0]}</td><td>${row[1]}</td></tr>`).join('');
@@ -239,7 +251,7 @@
         : `<div class="mapping-table table-shell"><table class="data-table"><thead><tr><th>吸力 kPa</th><th>卸压时间 ms</th></tr></thead><tbody>${reliefBody}</tbody></table></div>`;
       const actions = isView ? '' : `<div class="card-actions"><button class="btn btn--outline" type="button" data-export="${type}">导出模版</button><button class="btn btn--primary" type="button" data-import="${type}">${imported ? '重新导入' : '导入表格'}</button></div>`;
       const importStatus = imported && !isView ? `<div class="mapping-import-status" role="status"><span>导入成功</span><strong title="${importedName}">${importedName}</strong></div>` : '';
-      return `<section class="form-card mapping-card${isLinearMotorPressure ? ' linear-motor-feature' : ''}"><div class="form-card__header"><h2>${title}${isLinearMotorPressure ? '<span class="new-requirement-tag">新增需求</span>' : ''}</h2>${actions}</div><input class="mapping-file-input" type="file" accept=".xlsx,.xls,.csv" data-import-file="${type}" aria-label="${title}"><p class="mapping-description">${description}</p>
+      return `<section class="form-card mapping-card${isLinearMotorPressure ? ' linear-motor-feature' : ''}"><div class="form-card__header"><h2>${title}${isLinearMotorPressure ? '<span class="new-requirement-tag">脉冲频率数组</span>' : ''}</h2>${actions}</div><input class="mapping-file-input" type="file" accept=".xlsx,.xls,.csv" data-import-file="${type}" aria-label="${title}"><p class="mapping-description">${description}</p>
         ${imported ? `${importStatus}${sample}` : '<div class="mapping-empty">暂无数据，请先导入表格</div>'}
         <div class="mapping-stats"><div class="mapping-stat"><span>吸力范围</span><strong>${imported ? rangeText(suctionValues) : '-'} <em>kPa</em></strong></div><div class="mapping-stat"><span>时间范围</span><strong>${imported ? rangeText(secondaryValues) : '-'} <em>ms</em></strong></div></div>
       </section>`;
@@ -311,7 +323,8 @@
       const numericInput = (label, key) => `<label><span>${label}</span><input class="control" data-export-config="${key}" type="number" min="${key.endsWith('Count') ? '1' : ''}" step="${key.endsWith('Count') ? '1' : 'any'}" value="${config[key]}"></label>`;
       return `<div class="form-modal-overlay export-dialog-backdrop"><section class="form-modal export-template-dialog" role="dialog" aria-modal="true" aria-label="配置导出模版"><header><h2>配置导出模版</h2><button class="dialog-close" id="export-modal-close" type="button" aria-label="关闭" ${config.generating ? 'disabled' : ''}>×</button></header><div class="form-modal__body export-template-form">
         <section class="export-config-group"><header class="export-config-group__header"><h3>吸力 kPa</h3><span>全部为数值输入</span></header><div class="export-config-inputs">${numericInput('起始吸力', 'suctionStart')}${numericInput('步进', 'suctionStep')}${numericInput('数量', 'suctionCount')}</div></section>
-        ${isPump ? `<section class="export-config-group${isLinear ? ' export-config-group--new' : ''}"><header class="export-config-group__header"><h3>时间 ms</h3><span>全部为数值输入</span></header><div class="export-config-inputs">${numericInput('起始时间', 'timeStart')}${numericInput('步进时间', 'timeStep')}${numericInput('数量', 'timeCount')}</div>${isLinear ? '<p class="export-linear-note">新增需求：直线电机模板中的映射值为四个数的数组 [a, b, c, d]，不使用占空比。</p>' : ''}</section>` : ''}
+        ${isPump ? `<section class="export-config-group"><header class="export-config-group__header"><h3>时间 ms</h3><span>全部为数值输入</span></header><div class="export-config-inputs">${numericInput('起始时间', 'timeStart')}${numericInput('步进时间', 'timeStep')}${numericInput('数量', 'timeCount')}</div></section>` : ''}
+        ${isLinear ? '<aside class="export-linear-note">新增需求：直线电机模板中的映射值为四个数的脉冲频率数组 [a, b, c, d]，不使用占空比。</aside>' : ''}
         ${state.exportError ? `<p class="export-dialog-error">${escapeHtml(state.exportError)}</p>` : ''}
       </div><footer><button class="btn btn--outline" id="export-modal-cancel" type="button" ${config.generating ? 'disabled' : ''}>取消</button><button class="btn btn--primary" id="export-download" type="button" ${config.generating ? 'disabled' : ''}>${config.generating ? '生成中...' : '下载'}</button></footer></section></div>`;
     }
