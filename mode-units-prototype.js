@@ -60,7 +60,7 @@
     };
 
     const initialSection = sections[window.location.hash.slice(1)] ? window.location.hash.slice(1) : 'mode-units';
-    const state = { view: 'list', section: initialSection, collapsed: false, menuExpanded: true, query: '', status: 'all', selected: null, ruleStep: 1, resultSpeedTab: 1, generated: false, form: {}, modal: null, modeUnits: [], rhythmModes: [], powerImports: { pressure: '', relief: '' } };
+    const state = { view: 'list', section: initialSection, collapsed: false, menuExpanded: true, query: '', status: 'all', selected: null, ruleStep: 1, resultSpeedTab: 1, generated: false, form: {}, modal: null, exportConfig: null, exportError: '', modeUnits: [], rhythmModes: [], powerImports: { pressure: '', relief: '' } };
     const app = document.querySelector('#app');
     const overlay = document.querySelector('#overlay');
     const dialogMessage = document.querySelector('#dialog-message');
@@ -163,6 +163,8 @@
       state.resultSpeedTab = 1;
       state.generated = Boolean(row?.generated);
       state.modal = null;
+      state.exportConfig = null;
+      state.exportError = '';
       state.modeUnits = [];
       state.rhythmModes = [];
       state.powerImports = { pressure: '', relief: '', ...(row?.powerImports || {}) };
@@ -264,6 +266,138 @@
       </div></section>
       <section class="form-card"><div class="form-card__header"><h2>模式组合配置</h2><button class="btn btn--primary" id="add-combination" type="button">添加模式</button></div>${total ? `<div class="table-shell combo-table"><table class="data-table"><colgroup><col style="width:55px"><col style="width:140px"><col style="width:100px"><col style="width:110px"><col style="width:145px"><col style="width:80px"><col style="width:150px"></colgroup><thead><tr><th>顺序</th><th>模式名称</th><th>模式编码</th><th>模式类型</th><th>循环时间（单位：s）</th><th>状态</th><th>操作</th></tr></thead><tbody>${rowsMarkup}</tbody></table></div>` : '<div class="combo-empty">暂无数据，请先添加模式</div>'}</section>
       <section class="form-card"><h2>韵律阶段预览</h2>${rhythmPreview()}</section>`;
+    }
+
+    function exportTemplateModal() {
+      if (!state.exportConfig) return '';
+      const config = state.exportConfig;
+      const isPump = config.type === 'pressure';
+      const isLinear = isPump && state.form.motorType === '直线电机';
+      const numericInput = (label, key) => `<label><span>${label}</span><input class="control" data-export-config="${key}" type="number" min="${key.endsWith('Count') ? '1' : ''}" step="${key.endsWith('Count') ? '1' : 'any'}" value="${config[key]}"></label>`;
+      return `<div class="form-modal-overlay export-dialog-backdrop"><section class="form-modal export-template-dialog" role="dialog" aria-modal="true" aria-label="配置导出模版"><header><h2>配置导出模版</h2><button class="dialog-close" id="export-modal-close" type="button" aria-label="关闭" ${config.generating ? 'disabled' : ''}>×</button></header><div class="form-modal__body export-template-form">
+        <section class="export-config-group"><header class="export-config-group__header"><h3>吸力 kPa</h3><span>全部为数值输入</span></header><div class="export-config-inputs">${numericInput('起始吸力', 'suctionStart')}${numericInput('步进', 'suctionStep')}${numericInput('数量', 'suctionCount')}</div></section>
+        ${isPump ? `<section class="export-config-group${isLinear ? ' export-config-group--new' : ''}"><header class="export-config-group__header"><h3>时间 ms</h3><span>全部为数值输入</span></header><div class="export-config-inputs">${numericInput('起始时间', 'timeStart')}${numericInput('步进时间', 'timeStep')}${numericInput('数量', 'timeCount')}</div>${isLinear ? '<p class="export-linear-note">新增需求：直线电机模板中的映射值为四个数的数组 [a, b, c, d]，不使用占空比。</p>' : ''}</section>` : ''}
+        ${state.exportError ? `<p class="export-dialog-error">${escapeHtml(state.exportError)}</p>` : ''}
+      </div><footer><button class="btn btn--outline" id="export-modal-cancel" type="button" ${config.generating ? 'disabled' : ''}>取消</button><button class="btn btn--primary" id="export-download" type="button" ${config.generating ? 'disabled' : ''}>${config.generating ? '生成中...' : '下载'}</button></footer></section></div>`;
+    }
+
+    function numericSequence(startValue, stepValue, countValue) {
+      const start = Number(startValue);
+      const step = Number(stepValue);
+      const count = Number(countValue);
+      if (!Number.isFinite(start) || !Number.isFinite(step)) throw new Error('起始值和步进必须是有效数字');
+      if (!Number.isInteger(count) || count <= 0) throw new Error('数量必须是正整数');
+      return Array.from({ length: count }, (_, index) => Number((start + step * index).toFixed(12)));
+    }
+
+    function xmlEscape(value) {
+      return String(value).replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' }[character]));
+    }
+
+    function excelColumn(index) {
+      let result = '';
+      for (let value = index + 1; value > 0; value = Math.floor((value - 1) / 26)) result = String.fromCharCode(65 + ((value - 1) % 26)) + result;
+      return result;
+    }
+
+    function crc32(bytes) {
+      let crc = 0xffffffff;
+      for (const byte of bytes) {
+        crc ^= byte;
+        for (let bit = 0; bit < 8; bit += 1) crc = (crc >>> 1) ^ ((crc & 1) ? 0xedb88320 : 0);
+      }
+      return (crc ^ 0xffffffff) >>> 0;
+    }
+
+    function zipParts(files) {
+      const encoder = new TextEncoder();
+      const locals = [];
+      const centrals = [];
+      let offset = 0;
+      let centralSize = 0;
+      const join = parts => {
+        const total = parts.reduce((sum, part) => sum + part.length, 0);
+        const output = new Uint8Array(total);
+        let cursor = 0;
+        parts.forEach(part => { output.set(part, cursor); cursor += part.length; });
+        return output;
+      };
+      Object.entries(files).forEach(([name, content]) => {
+        const nameBytes = encoder.encode(name);
+        const data = encoder.encode(content);
+        const checksum = crc32(data);
+        const localHeader = new Uint8Array(30);
+        const localView = new DataView(localHeader.buffer);
+        localView.setUint32(0, 0x04034b50, true);
+        localView.setUint16(4, 20, true);
+        localView.setUint32(14, checksum, true);
+        localView.setUint32(18, data.length, true);
+        localView.setUint32(22, data.length, true);
+        localView.setUint16(26, nameBytes.length, true);
+        const local = join([localHeader, nameBytes, data]);
+        locals.push(local);
+        const centralHeader = new Uint8Array(46);
+        const centralView = new DataView(centralHeader.buffer);
+        centralView.setUint32(0, 0x02014b50, true);
+        centralView.setUint16(4, 20, true);
+        centralView.setUint16(6, 20, true);
+        centralView.setUint32(16, checksum, true);
+        centralView.setUint32(20, data.length, true);
+        centralView.setUint32(24, data.length, true);
+        centralView.setUint16(28, nameBytes.length, true);
+        centralView.setUint32(42, offset, true);
+        const central = join([centralHeader, nameBytes]);
+        centrals.push(central);
+        offset += local.length;
+        centralSize += central.length;
+      });
+      const end = new Uint8Array(22);
+      const endView = new DataView(end.buffer);
+      endView.setUint32(0, 0x06054b50, true);
+      endView.setUint16(8, centrals.length, true);
+      endView.setUint16(10, centrals.length, true);
+      endView.setUint32(12, centralSize, true);
+      endView.setUint32(16, offset, true);
+      return join([...locals, ...centrals, end]);
+    }
+
+    function mappingWorkbookBlob(type, config) {
+      const suctionValues = numericSequence(config.suctionStart, config.suctionStep, config.suctionCount);
+      const isPump = type === 'pressure';
+      const timeValues = isPump ? numericSequence(config.timeStart, config.timeStep, config.timeCount) : [];
+      const isLinear = isPump && state.form.motorType === '直线电机';
+      const matrix = isPump
+        ? [['吸力 kPa', ...timeValues], ...suctionValues.map(suction => [suction, ...timeValues.map(() => isLinear ? '[0, 0, 0, 0]' : '')])]
+        : [['吸力 kPa', '卸压时间'], ...suctionValues.map(suction => [suction, ''])];
+      const cells = matrix.map((row, rowIndex) => `<row r="${rowIndex + 1}">${row.map((value, columnIndex) => {
+        const reference = `${excelColumn(columnIndex)}${rowIndex + 1}`;
+        const style = rowIndex === 0 ? 1 : isLinear && columnIndex > 0 ? 3 : 2;
+        if (value === '') return `<c r="${reference}" s="${style}"/>`;
+        if (typeof value === 'number') return `<c r="${reference}" s="${style}"><v>${value}</v></c>`;
+        return `<c r="${reference}" s="${style}" t="inlineStr"><is><t>${xmlEscape(value)}</t></is></c>`;
+      }).join('')}</row>`).join('');
+      const lastCell = `${excelColumn(matrix[0].length - 1)}${matrix.length}`;
+      const sheetName = isPump ? '泵建压映射表' : '阀卸压映射表';
+      const files = {
+        '[Content_Types].xml': `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>`,
+        '_rels/.rels': `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`,
+        'xl/workbook.xml': `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="${sheetName}" sheetId="1" r:id="rId1"/></sheets></workbook>`,
+        'xl/_rels/workbook.xml.rels': `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`,
+        'xl/styles.xml': `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="2"><font><sz val="11"/><name val="Arial"/></font><font><b/><sz val="11"/><name val="Arial"/></font></fonts><fills count="4"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FFE2E8F0"/><bgColor indexed="64"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFFFF6BF"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="2"><border/><border><left style="thin"><color rgb="FFCBD5E1"/></left><right style="thin"><color rgb="FFCBD5E1"/></right><top style="thin"><color rgb="FFCBD5E1"/></top><bottom style="thin"><color rgb="FFCBD5E1"/></bottom></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="4"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf><xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf><xf numFmtId="49" fontId="0" fillId="3" borderId="1" xfId="0" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`,
+        'xl/worksheets/sheet1.xml': `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><dimension ref="A1:${lastCell}"/><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><cols>${matrix[0].map((_, index) => `<col min="${index + 1}" max="${index + 1}" width="${index === 0 ? 14 : isLinear ? 22 : 12}" customWidth="1"/>`).join('')}</cols><sheetData>${cells}</sheetData></worksheet>`
+      };
+      return new Blob([zipParts(files)], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    }
+
+    function downloadMappingTemplate(type, config) {
+      const blob = mappingWorkbookBlob(type, config);
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = type === 'pressure' ? '泵建压映射表模版.xlsx' : '阀卸压映射表模版.xlsx';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(link.href), 1000);
     }
 
     function combinationModal() {
@@ -477,7 +611,7 @@
     }
 
     function render() {
-      app.innerHTML = `<div class="admin-shell${state.collapsed ? ' is-collapsed' : ''}">${sidebar()}<main class="content-shell">${state.view === 'list' ? listView() : formView()}</main></div>${combinationModal()}`;
+      app.innerHTML = `<div class="admin-shell${state.collapsed ? ' is-collapsed' : ''}">${sidebar()}<main class="content-shell">${state.view === 'list' ? listView() : formView()}</main></div>${combinationModal()}${exportTemplateModal()}`;
       bindEvents();
     }
 
@@ -547,22 +681,59 @@
         document.querySelector('.step-next')?.addEventListener('click', () => { state.ruleStep = Math.min(4, state.ruleStep + 1); render(); });
         document.querySelector('#generate')?.addEventListener('click', () => { state.generated = true; state.resultSpeedTab = 1; render(); showToast('生成成功'); });
         document.querySelectorAll('[data-export]').forEach(button => button.addEventListener('click', () => {
-          const templates = {
-            pressure: state.form.motorType === '直线电机'
-              ? { href: './assets/templates/linear-motor-pressure-mapping-template.xlsx', filename: '直线电机泵建压映射表导入模板.xlsx' }
-              : { href: './assets/templates/pump-pressure-mapping-template.xlsx', filename: '泵建压映射表导入模板.xlsx' },
-            relief: { href: './assets/templates/valve-relief-mapping-template.xlsx', filename: '阀卸压映射表导入模板.xlsx' }
+          state.exportConfig = {
+            type: button.dataset.export,
+            suctionStart: 0,
+            suctionStep: 1,
+            suctionCount: 10,
+            timeStart: 0,
+            timeStep: 100,
+            timeCount: 10,
+            generating: false
           };
-          const template = templates[button.dataset.export];
-          if (!template) return;
-          const link = document.createElement('a');
-          link.href = template.href;
-          link.download = template.filename;
-          document.body.appendChild(link);
-          link.click();
-          link.remove();
-          showToast('模版已导出');
+          state.exportError = '';
+          render();
         }));
+        document.querySelectorAll('[data-export-config]').forEach(input => input.addEventListener('input', event => {
+          if (state.exportConfig) state.exportConfig[event.currentTarget.dataset.exportConfig] = event.currentTarget.value;
+        }));
+        const closeExportModal = () => {
+          if (state.exportConfig?.generating) return;
+          state.exportConfig = null;
+          state.exportError = '';
+          render();
+        };
+        document.querySelector('#export-modal-close')?.addEventListener('click', closeExportModal);
+        document.querySelector('#export-modal-cancel')?.addEventListener('click', closeExportModal);
+        document.querySelector('.export-dialog-backdrop')?.addEventListener('click', event => {
+          if (event.target.classList.contains('export-dialog-backdrop')) closeExportModal();
+        });
+        document.querySelector('#export-download')?.addEventListener('click', () => {
+          const config = { ...state.exportConfig };
+          try {
+            numericSequence(config.suctionStart, config.suctionStep, config.suctionCount);
+            if (config.type === 'pressure') numericSequence(config.timeStart, config.timeStep, config.timeCount);
+          } catch (error) {
+            state.exportError = error.message;
+            render();
+            return;
+          }
+          state.exportConfig.generating = true;
+          state.exportError = '';
+          render();
+          window.setTimeout(() => {
+            try {
+              downloadMappingTemplate(config.type, config);
+              state.exportConfig = null;
+              render();
+              showToast('模版已导出');
+            } catch (error) {
+              state.exportConfig = { ...config, generating: false };
+              state.exportError = error.message || '模版生成失败，请重试';
+              render();
+            }
+          }, 30);
+        });
         document.querySelectorAll('[data-import]').forEach(button => button.addEventListener('click', () => {
           document.querySelector(`[data-import-file="${button.dataset.import}"]`)?.click();
         }));
@@ -588,7 +759,7 @@
         const closeModal = () => { state.modal = null; render(); };
         document.querySelector('#modal-close')?.addEventListener('click', closeModal);
         document.querySelector('#modal-cancel')?.addEventListener('click', closeModal);
-        document.querySelector('.form-modal-overlay')?.addEventListener('click', event => { if (event.target.classList.contains('form-modal-overlay')) closeModal(); });
+        document.querySelector('.form-modal-overlay:not(.export-dialog-backdrop)')?.addEventListener('click', event => { if (event.target.classList.contains('form-modal-overlay')) closeModal(); });
         document.querySelector('#modal-confirm')?.addEventListener('click', () => {
           if (state.modal === 'mode-unit') {
             const selected = state.form.modalSelection || '818模式单元 / 818';
@@ -642,7 +813,7 @@
       returnToList();
     }
 
-    function returnToList() { state.view = 'list'; state.selected = null; state.modal = null; render(); window.scrollTo(0, 0); }
+    function returnToList() { state.view = 'list'; state.selected = null; state.modal = null; state.exportConfig = null; state.exportError = ''; render(); window.scrollTo(0, 0); }
     function showDialog(message, action) { dialogMessage.textContent = message; pendingAction = action; overlay.classList.add('is-open'); overlay.setAttribute('aria-hidden', 'false'); document.querySelector('#dialog-confirm').focus(); }
     function hideDialog() { overlay.classList.remove('is-open'); overlay.setAttribute('aria-hidden', 'true'); pendingAction = null; }
     function showToast(message) { toast.textContent = message; toast.classList.add('is-open'); window.setTimeout(() => toast.classList.remove('is-open'), 1800); }
