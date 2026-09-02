@@ -4,20 +4,46 @@
       { id: 5, name: '818模式单元', code: '818', status: '发布', updater: '陈剑泽', time: '2026-08-18 16:29:10', source: 'Air2直线电机', description: '' }
     ];
 
-    const powerSourceRows = [
-      { id: 101, name: '818动力源', code: '818', project: 'V3、V3 Pro', status: '发布', updater: '陈剑泽', time: '2026-08-18 16:28:12', description: '' },
-      { id: 102, name: 'Air2直线电机', code: '1001', project: 'Air 2', status: '发布', updater: '池浩', time: '2026-08-18 15:37:43', description: '' },
-      {
-        id: 103, name: 'new air2直线电机方案', code: 'NEW-AIR2-LINEAR', project: 'Air 2', status: '草稿', updater: '刘媛媛', time: '2026-09-02 13:50:00', description: '直线电机四段驱动参数方案',
-        config: { motorType: '直线电机', pumpType: '隔膜泵', valveType: '电磁阀', frequencyMin: '30', frequencyMax: '120', holdMin: '20', holdMax: '300', intervalMin: '0', intervalMax: '500' },
-        powerImports: { pressure: 'new-air2-linear-pressure.xlsx', relief: 'new-air2-valve-relief.xlsx' }
-      }
+    const percentagePressureRows = [
+      ['10', '42%', '48%', '55%', '62%'],
+      ['15', '51%', '58%', '64%', '70%'],
+      ['20', '60%', '67%', '73%', '80%']
     ];
-
+    const air2LinearPressureRows = [
+      ['10', '[10, 16, 24, 32]', '[12, 19, 27, 36]', '[14, 21, 30, 40]', '[16, 24, 33, 44]'],
+      ['15', '[16, 23, 31, 41]', '[18, 26, 35, 46]', '[20, 29, 39, 51]', '[22, 32, 43, 56]'],
+      ['20', '[22, 30, 40, 52]', '[24, 33, 44, 57]', '[26, 36, 48, 62]', '[28, 39, 52, 67]']
+    ];
     const linearMotorPressureRows = [
       ['10', '[12, 18, 26, 34]', '[14, 21, 29, 38]', '[16, 23, 32, 42]', '[18, 26, 35, 46]'],
       ['15', '[18, 25, 33, 43]', '[20, 28, 37, 48]', '[22, 31, 41, 53]', '[24, 34, 45, 58]'],
       ['20', '[24, 32, 42, 54]', '[26, 35, 46, 59]', '[28, 38, 50, 64]', '[30, 41, 54, 69]']
+    ];
+    const standardReliefRows = [['10', '24'], ['15', '34'], ['20', '44']];
+    const air2ReliefRows = [['10', '22'], ['15', '31'], ['20', '41']];
+
+    const powerSourceRows = [
+      {
+        id: 101, name: '818动力源', code: '818', project: 'V3、V3 Pro', status: '发布', updater: '陈剑泽', time: '2026-08-18 16:28:12', description: '',
+        config: { motorType: '无', pumpType: '隔膜泵', valveType: '电磁阀', frequencyMin: '40', frequencyMax: '80', holdMin: '100', holdMax: '900', intervalMin: '0', intervalMax: '500' },
+        pressureRows: percentagePressureRows,
+        reliefRows: standardReliefRows,
+        powerImports: { pressure: '818-pump-pressure.xlsx', relief: '818-valve-relief.xlsx' }
+      },
+      {
+        id: 102, name: 'Air2直线电机', code: '1001', project: 'Air 2', status: '发布', updater: '池浩', time: '2026-08-18 15:37:43', description: '',
+        config: { motorType: '直线电机', pumpType: '隔膜泵', valveType: '电磁阀', frequencyMin: '40', frequencyMax: '80', holdMin: '20', holdMax: '500', intervalMin: '0', intervalMax: '500' },
+        pressureRows: air2LinearPressureRows,
+        reliefRows: air2ReliefRows,
+        powerImports: { pressure: 'air2-linear-pressure.xlsx', relief: 'air2-valve-relief.xlsx' }
+      },
+      {
+        id: 103, name: 'new air2直线电机方案', code: 'NEW-AIR2-LINEAR', project: 'Air 2', status: '草稿', updater: '刘媛媛', time: '2026-09-02 13:50:00', description: '直线电机四段驱动参数方案',
+        config: { motorType: '直线电机', pumpType: '隔膜泵', valveType: '电磁阀', frequencyMin: '30', frequencyMax: '120', holdMin: '20', holdMax: '300', intervalMin: '0', intervalMax: '500' },
+        pressureRows: linearMotorPressureRows,
+        reliefRows: standardReliefRows,
+        powerImports: { pressure: 'new-air2-linear-pressure.xlsx', relief: 'new-air2-valve-relief.xlsx' }
+      }
     ];
 
     const modeLibraryRows = [
@@ -144,7 +170,8 @@
     }
 
     function selectField(label, key, options, selected = '', wide = false, required = true, className = '') {
-      return `<label class="form-field${wide ? ' form-field--wide' : ''}${className ? ` ${className}` : ''}"><span>${label}${required ? '<em class="required"> *</em>' : ''}</span><div class="select-wrap"><select class="control" data-field="${key}">${optionList(options, selected)}</select><svg class="select-caret" viewBox="0 0 1024 1024" aria-hidden="true"><path fill="currentColor" d="M831.872 340.864 512 652.672 192.128 340.864a30.59 30.59 0 0 0-42.752 0 29.12 29.12 0 0 0 0 41.6L489.664 714.24a32 32 0 0 0 44.672 0l340.288-331.712a29.12 29.12 0 0 0 0-41.728 30.59 30.59 0 0 0-42.752 0z"></path></svg></div></label>`;
+      const disabled = state.view === 'view' ? 'disabled' : '';
+      return `<label class="form-field${wide ? ' form-field--wide' : ''}${className ? ` ${className}` : ''}"><span>${label}${required ? '<em class="required"> *</em>' : ''}</span><div class="select-wrap"><select class="control" data-field="${key}" ${disabled}>${optionList(options, selected)}</select><svg class="select-caret" viewBox="0 0 1024 1024" aria-hidden="true"><path fill="currentColor" d="M831.872 340.864 512 652.672 192.128 340.864a30.59 30.59 0 0 0-42.752 0 29.12 29.12 0 0 0 0 41.6L489.664 714.24a32 32 0 0 0 44.672 0l340.288-331.712a29.12 29.12 0 0 0 0-41.728 30.59 30.59 0 0 0-42.752 0z"></path></svg></div></label>`;
     }
 
     function initializeForm(row = null) {
@@ -190,23 +217,31 @@
 
     function mappingPanel(type) {
       const isPressure = type === 'pressure';
+      const isView = state.view === 'view';
       const isLinearMotorPressure = isPressure && state.form.motorType === '直线电机';
       const importedFile = state.powerImports[type];
       const imported = Boolean(importedFile);
       const importedName = imported ? escapeHtml(importedFile) : '';
+      const pressureRows = state.selected?.pressureRows || (isLinearMotorPressure ? linearMotorPressureRows : percentagePressureRows);
+      const reliefRows = state.selected?.reliefRows || standardReliefRows;
+      const activeRows = isPressure ? pressureRows : reliefRows;
+      const suctionValues = activeRows.map(row => Number(row[0])).filter(Number.isFinite);
+      const secondaryValues = isPressure ? [30, 40, 50, 60] : activeRows.map(row => Number(row[1])).filter(Number.isFinite);
+      const rangeText = values => values.length ? `${Math.min(...values)}-${Math.max(...values)}` : '-';
       const title = isPressure ? '导入泵建压映射表' : '导入阀卸压映射表';
       const description = isLinearMotorPressure
         ? '直线电机新增规则：行是多个吸力值，列是多个建压时间 ms；每个映射值为包含四个数的驱动参数数组，不使用占空比百分比。导出与导入保持相同格式。'
         : isPressure ? '行是多个吸力值，列是多个时间 ms，中间的值是泵工作的占空比百分比。' : '行表示吸力点，列表示对应卸压时间 ms。';
-      const linearRows = linearMotorPressureRows.map(row => `<tr>${row.map((value, index) => `<td${index ? ' class="linear-array-cell"' : ''}>${value}</td>`).join('')}</tr>`).join('');
+      const pressureBody = pressureRows.map(row => `<tr>${row.map((value, index) => `<td${isLinearMotorPressure && index ? ' class="linear-array-cell"' : ''}>${value}</td>`).join('')}</tr>`).join('');
+      const reliefBody = reliefRows.map(row => `<tr><td>${row[0]}</td><td>${row[1]}</td></tr>`).join('');
       const sample = isPressure
-        ? isLinearMotorPressure
-          ? `<div class="mapping-table table-shell linear-mapping-table"><table class="data-table"><thead><tr><th>吸力 kPa</th><th>30 ms</th><th>40 ms</th><th>50 ms</th><th>60 ms</th></tr></thead><tbody>${linearRows}</tbody></table></div>`
-          : `<div class="mapping-table table-shell"><table class="data-table"><thead><tr><th>吸力 kPa</th><th>30 ms</th><th>40 ms</th><th>50 ms</th><th>60 ms</th></tr></thead><tbody><tr><td>10</td><td>42%</td><td>48%</td><td>55%</td><td>62%</td></tr><tr><td>15</td><td>51%</td><td>58%</td><td>64%</td><td>70%</td></tr><tr><td>20</td><td>60%</td><td>67%</td><td>73%</td><td>80%</td></tr></tbody></table></div>`
-        : `<div class="mapping-table table-shell"><table class="data-table"><thead><tr><th>吸力 kPa</th><th>卸压时间 ms</th></tr></thead><tbody><tr><td>10</td><td>24</td></tr><tr><td>15</td><td>34</td></tr><tr><td>20</td><td>44</td></tr></tbody></table></div>`;
-      return `<section class="form-card mapping-card${isLinearMotorPressure ? ' linear-motor-feature' : ''}"><div class="form-card__header"><h2>${title}${isLinearMotorPressure ? '<span class="new-requirement-tag">新增需求</span>' : ''}</h2><div class="card-actions"><button class="btn btn--outline" type="button" data-export="${type}">导出模版</button><button class="btn btn--primary" type="button" data-import="${type}">${imported ? '重新导入' : '导入表格'}</button></div></div><input class="mapping-file-input" type="file" accept=".xlsx,.xls,.csv" data-import-file="${type}" aria-label="${title}"><p class="mapping-description">${description}</p>
-        ${imported ? `<div class="mapping-import-status" role="status"><span>导入成功</span><strong title="${importedName}">${importedName}</strong></div>${sample}` : '<div class="mapping-empty">暂无数据，请先导入表格</div>'}
-        <div class="mapping-stats"><div class="mapping-stat"><span>吸力范围</span><strong>${imported ? '10-20' : '-'} <em>kPa</em></strong></div><div class="mapping-stat"><span>时间范围</span><strong>${imported ? (isPressure ? '30-60' : '24-44') : '-'} <em>ms</em></strong></div></div>
+        ? `<div class="mapping-table table-shell${isLinearMotorPressure ? ' linear-mapping-table' : ''}"><table class="data-table"><thead><tr><th>吸力 kPa</th><th>30 ms</th><th>40 ms</th><th>50 ms</th><th>60 ms</th></tr></thead><tbody>${pressureBody}</tbody></table></div>`
+        : `<div class="mapping-table table-shell"><table class="data-table"><thead><tr><th>吸力 kPa</th><th>卸压时间 ms</th></tr></thead><tbody>${reliefBody}</tbody></table></div>`;
+      const actions = isView ? '' : `<div class="card-actions"><button class="btn btn--outline" type="button" data-export="${type}">导出模版</button><button class="btn btn--primary" type="button" data-import="${type}">${imported ? '重新导入' : '导入表格'}</button></div>`;
+      const importStatus = imported && !isView ? `<div class="mapping-import-status" role="status"><span>导入成功</span><strong title="${importedName}">${importedName}</strong></div>` : '';
+      return `<section class="form-card mapping-card${isLinearMotorPressure ? ' linear-motor-feature' : ''}"><div class="form-card__header"><h2>${title}${isLinearMotorPressure ? '<span class="new-requirement-tag">新增需求</span>' : ''}</h2>${actions}</div><input class="mapping-file-input" type="file" accept=".xlsx,.xls,.csv" data-import-file="${type}" aria-label="${title}"><p class="mapping-description">${description}</p>
+        ${imported ? `${importStatus}${sample}` : '<div class="mapping-empty">暂无数据，请先导入表格</div>'}
+        <div class="mapping-stats"><div class="mapping-stat"><span>吸力范围</span><strong>${imported ? rangeText(suctionValues) : '-'} <em>kPa</em></strong></div><div class="mapping-stat"><span>时间范围</span><strong>${imported ? rangeText(secondaryValues) : '-'} <em>ms</em></strong></div></div>
       </section>`;
     }
 
