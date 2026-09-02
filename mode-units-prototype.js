@@ -189,7 +189,7 @@
         ${textField('动力源名称', 'name', state.form.name, false, false, isView)}
         ${textField('动力源编码', 'code', state.form.code, false, false, isView)}
         ${selectField('关联项目', 'project', sections['power-sources'].options, state.form.project)}
-        ${selectField('电机类型', 'motorType', ['直线电机'], state.form.motorType)}
+        ${selectField('电机类型', 'motorType', ['直线电机', '无'], state.form.motorType)}
         ${selectField('泵类型', 'pumpType', ['隔膜泵', '压电泵'], state.form.pumpType)}
         ${selectField('阀类型', 'valveType', ['电磁阀'], state.form.valveType)}
         ${textField('描述', 'description', state.form.description, true, true, isView)}
