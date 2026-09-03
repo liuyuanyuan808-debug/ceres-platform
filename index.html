@@ -282,6 +282,16 @@
     .actions button:hover { color: var(--primary-hover); }
     .actions button.danger { color: var(--danger); }
     .actions button.danger:hover { color: var(--danger-hover); }
+    .data-table th.version-feature-cell, .data-table td.version-feature-cell { background: #fff6bf; }
+    .data-table tbody tr:hover td.version-feature-cell { background: #ffef9e; }
+    .version-cell { min-width: 104px; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 7px; }
+    .version-cell strong { color: #664d03; font-size: 14px; }
+    .version-cell span, .current-version-tag { padding: 2px 5px; color: #7a5a00; border: 1px solid #e6bd39; border-radius: 3px; background: #fffbea; font-size: 10px; white-space: nowrap; }
+    .version-cell em { width: 100%; color: #a06b00; font-size: 11px; font-style: normal; }
+    .actions button.version-action { margin-left: 8px; padding: 3px 7px; color: #7a5a00; border: 1px solid #e6bd39; border-radius: 4px; background: #fff6bf; }
+    .actions button.version-action + button { padding-left: 7px; }
+    .actions button.version-action:hover { color: #664d03; border-color: #d3a20f; background: #ffef9e; }
+
     .empty-row td { height: 120px; color: #909399; text-align: center; }
     .pagination-bar { flex: 0 0 auto; margin-top: 12px; padding-top: 12px; display: flex; justify-content: space-between; align-items: center; color: var(--muted); font-size: 13px; border-top: 1px solid var(--line); }
     .pagination { display: flex; align-items: center; gap: 8px; }
@@ -413,6 +423,30 @@
     .form-modal > header p { margin: 0; color: var(--muted); font-size: 13px; }
     .form-modal__body { padding: 20px; display: grid; gap: 16px; }
     .form-modal > footer { padding: 12px 20px 18px; display: flex; justify-content: flex-end; gap: 10px; }
+    .version-dialog { width: min(680px, calc(100vw - 32px)); }
+    .version-dialog--wide { width: min(1040px, calc(100vw - 32px)); }
+    .version-dialog .form-modal__body { max-height: min(640px, calc(100vh - 180px)); overflow: auto; }
+    .version-form { margin: 20px; padding: 16px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .version-form.form-modal__body { max-height: min(650px, calc(100vh - 170px)); }
+    .version-rule-note { grid-column: 1 / -1; margin: 0; padding: 10px 12px; color: #664d03; border-left: 3px solid #e6bd39; background: #fffbea; font-size: 12px; line-height: 1.7; }
+    .version-primary { color: #664d03; border-color: #d3a20f; background: #fff3ad; }
+    .version-primary:hover { background: #ffea83; }
+    .version-history-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 18px; }
+    .version-history-toolbar > div { display: grid; gap: 4px; color: #664d03; }
+    .version-history-toolbar span { color: #7a5a00; font-size: 12px; }
+    .version-history-table { overflow-x: auto; }
+    .version-history-table .data-table { min-width: 940px; }
+    .version-history-table .data-table th { color: #664d03; background: #fff3ad; }
+    .version-history-table td small { display: block; margin-top: 3px; color: var(--muted); font-size: 11px; }
+    .current-version-tag { margin-left: 7px; display: inline-block; }
+    .version-compare-head, .version-compare-row { display: grid; grid-template-columns: 150px repeat(2, minmax(0, 1fr)); border: 1px solid #e6bd39; border-bottom: 0; }
+    .version-compare-head { color: #664d03; background: #fff3ad; font-size: 13px; }
+    .version-compare-row:last-child { border-bottom: 1px solid #e6bd39; }
+    .version-compare-head > *, .version-compare-row > * { min-width: 0; margin: 0; padding: 12px 14px; border-right: 1px solid #e6bd39; }
+    .version-compare-head > *:last-child, .version-compare-row > *:last-child { border-right: 0; }
+    .version-compare-row strong { color: #664d03; background: #fffbea; }
+    .version-change-value { color: #664d03; background: #fff6bf; }
+
     .export-template-dialog { width: min(660px, calc(100vw - 32px)); }
     .export-template-dialog > header { min-height: 62px; align-items: center; }
     .export-template-dialog > header h2 { margin: 0; font-size: 18px; }
@@ -451,6 +485,8 @@
     .toast.is-open { opacity: 1; transform: translate(-50%, 0); }
 
     @media (max-width: 960px) {
+      .version-form { grid-template-columns: 1fr; }
+      .version-form .form-field--wide, .version-rule-note { grid-column: auto; }
       .filter-toolbar { grid-template-columns: 1fr; }
       .filter-toolbar__counts { justify-content: flex-start; }
       .form-grid, .rule-fields, .boundary-grid { grid-template-columns: 1fr; }
@@ -470,6 +506,6 @@
   </div>
   <div class="toast" id="toast">操作成功</div>
 
-  <script src="./mode-units-prototype.js?v=20260903-1" defer></script>
+  <script src="./mode-units-prototype.js?v=20260903-3" defer></script>
 </body>
 </html>

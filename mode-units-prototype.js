@@ -1,4 +1,11 @@
     const rows = [
+      {
+        id: 8, name: '吸乳模式', code: 'SUCTION', status: '发布', currentVersion: 'V2', updater: '刘媛媛', time: '2026-09-03 11:20:00', source: 'Air2直线电机', description: '基于医学输入持续迭代的吸乳模式',
+        versions: [
+          { version: 'V2', status: '发布', current: true, medicalInput: '医学输入方案 B', applicableModels: 'Air 2、新一代机型', changeSummary: '更新吸乳节律参数与频率区间', publisher: '刘媛媛', publishTime: '2026-09-03 11:20:00' },
+          { version: 'V1', status: '历史版本', current: false, medicalInput: '医学输入方案 A', applicableModels: 'V3、V3 Pro', changeSummary: '首版吸乳模式参数', publisher: '陈剑泽', publishTime: '2026-06-18 16:29:10' }
+        ]
+      },
       { id: 7, name: 'Air2直线电机模式单元库', code: '111', status: '停用', updater: '池浩', time: '2026-08-19 11:04:26', source: 'Air2直线电机', description: 'Air2直线电机模式单元库-阿道夫垃圾地方拉近双方了解了福建建瓯放假哦我绿卡就是的老夫就撒了恐惧拉丁教父glad咯就' },
       { id: 6, name: '818模式单元2', code: '8182', status: '停用', updater: '池浩', time: '2026-08-18 19:03:42', source: 'Air2直线电机', description: '' },
       { id: 5, name: '818模式单元', code: '818', status: '发布', updater: '陈剑泽', time: '2026-08-18 16:29:10', source: 'Air2直线电机', description: '' }
@@ -83,7 +90,7 @@
       'mode-units': {
         label: '模式单元库', title: '模式单元列表管理', addLabel: '新增模式单元', formTitle: '模式单元配置', extraLabel: '关联动力源', extraKey: 'source', rows,
         options: ['Air2直线电机', '818动力源'],
-        columns: [['name', '名称'], ['code', '编码'], ['status', '状态'], ['updater', '更新人'], ['time', '更新时间']]
+        columns: [['name', '名称'], ['code', '编码'], ['currentVersion', '当前版本'], ['status', '状态'], ['updater', '更新人'], ['time', '更新时间']]
       },
       'mode-libraries': {
         label: '模式库', title: '模式库列表管理', addLabel: '新增模式库', formTitle: '模式库配置', extraLabel: '关联动力源', extraKey: 'source', rows: modeLibraryRows,
@@ -98,7 +105,7 @@
     };
 
     const initialSection = sections[window.location.hash.slice(1)] ? window.location.hash.slice(1) : 'mode-units';
-    const state = { view: 'list', section: initialSection, collapsed: false, menuExpanded: true, query: '', status: 'all', selected: null, ruleStep: 1, resultSpeedTab: 1, generated: false, form: {}, modal: null, exportConfig: null, exportError: '', modeUnits: [], rhythmModes: [], powerImports: { pressure: '', relief: '' } };
+    const state = { view: 'list', section: initialSection, collapsed: false, menuExpanded: true, query: '', status: 'all', selected: null, ruleStep: 1, resultSpeedTab: 1, generated: false, form: {}, modal: null, versionModal: null, exportConfig: null, exportError: '', modeUnits: [], rhythmModes: [], powerImports: { pressure: '', relief: '' } };
     const app = document.querySelector('#app');
     const overlay = document.querySelector('#overlay');
     const dialogMessage = document.querySelector('#dialog-message');
@@ -136,6 +143,28 @@
       return `<span class="tag tag--${type}${small ? ' tag--small' : ''}">${status}</span>`;
     }
 
+    function versionsFor(row) {
+      if (!row.versions) {
+        const version = row.currentVersion || 'V1';
+        row.currentVersion = version;
+        row.versions = [{ version, status: row.status === '草稿' ? '草稿' : row.status === '发布' ? '发布' : '历史版本', current: row.status === '发布', medicalInput: '原始医学输入', applicableModels: row.source || '未配置', changeSummary: '初始版本', publisher: row.updater, publishTime: row.time }];
+      }
+      return row.versions;
+    }
+
+    function nextVersionFor(row) {
+      const maximum = versionsFor(row).reduce((value, item) => Math.max(value, Number.parseInt(item.version.replace(/\D/g, ''), 10) || 0), 0);
+      return `V${maximum + 1}`;
+    }
+
+    function versionCell(row) {
+      const versions = versionsFor(row);
+      const draft = versions.find(item => item.status === '草稿');
+      const current = versions.find(item => item.current);
+      const label = current ? '当前推荐' : row.status === '停用' ? '已停用' : '未发布';
+      return `<div class="version-cell"><strong>${row.currentVersion || 'V1'}</strong><span>${label}</span>${draft && draft.version !== row.currentVersion ? `<em>${draft.version} 草稿</em>` : ''}</div>`;
+    }
+
     function listView() {
       const section = sections[state.section];
       const activeRows = section.rows;
@@ -146,10 +175,10 @@
       });
       const counts = activeRows.reduce((acc, row) => (acc[row.status]++, acc), { 发布: 0, 草稿: 0, 停用: 0 });
       const tableRows = visible.length ? visible.map(row => `<tr data-id="${row.id}">
-        ${section.columns.map(([key]) => `<td>${key === 'status' ? statusTag(row.status) : `<span class="cell-text">${row[key] || ''}</span>`}</td>`).join('')}
-        <td class="actions"><button data-action="view">查看</button>${row.status !== '发布' ? '<button data-action="edit">编辑</button><button data-action="publish">发布</button><button class="danger" data-action="delete">删除</button>' : '<button data-action="disable">停用</button>'}</td>
+        ${section.columns.map(([key]) => `<td${state.section === 'mode-units' && key === 'currentVersion' ? ' class="version-feature-cell"' : ''}>${key === 'status' ? statusTag(row.status) : key === 'currentVersion' ? versionCell(row) : `<span class="cell-text">${row[key] || ''}</span>`}</td>`).join('')}
+        <td class="actions"><button data-action="view">查看</button>${state.section === 'mode-units' ? '<button class="version-action" data-action="version-history">版本记录</button><button class="version-action" data-action="new-version">新建版本</button>' : ''}${row.status !== '发布' ? '<button data-action="edit">编辑</button><button data-action="publish">发布</button><button class="danger" data-action="delete">删除</button>' : '<button data-action="disable">停用</button>'}</td>
       </tr>`).join('') : `<tr class="empty-row"><td colspan="${section.columns.length + 1}">暂无数据</td></tr>`;
-      const tableMinWidth = Math.max(830, section.columns.length * 128 + 190);
+      const tableMinWidth = Math.max(830, section.columns.length * 128 + (state.section === 'mode-units' ? 330 : 190));
       return `<section class="page-stack">
         <header class="page-header-bar"><h1>${section.title}</h1><div class="page-header-actions"><button class="btn btn--primary" id="add-unit">${section.addLabel}</button></div></header>
         <div class="list-page-body">
@@ -160,7 +189,7 @@
             <div class="filter-toolbar__counts"><span class="tag tag--success">发布 ${counts.发布}</span><span class="tag tag--warning">草稿 ${counts.草稿}</span><span class="tag tag--info">停用 ${counts.停用}</span></div>
           </section>
           <section class="list-table-card"><div class="table-panel"><div class="table-shell"><div class="data-table-scroll-region">
-            <table class="data-table" style="min-width:${tableMinWidth}px"><colgroup>${section.columns.map(() => '<col style="width:128px">').join('')}<col style="width:190px"></colgroup><thead><tr>${section.columns.map(([, label]) => `<th>${label}</th>`).join('')}<th>操作</th></tr></thead><tbody>${tableRows}</tbody></table>
+            <table class="data-table" style="min-width:${tableMinWidth}px"><colgroup>${section.columns.map(() => '<col style="width:128px">').join('')}<col style="width:${state.section === 'mode-units' ? 330 : 190}px"></colgroup><thead><tr>${section.columns.map(([key, label]) => `<th${state.section === 'mode-units' && key === 'currentVersion' ? ' class="version-feature-cell"' : ''}>${label}</th>`).join('')}<th>操作</th></tr></thead><tbody>${tableRows}</tbody></table>
           </div></div></div><footer class="pagination-bar"><span>共 ${visible.length} 条记录 · 每页 10 条</span><div class="pagination"><button class="page-button" disabled>${chevron('left')}</button><button class="page-button is-active">1</button><button class="page-button" disabled>${chevron('right')}</button></div></footer></section>
         </div>
       </section>`;
@@ -475,6 +504,32 @@
       </div><footer><button class="btn btn--outline" id="modal-cancel" type="button">取消</button><button class="btn btn--primary" id="modal-confirm" type="button">${isModeUnit ? '确定添加' : '确定'}</button></footer></section></div>`;
     }
 
+    function versionModal() {
+      if (!state.versionModal) return '';
+      const { type, row } = state.versionModal;
+      const versions = versionsFor(row);
+      const closeButton = '<button class="dialog-close" id="version-modal-close" type="button" aria-label="关闭">×</button>';
+      if (type === 'create') {
+        const nextVersion = nextVersionFor(row);
+        return `<div class="form-modal-overlay version-modal-overlay"><section class="form-modal version-dialog" role="dialog" aria-modal="true" aria-label="新建版本"><header><div><h2>新建模式单元版本 <span class="new-requirement-tag">新增需求</span></h2><p>${escapeHtml(row.name)} / ${escapeHtml(row.code)} · 已发布版本不可直接修改</p></div>${closeButton}</header><div class="form-modal__body version-form new-feature">
+          <label class="form-field"><span>基于版本<em class="required"> *</em></span><div class="select-wrap"><select class="control" id="version-base">${versions.filter(item => item.status !== '草稿').map(item => `<option value="${item.version}">${item.version}${item.current ? '（当前推荐）' : ''}</option>`).join('')}</select>${chevron('right')}</div></label>
+          <label class="form-field"><span>新版本号</span><input class="control" id="version-number" value="${nextVersion}" disabled></label>
+          <label class="form-field form-field--wide"><span>医学输入/依据<em class="required"> *</em></span><input class="control" id="version-medical" placeholder="例如：医学输入方案 C"></label>
+          <label class="form-field form-field--wide"><span>适用机型<em class="required"> *</em></span><input class="control" id="version-models" placeholder="例如：Air 2、新一代机型"></label>
+          <label class="form-field form-field--wide"><span>版本变更说明<em class="required"> *</em></span><textarea class="control" id="version-summary" placeholder="说明本次医学参数和策略的变化"></textarea></label>
+          <p class="version-rule-note">创建后保存为草稿；验证通过后在“版本记录”中发布，发布时才会替换当前推荐版本。已使用旧版本的方案不会自动升级。</p>
+        </div><footer><button class="btn btn--outline" id="version-modal-cancel" type="button">取消</button><button class="btn version-primary" id="version-create-confirm" type="button">创建草稿</button></footer></section></div>`;
+      }
+      if (type === 'compare') {
+        const target = versions.find(item => item.version === state.versionModal.version) || versions[0];
+        const baseline = versions.find(item => item.current && item.version !== target.version) || versions.find(item => item.version !== target.version) || target;
+        const compareRow = (label, left, right) => `<div class="version-compare-row"><strong>${label}</strong><span>${escapeHtml(left || '-')}</span><span class="version-change-value">${escapeHtml(right || '-')}</span></div>`;
+        return `<div class="form-modal-overlay version-modal-overlay"><section class="form-modal version-dialog version-dialog--wide" role="dialog" aria-modal="true" aria-label="版本对比"><header><div><h2>版本对比 <span class="new-requirement-tag">新增需求</span></h2><p>${escapeHtml(row.name)}：${baseline.version} 与 ${target.version}</p></div>${closeButton}</header><div class="form-modal__body"><div class="version-compare-head"><span>对比项</span><strong>${baseline.version}</strong><strong>${target.version}</strong></div>${compareRow('医学输入/依据', baseline.medicalInput, target.medicalInput)}${compareRow('适用机型', baseline.applicableModels, target.applicableModels)}${compareRow('变更说明', baseline.changeSummary, target.changeSummary)}${compareRow('发布人', baseline.publisher, target.publisher)}</div><footer><button class="btn btn--outline" id="version-modal-cancel" type="button">返回版本记录</button></footer></section></div>`;
+      }
+      const versionRows = versions.map(item => `<tr><td><strong>${item.version}</strong>${item.current ? '<span class="current-version-tag">当前推荐</span>' : ''}</td><td>${statusTag(item.status)}</td><td>${escapeHtml(item.medicalInput)}</td><td>${escapeHtml(item.applicableModels)}</td><td>${escapeHtml(item.changeSummary)}</td><td>${escapeHtml(item.publisher)}<small>${escapeHtml(item.publishTime || '未发布')}</small></td><td class="actions"><button class="version-action" data-version-action="compare" data-version="${item.version}">对比</button>${item.status === '草稿' ? `<button class="version-action" data-version-action="publish" data-version="${item.version}">发布</button>` : ''}</td></tr>`).join('');
+      return `<div class="form-modal-overlay version-modal-overlay"><section class="form-modal version-dialog version-dialog--wide" role="dialog" aria-modal="true" aria-label="版本记录"><header><div><h2>${escapeHtml(row.name)} · 版本记录 <span class="new-requirement-tag">新增需求</span></h2><p>每个版本保存完整参数快照；现有方案始终引用明确版本。</p></div>${closeButton}</header><div class="form-modal__body"><div class="version-history-toolbar new-feature"><div><strong>当前推荐版本：${row.currentVersion || 'V1'}</strong><span>新建方案默认使用此版本，旧方案不会自动切换。</span></div><button class="btn version-primary" id="history-new-version" type="button">新建版本</button></div><div class="table-shell version-history-table"><table class="data-table"><thead><tr><th>版本</th><th>状态</th><th>医学输入/依据</th><th>适用机型</th><th>变更说明</th><th>发布信息</th><th>操作</th></tr></thead><tbody>${versionRows}</tbody></table></div></div><footer><button class="btn btn--outline" id="version-modal-cancel" type="button">关闭</button></footer></section></div>`;
+    }
+
     function suctionRange() {
       const start = Number(state.form.suction);
       const step = Number.parseInt(state.form.suctionStep, 10);
@@ -676,8 +731,51 @@
     }
 
     function render() {
-      app.innerHTML = `<div class="admin-shell${state.collapsed ? ' is-collapsed' : ''}">${sidebar()}<main class="content-shell">${state.view === 'list' ? listView() : formView()}</main></div>${combinationModal()}${exportTemplateModal()}`;
+      app.innerHTML = `<div class="admin-shell${state.collapsed ? ' is-collapsed' : ''}">${sidebar()}<main class="content-shell">${state.view === 'list' ? listView() : formView()}</main></div>${combinationModal()}${exportTemplateModal()}${versionModal()}`;
       bindEvents();
+    }
+
+    function bindVersionModalEvents() {
+      if (!state.versionModal) return;
+      const closeVersionModal = () => { state.versionModal = null; render(); };
+      document.querySelector('#version-modal-close')?.addEventListener('click', closeVersionModal);
+      document.querySelector('#version-modal-cancel')?.addEventListener('click', () => {
+        if (state.versionModal?.type === 'compare') state.versionModal = { type: 'history', row: state.versionModal.row };
+        else state.versionModal = null;
+        render();
+      });
+      document.querySelector('.version-modal-overlay')?.addEventListener('click', event => { if (event.target.classList.contains('version-modal-overlay')) closeVersionModal(); });
+      document.querySelector('#history-new-version')?.addEventListener('click', () => { state.versionModal = { type: 'create', row: state.versionModal.row }; render(); });
+      document.querySelector('#version-create-confirm')?.addEventListener('click', () => {
+        const row = state.versionModal.row;
+        const medicalInput = document.querySelector('#version-medical').value.trim();
+        const applicableModels = document.querySelector('#version-models').value.trim();
+        const changeSummary = document.querySelector('#version-summary').value.trim();
+        if (!medicalInput || !applicableModels || !changeSummary) { showToast('请完整填写医学输入、适用机型和变更说明'); return; }
+        versionsFor(row).unshift({ version: nextVersionFor(row), baseVersion: document.querySelector('#version-base').value, status: '草稿', current: false, medicalInput, applicableModels, changeSummary, publisher: '刘媛媛', publishTime: '未发布' });
+        state.versionModal = { type: 'history', row };
+        render();
+        showToast('新版本草稿已创建');
+      });
+      document.querySelectorAll('[data-version-action]').forEach(button => button.addEventListener('click', () => {
+        const row = state.versionModal.row;
+        const version = versionsFor(row).find(item => item.version === button.dataset.version);
+        if (!version) return;
+        if (button.dataset.versionAction === 'compare') { state.versionModal = { type: 'compare', row, version: version.version }; render(); return; }
+        if (button.dataset.versionAction === 'publish') {
+          versionsFor(row).forEach(item => { if (item.current) { item.current = false; if (item.status === '发布') item.status = '历史版本'; } });
+          version.current = true;
+          version.status = '发布';
+          version.publisher = '刘媛媛';
+          version.publishTime = currentTimestamp();
+          row.currentVersion = version.version;
+          row.status = '发布';
+          row.updater = '刘媛媛';
+          row.time = version.publishTime;
+          render();
+          showToast(`${version.version} 已发布并设为当前推荐版本`);
+        }
+      }));
     }
 
     function bindEvents() {
@@ -709,6 +807,8 @@
           const activeRows = sections[state.section].rows;
           const row = activeRows.find(item => item.id === Number(tr.dataset.id));
           if (action === 'view' || action === 'edit') { openForm(action, row); return; }
+          if (action === 'version-history') { state.versionModal = { type: 'history', row }; render(); return; }
+          if (action === 'new-version') { state.versionModal = { type: 'create', row }; render(); return; }
           const messages = { publish: '确认执行此操作并切换状态吗？', disable: '确认执行此操作并切换状态吗？', delete: '确认删除吗？' };
           showDialog(messages[action], () => {
             if (action === 'delete') activeRows.splice(activeRows.indexOf(row), 1);
@@ -860,6 +960,7 @@
         document.querySelector('#cancel').addEventListener('click', returnToList);
         document.querySelector('#save')?.addEventListener('click', saveCurrentForm);
       }
+      bindVersionModalEvents();
     }
 
     function currentTimestamp() {
