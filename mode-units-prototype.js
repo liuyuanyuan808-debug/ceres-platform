@@ -71,14 +71,10 @@
     ];
 
     const rhythmRows = [
-      { id: 301, name: '7', code: '7', tags: '舒缓', duration: '7200', status: '停用', updater: '池浩', time: '2026-08-19 09:59:39', description: '' },
-      { id: 302, name: '6', code: '6', tags: '追奶、6、敏感', duration: '60', status: '草稿', updater: '池浩', time: '2026-08-18 22:01:22', description: '' },
-      { id: 303, name: '5', code: '5', tags: '追奶', duration: '60', status: '草稿', updater: '池浩', time: '2026-08-18 22:00:29', description: '' },
-      { id: 304, name: '2', code: '2', tags: '新手推荐、强劲、高效', duration: '120', status: '草稿', updater: '池浩', time: '2026-08-18 21:59:41', description: '' },
-      { id: 305, name: '4', code: '4', tags: '快速', duration: '60', status: '草稿', updater: '池浩', time: '2026-08-18 21:59:18', description: '' },
-      { id: 306, name: '3', code: '3', tags: '强劲', duration: '60', status: '草稿', updater: '池浩', time: '2026-08-18 21:57:59', description: '' },
-      { id: 307, name: '1', code: '1', tags: '舒缓', duration: '60', status: '草稿', updater: '池浩', time: '2026-08-18 21:56:26', description: '' },
-      { id: 308, name: 'Air2韵律库', code: '4341', tags: '强劲、静音、敏感', duration: '905', status: '停用', updater: '池浩', time: '2026-08-18 19:03:28', description: '' }
+      { id: 301, rank: '1', tags: '推荐', name: 'Milk Boost（默认内置）', displayName: '高效泌乳', code: 'MILK_BOOST', duration: '1200', schedule: '20 min：刺激 2min + 吸乳 8min + 刺激 2min + 吸乳 8min', description: '顺利启动泌乳后，适合日常使用', descriptionEn: 'Most suitable for daily use after successful lactation.', status: '发布', updater: '刘媛媛', time: '2026-09-04 10:00:00' },
+      { id: 302, rank: '2', tags: '推荐', name: 'Quick Relief', displayName: '日间快吸', code: 'QUICK_RELIEF', duration: '540', schedule: '9 min：刺激 1min + 吸乳 8min', description: '短时缓解奶涨，避免堵奶和奶量下降', descriptionEn: 'Quick engorgement relief, prevents clogs & supply drop.', status: '发布', updater: '刘媛媛', time: '2026-09-04 10:00:00' },
+      { id: 303, rank: '3', tags: '推荐', name: 'Power pumping', displayName: '密集追奶', code: 'POWER_PUMPING', duration: '2700', schedule: '45 min：刺激 2min + 吸乳 13min + 暂停 5min + 刺激 2min + 吸乳 8min + 暂停 5min + 刺激 2min + 吸乳 8min', description: '当奶量下降时，及时提升；每天不超过 1 次', descriptionEn: 'Increase milk supply, no more than once a day.', status: '发布', updater: '刘媛媛', time: '2026-09-04 10:00:00' },
+      { id: 304, rank: '4', tags: '场景', name: 'Before bed', displayName: '睡前场景', code: 'BEFORE_BED', duration: '1200', schedule: '20 min：刺激 2min + 吸乳 8min + 刺激 2min + 混合 8min', description: '安静低噪音的柔和吸奶', descriptionEn: 'Gentle, low-noise expression for bedtime comfort.', status: '发布', updater: '刘媛媛', time: '2026-09-04 10:00:00' }
     ];
 
     const sections = {
@@ -100,7 +96,8 @@
       'rhythm-libraries': {
         label: '韵律库', title: '韵律库列表管理', addLabel: '新增韵律库', formTitle: '韵律库配置', extraLabel: '关联动力源', extraKey: 'source', rows: rhythmRows,
         options: ['Air2直线电机', '818动力源'],
-        columns: [['name', '名称'], ['code', '编码'], ['tags', '标签'], ['duration', '总时长'], ['status', '状态'], ['updater', '更新人'], ['time', '更新时间']]
+        columns: [['rank', '排序'], ['tags', '标签'], ['name', '韵律名'], ['displayName', '中文名称'], ['currentVersion', '当前版本'], ['schedule', '时长 & 编排'], ['description', '简介'], ['descriptionEn', '英文简介']],
+        columnWidths: [64, 76, 190, 100, 120, 360, 230, 330]
       }
     };
 
@@ -147,7 +144,7 @@
       if (!row.versions) {
         const version = row.currentVersion || 'V1';
         row.currentVersion = version;
-        row.versions = [{ version, status: row.status === '草稿' ? '草稿' : row.status === '发布' ? '发布' : '历史版本', current: row.status === '发布', medicalInput: '原始医学输入', applicableModels: row.source || '未配置', changeSummary: '初始版本', publisher: row.updater, publishTime: row.time }];
+        row.versions = [{ version, status: row.status === '草稿' ? '草稿' : row.status === '发布' ? '发布' : '历史版本', current: row.status === '发布', medicalInput: state.section === 'rhythm-libraries' ? '初始韵律设计输入' : '原始医学输入', applicableModels: row.source || '未配置', changeSummary: '初始版本', publisher: row.updater, publishTime: row.time }];
       }
       return row.versions;
     }
@@ -174,11 +171,14 @@
         return matchesQuery && matchesStatus;
       });
       const counts = activeRows.reduce((acc, row) => (acc[row.status]++, acc), { 发布: 0, 草稿: 0, 停用: 0 });
+      const versionedSection = state.section === 'mode-units' || state.section === 'rhythm-libraries';
       const tableRows = visible.length ? visible.map(row => `<tr data-id="${row.id}">
-        ${section.columns.map(([key]) => `<td${state.section === 'mode-units' && key === 'currentVersion' ? ' class="version-feature-cell"' : ''}>${key === 'status' ? statusTag(row.status) : key === 'currentVersion' ? versionCell(row) : `<span class="cell-text">${row[key] || ''}</span>`}</td>`).join('')}
-        <td class="actions"><button data-action="view">查看</button>${state.section === 'mode-units' ? '<button class="version-action" data-action="version-history">版本记录</button><button class="version-action" data-action="new-version">新建版本</button>' : ''}${row.status !== '发布' ? '<button data-action="edit">编辑</button><button data-action="publish">发布</button><button class="danger" data-action="delete">删除</button>' : '<button data-action="disable">停用</button>'}</td>
+        ${section.columns.map(([key]) => `<td${versionedSection && key === 'currentVersion' ? ' class="version-feature-cell"' : ''}>${key === 'status' ? statusTag(row.status) : key === 'currentVersion' ? versionCell(row) : `<span class="cell-text">${row[key] || ''}</span>`}</td>`).join('')}
+        <td class="actions"><button data-action="view">查看</button>${versionedSection ? '<button class="version-action" data-action="version-history">版本记录</button><button class="version-action" data-action="new-version">新建版本</button>' : ''}${row.status !== '发布' ? '<button data-action="edit">编辑</button><button data-action="publish">发布</button><button class="danger" data-action="delete">删除</button>' : '<button data-action="disable">停用</button>'}</td>
       </tr>`).join('') : `<tr class="empty-row"><td colspan="${section.columns.length + 1}">暂无数据</td></tr>`;
-      const tableMinWidth = Math.max(830, section.columns.length * 128 + (state.section === 'mode-units' ? 330 : 190));
+      const actionWidth = versionedSection ? 330 : 190;
+      const columnWidths = section.columnWidths || section.columns.map(() => 128);
+      const tableMinWidth = Math.max(830, columnWidths.reduce((sum, width) => sum + width, 0) + actionWidth);
       return `<section class="page-stack">
         <header class="page-header-bar"><h1>${section.title}</h1><div class="page-header-actions"><button class="btn btn--primary" id="add-unit">${section.addLabel}</button></div></header>
         <div class="list-page-body">
@@ -189,7 +189,7 @@
             <div class="filter-toolbar__counts"><span class="tag tag--success">发布 ${counts.发布}</span><span class="tag tag--warning">草稿 ${counts.草稿}</span><span class="tag tag--info">停用 ${counts.停用}</span></div>
           </section>
           <section class="list-table-card"><div class="table-panel"><div class="table-shell"><div class="data-table-scroll-region">
-            <table class="data-table" style="min-width:${tableMinWidth}px"><colgroup>${section.columns.map(() => '<col style="width:128px">').join('')}<col style="width:${state.section === 'mode-units' ? 330 : 190}px"></colgroup><thead><tr>${section.columns.map(([key, label]) => `<th${state.section === 'mode-units' && key === 'currentVersion' ? ' class="version-feature-cell"' : ''}>${label}</th>`).join('')}<th>操作</th></tr></thead><tbody>${tableRows}</tbody></table>
+            <table class="data-table${state.section === 'rhythm-libraries' ? ' rhythm-list-table' : ''}" style="min-width:${tableMinWidth}px"><colgroup>${columnWidths.map(width => `<col style="width:${width}px">`).join('')}<col style="width:${actionWidth}px"></colgroup><thead><tr>${section.columns.map(([key, label]) => `<th${versionedSection && key === 'currentVersion' ? ' class="version-feature-cell"' : ''}>${label}</th>`).join('')}<th>操作</th></tr></thead><tbody>${tableRows}</tbody></table>
           </div></div></div><footer class="pagination-bar"><span>共 ${visible.length} 条记录 · 每页 10 条</span><div class="pagination"><button class="page-button" disabled>${chevron('left')}</button><button class="page-button is-active">1</button><button class="page-button" disabled>${chevron('right')}</button></div></footer></section>
         </div>
       </section>`;
@@ -224,7 +224,7 @@
         project: row?.project || '', motorType: '', pumpType: '', valveType: '', pulseCount: '4', frequencyMin: '', frequencyMax: '', holdMin: '', holdMax: '', intervalMin: '', intervalMax: '',
         modeType: '', source: row?.source || '', tags: row?.tags || '', modalSelection: '', modalAmount: '3',
         ...savedConfig,
-        name: row?.name || '', code: row?.code || '', description: row?.description || '', extra: savedConfig.extra || row?.[section.extraKey] || ''
+        name: row?.name || '', code: row?.code || '', rank: row?.rank || '', displayName: row?.displayName || '', schedule: row?.schedule || '', description: row?.description || '', descriptionEn: row?.descriptionEn || '', extra: savedConfig.extra || row?.[section.extraKey] || ''
       };
       if (savedConfig.speedEnabled && !savedConfig.speedStrategy) state.form.speedStrategy = '按 Speed 档位配置';
       state.ruleStep = 1;
@@ -346,10 +346,13 @@
       const total = state.rhythmModes.length;
       const rowsMarkup = total ? state.rhythmModes.map((item, index) => `<tr><td>${index + 1}</td><td>${item.name}</td><td>${item.code}</td><td>${item.modeType}</td><td>${item.amount}</td><td>${statusTag('发布')}</td><td class="actions">${combinationActions(index, total, 'rhythm')}</td></tr>`).join('') : '';
       return `<section class="form-card"><h2>基础信息配置</h2><div class="form-grid">
-        ${textField('名称', 'name', state.form.name, false, false, isView)}${textField('编码', 'code', state.form.code, false, false, isView)}
+        ${textField('排序', 'rank', state.form.rank, false, false, isView, 'number')}${textField('韵律名', 'name', state.form.name, false, false, isView)}${textField('中文名称', 'displayName', state.form.displayName, false, false, isView)}
+        ${textField('编码', 'code', state.form.code, false, false, isView)}
         ${selectField('关联动力源', 'source', ['Air2直线电机', '818动力源'], state.form.source)}
-        ${selectField('标签', 'tags', ['新手推荐', '舒缓', '强劲', '高效', '夜间', '静音', '快速', '追奶', '敏感用户', '敏感', '6'], state.form.tags)}
-        ${textField('描述', 'description', state.form.description, true, true, isView)}
+        ${selectField('标签', 'tags', ['推荐', '场景'], state.form.tags)}
+        ${textField('时长 & 编排', 'schedule', state.form.schedule, true, true, isView)}
+        ${textField('简介', 'description', state.form.description, true, true, isView)}
+        ${textField('英文简介', 'descriptionEn', state.form.descriptionEn, true, true, isView)}
       </div></section>
       <section class="form-card"><div class="form-card__header"><h2>模式组合配置</h2><button class="btn btn--primary" id="add-combination" type="button">添加模式</button></div>${total ? `<div class="table-shell combo-table"><table class="data-table"><colgroup><col style="width:55px"><col style="width:140px"><col style="width:100px"><col style="width:110px"><col style="width:145px"><col style="width:80px"><col style="width:150px"></colgroup><thead><tr><th>顺序</th><th>模式名称</th><th>模式编码</th><th>模式类型</th><th>循环时间（单位：s）</th><th>状态</th><th>操作</th></tr></thead><tbody>${rowsMarkup}</tbody></table></div>` : '<div class="combo-empty">暂无数据，请先添加模式</div>'}</section>
       <section class="form-card"><h2>韵律阶段预览</h2>${rhythmPreview()}</section>`;
@@ -508,26 +511,29 @@
       if (!state.versionModal) return '';
       const { type, row } = state.versionModal;
       const versions = versionsFor(row);
+      const versionEntityLabel = state.section === 'rhythm-libraries' ? '韵律库' : '模式单元';
+      const versionInputLabel = state.section === 'rhythm-libraries' ? '韵律设计输入/依据' : '医学输入/依据';
+      const versionInputPlaceholder = state.section === 'rhythm-libraries' ? '例如：韵律设计方案 B' : '例如：医学输入方案 C';
       const closeButton = '<button class="dialog-close" id="version-modal-close" type="button" aria-label="关闭">×</button>';
       if (type === 'create') {
         const nextVersion = nextVersionFor(row);
-        return `<div class="form-modal-overlay version-modal-overlay"><section class="form-modal version-dialog" role="dialog" aria-modal="true" aria-label="新建版本"><header><div><h2>新建模式单元版本 <span class="new-requirement-tag">新增需求</span></h2><p>${escapeHtml(row.name)} / ${escapeHtml(row.code)} · 已发布版本不可直接修改</p></div>${closeButton}</header><div class="form-modal__body version-form new-feature">
-          <label class="form-field"><span>基于版本<em class="required"> *</em></span><div class="select-wrap"><select class="control" id="version-base">${versions.filter(item => item.status !== '草稿').map(item => `<option value="${item.version}">${item.version}${item.current ? '（当前推荐）' : ''}</option>`).join('')}</select>${chevron('right')}</div></label>
-          <label class="form-field"><span>新版本号</span><input class="control" id="version-number" value="${nextVersion}" disabled></label>
-          <label class="form-field form-field--wide"><span>医学输入/依据<em class="required"> *</em></span><input class="control" id="version-medical" placeholder="例如：医学输入方案 C"></label>
+        return `<div class="form-modal-overlay version-modal-overlay"><section class="form-modal version-dialog" role="dialog" aria-modal="true" aria-label="新建版本"><header><div><h2>新建${versionEntityLabel}版本 <span class="new-requirement-tag">新增需求</span></h2><p>${escapeHtml(row.name)} / ${escapeHtml(row.code)} · 已发布版本不可直接修改</p></div>${closeButton}</header><div class="form-modal__body version-form new-feature">
+          <label class="form-field"><span>基于版本<em class="required"> *</em></span><div class="select-wrap"><select class="control" id="version-base">${versions.filter(item => item.status !== '草稿').map(item => `<option value="${item.version}">${item.version}${item.current ? '（当前推荐）' : ''}</option>`).join('')}</select><svg class="select-caret" viewBox="0 0 1024 1024" aria-hidden="true"><path fill="currentColor" d="M831.872 340.864 512 652.672 192.128 340.864a30.59 30.59 0 0 0-42.752 0 29.12 29.12 0 0 0 0 41.6L489.664 714.24a32 32 0 0 0 44.672 0l340.288-331.712a29.12 29.12 0 0 0 0-41.728 30.59 30.59 0 0 0-42.752 0z"></path></svg></div></label>
+          <label class="form-field"><span>新版本号<em class="required"> *</em></span><input class="control" id="version-number" value="${nextVersion}" placeholder="例如：1.1、1.2 或 V3"></label>
+          <label class="form-field form-field--wide"><span>${versionInputLabel}<em class="required"> *</em></span><input class="control" id="version-medical" placeholder="${versionInputPlaceholder}"></label>
           <label class="form-field form-field--wide"><span>适用机型<em class="required"> *</em></span><input class="control" id="version-models" placeholder="例如：Air 2、新一代机型"></label>
           <label class="form-field form-field--wide"><span>版本变更说明<em class="required"> *</em></span><textarea class="control" id="version-summary" placeholder="说明本次医学参数和策略的变化"></textarea></label>
-          <p class="version-rule-note">创建后保存为草稿；验证通过后在“版本记录”中发布，发布时才会替换当前推荐版本。已使用旧版本的方案不会自动升级。</p>
+          <p class="version-rule-note">版本号支持 1.1、1.2、V3 等格式，且同一${versionEntityLabel}内不可重复。创建后保存为草稿；验证通过后在“版本记录”中发布，发布时才会替换当前推荐版本。已使用旧版本的方案不会自动升级。</p>
         </div><footer><button class="btn btn--outline" id="version-modal-cancel" type="button">取消</button><button class="btn version-primary" id="version-create-confirm" type="button">创建草稿</button></footer></section></div>`;
       }
       if (type === 'compare') {
         const target = versions.find(item => item.version === state.versionModal.version) || versions[0];
         const baseline = versions.find(item => item.current && item.version !== target.version) || versions.find(item => item.version !== target.version) || target;
         const compareRow = (label, left, right) => `<div class="version-compare-row"><strong>${label}</strong><span>${escapeHtml(left || '-')}</span><span class="version-change-value">${escapeHtml(right || '-')}</span></div>`;
-        return `<div class="form-modal-overlay version-modal-overlay"><section class="form-modal version-dialog version-dialog--wide" role="dialog" aria-modal="true" aria-label="版本对比"><header><div><h2>版本对比 <span class="new-requirement-tag">新增需求</span></h2><p>${escapeHtml(row.name)}：${baseline.version} 与 ${target.version}</p></div>${closeButton}</header><div class="form-modal__body"><div class="version-compare-head"><span>对比项</span><strong>${baseline.version}</strong><strong>${target.version}</strong></div>${compareRow('医学输入/依据', baseline.medicalInput, target.medicalInput)}${compareRow('适用机型', baseline.applicableModels, target.applicableModels)}${compareRow('变更说明', baseline.changeSummary, target.changeSummary)}${compareRow('发布人', baseline.publisher, target.publisher)}</div><footer><button class="btn btn--outline" id="version-modal-cancel" type="button">返回版本记录</button></footer></section></div>`;
+        return `<div class="form-modal-overlay version-modal-overlay"><section class="form-modal version-dialog version-dialog--wide" role="dialog" aria-modal="true" aria-label="版本对比"><header><div><h2>版本对比 <span class="new-requirement-tag">新增需求</span></h2><p>${escapeHtml(row.name)}：${baseline.version} 与 ${target.version}</p></div>${closeButton}</header><div class="form-modal__body"><div class="version-compare-head"><span>对比项</span><strong>${baseline.version}</strong><strong>${target.version}</strong></div>${compareRow(versionInputLabel, baseline.medicalInput, target.medicalInput)}${compareRow('适用机型', baseline.applicableModels, target.applicableModels)}${compareRow('变更说明', baseline.changeSummary, target.changeSummary)}${compareRow('发布人', baseline.publisher, target.publisher)}</div><footer><button class="btn btn--outline" id="version-modal-cancel" type="button">返回版本记录</button></footer></section></div>`;
       }
       const versionRows = versions.map(item => `<tr><td><strong>${item.version}</strong>${item.current ? '<span class="current-version-tag">当前推荐</span>' : ''}</td><td>${statusTag(item.status)}</td><td>${escapeHtml(item.medicalInput)}</td><td>${escapeHtml(item.applicableModels)}</td><td>${escapeHtml(item.changeSummary)}</td><td>${escapeHtml(item.publisher)}<small>${escapeHtml(item.publishTime || '未发布')}</small></td><td class="actions"><button class="version-action" data-version-action="compare" data-version="${item.version}">对比</button>${item.status === '草稿' ? `<button class="version-action" data-version-action="publish" data-version="${item.version}">发布</button>` : ''}</td></tr>`).join('');
-      return `<div class="form-modal-overlay version-modal-overlay"><section class="form-modal version-dialog version-dialog--wide" role="dialog" aria-modal="true" aria-label="版本记录"><header><div><h2>${escapeHtml(row.name)} · 版本记录 <span class="new-requirement-tag">新增需求</span></h2><p>每个版本保存完整参数快照；现有方案始终引用明确版本。</p></div>${closeButton}</header><div class="form-modal__body"><div class="version-history-toolbar new-feature"><div><strong>当前推荐版本：${row.currentVersion || 'V1'}</strong><span>新建方案默认使用此版本，旧方案不会自动切换。</span></div><button class="btn version-primary" id="history-new-version" type="button">新建版本</button></div><div class="table-shell version-history-table"><table class="data-table"><thead><tr><th>版本</th><th>状态</th><th>医学输入/依据</th><th>适用机型</th><th>变更说明</th><th>发布信息</th><th>操作</th></tr></thead><tbody>${versionRows}</tbody></table></div></div><footer><button class="btn btn--outline" id="version-modal-cancel" type="button">关闭</button></footer></section></div>`;
+      return `<div class="form-modal-overlay version-modal-overlay"><section class="form-modal version-dialog version-dialog--wide" role="dialog" aria-modal="true" aria-label="版本记录"><header><div><h2>${escapeHtml(row.name)} · 版本记录 <span class="new-requirement-tag">新增需求</span></h2><p>每个版本保存完整配置快照；现有方案始终引用明确版本。</p></div>${closeButton}</header><div class="form-modal__body"><div class="version-history-toolbar new-feature"><div><strong>当前推荐版本：${row.currentVersion || 'V1'}</strong><span>新建方案默认使用此版本，旧方案不会自动切换。</span></div><button class="btn version-primary" id="history-new-version" type="button">新建版本</button></div><div class="table-shell version-history-table"><table class="data-table"><thead><tr><th>版本</th><th>状态</th><th>${versionInputLabel}</th><th>适用机型</th><th>变更说明</th><th>发布信息</th><th>操作</th></tr></thead><tbody>${versionRows}</tbody></table></div></div><footer><button class="btn btn--outline" id="version-modal-cancel" type="button">关闭</button></footer></section></div>`;
     }
 
     function suctionRange() {
@@ -748,11 +754,14 @@
       document.querySelector('#history-new-version')?.addEventListener('click', () => { state.versionModal = { type: 'create', row: state.versionModal.row }; render(); });
       document.querySelector('#version-create-confirm')?.addEventListener('click', () => {
         const row = state.versionModal.row;
+        const versionNumber = document.querySelector('#version-number').value.trim();
         const medicalInput = document.querySelector('#version-medical').value.trim();
         const applicableModels = document.querySelector('#version-models').value.trim();
         const changeSummary = document.querySelector('#version-summary').value.trim();
-        if (!medicalInput || !applicableModels || !changeSummary) { showToast('请完整填写医学输入、适用机型和变更说明'); return; }
-        versionsFor(row).unshift({ version: nextVersionFor(row), baseVersion: document.querySelector('#version-base').value, status: '草稿', current: false, medicalInput, applicableModels, changeSummary, publisher: '刘媛媛', publishTime: '未发布' });
+        if (!versionNumber || !medicalInput || !applicableModels || !changeSummary) { showToast('请完整填写版本号、输入依据、适用机型和变更说明'); return; }
+        if (!/^(?:V)?\d+(?:\.\d+)*$/i.test(versionNumber)) { showToast('版本号格式不正确，请输入 1.1、1.2 或 V3 等格式'); return; }
+        if (versionsFor(row).some(item => item.version.toLowerCase() === versionNumber.toLowerCase())) { showToast('该版本号已存在，请输入新的版本号'); return; }
+        versionsFor(row).unshift({ version: versionNumber, baseVersion: document.querySelector('#version-base').value, status: '草稿', current: false, medicalInput, applicableModels, changeSummary, publisher: '刘媛媛', publishTime: '未发布' });
         state.versionModal = { type: 'history', row };
         render();
         showToast('新版本草稿已创建');
@@ -983,6 +992,24 @@
         };
         if (state.selected) Object.assign(state.selected, values);
         else rows.unshift({ id: Math.max(...rows.map(row => row.id)) + 1, status: '草稿', ...values });
+      }
+      if (state.section === 'rhythm-libraries') {
+        const values = {
+          rank: state.form.rank || String(rhythmRows.length + 1),
+          tags: state.form.tags || '推荐',
+          name: state.form.name || '未命名韵律',
+          displayName: state.form.displayName,
+          code: state.form.code || `RHYTHM-${Math.max(...rhythmRows.map(row => row.id)) + 1}`,
+          source: state.form.source,
+          schedule: state.form.schedule,
+          description: state.form.description,
+          descriptionEn: state.form.descriptionEn,
+          updater: '刘媛媛',
+          time: currentTimestamp()
+        };
+        if (state.selected) Object.assign(state.selected, values);
+        else rhythmRows.push({ id: Math.max(...rhythmRows.map(row => row.id)) + 1, status: '草稿', duration: '0', ...values });
+        rhythmRows.sort((left, right) => Number(left.rank) - Number(right.rank));
       }
       showToast('保存成功');
       returnToList();

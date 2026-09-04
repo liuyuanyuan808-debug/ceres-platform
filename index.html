@@ -276,6 +276,8 @@
     .data-table td { height: 45px; font-size: 13px; vertical-align: middle; }
     .data-table tbody tr:hover td { background: #fafbfc; }
     .cell-text { display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .rhythm-list-table td { height: auto; min-height: 58px; vertical-align: top; }
+    .rhythm-list-table .cell-text { overflow: visible; line-height: 1.55; text-overflow: clip; white-space: normal; overflow-wrap: anywhere; }
     .actions { white-space: nowrap; }
     .actions button { border: 0; padding: 0; color: var(--primary); background: transparent; font-size: 13px; font-weight: 500; cursor: pointer; }
     .actions button + button { padding-left: 10px; }
@@ -428,6 +430,19 @@
     .version-dialog .form-modal__body { max-height: min(640px, calc(100vh - 180px)); overflow: auto; }
     .version-form { margin: 20px; padding: 16px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .version-form.form-modal__body { max-height: min(650px, calc(100vh - 170px)); }
+    .version-dialog .select-wrap { position: relative; min-width: 0; }
+    .version-dialog .select-caret {
+      position: absolute;
+      top: 50%;
+      right: 12px;
+      width: 14px !important;
+      height: 14px !important;
+      max-width: 14px;
+      max-height: 14px;
+      color: #a8abb2;
+      pointer-events: none;
+      transform: translateY(-50%);
+    }
     .version-rule-note { grid-column: 1 / -1; margin: 0; padding: 10px 12px; color: #664d03; border-left: 3px solid #e6bd39; background: #fffbea; font-size: 12px; line-height: 1.7; }
     .version-primary { color: #664d03; border-color: #d3a20f; background: #fff3ad; }
     .version-primary:hover { background: #ffea83; }
@@ -506,6 +521,6 @@
   </div>
   <div class="toast" id="toast">操作成功</div>
 
-  <script src="./mode-units-prototype.js?v=20260903-3" defer></script>
+  <script src="./mode-units-prototype.js?v=20260904-2" defer></script>
 </body>
 </html>
