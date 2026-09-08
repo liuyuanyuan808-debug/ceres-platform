@@ -453,6 +453,16 @@
     .version-history-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 18px; }
     .version-history-toolbar > div { display: grid; gap: 4px; color: #664d03; }
     .version-history-toolbar span { color: #7a5a00; font-size: 12px; }
+    .rhythm-version-viewer .form-card__header { align-items: flex-start; }
+    .rhythm-version-viewer .form-card__header p { margin: 5px 0 0; color: #7a5a00; font-size: 12px; font-weight: 400; }
+    .rhythm-version-tabs { margin-top: 16px; display: flex; gap: 8px; overflow-x: auto; }
+    .rhythm-version-tab { min-width: 92px; height: 48px; padding: 6px 12px; display: grid; grid-template-columns: auto auto; align-items: center; gap: 7px; color: #7a5a00; border: 1px solid #e6bd39; border-radius: 5px; background: #fffbea; cursor: pointer; }
+    .rhythm-version-tab strong { font-size: 14px; }
+    .rhythm-version-tab span { font-size: 11px; }
+    .rhythm-version-tab.is-active { color: #fff; border-color: #c99600; background: #c99600; }
+    .rhythm-version-meta { margin-top: 12px; padding: 10px 12px; display: flex; flex-wrap: wrap; gap: 8px 24px; color: #664d03; border-top: 1px solid #e6bd39; font-size: 12px; }
+    .rhythm-version-meta strong { margin-left: 4px; }
+    .rhythm-version-meta p { width: 100%; margin: 0; }
     .version-history-table { overflow-x: auto; }
     .version-history-table .data-table { min-width: 940px; }
     .version-history-table .data-table th { color: #664d03; background: #fff3ad; }
@@ -525,6 +535,6 @@
   </div>
   <div class="toast" id="toast">操作成功</div>
 
-  <script src="./mode-units-prototype.js?v=20260905-2" defer></script>
+  <script src="./mode-units-prototype.js?v=20260906-4" defer></script>
 </body>
 </html>
