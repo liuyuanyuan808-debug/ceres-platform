@@ -418,13 +418,11 @@
       const total = state.rhythmModes.length;
       const rowsMarkup = total ? state.rhythmModes.map((item, index) => `<tr><td>${index + 1}</td><td>${item.name}</td><td>${item.code}</td><td>${item.modeType}</td><td>${item.amount}</td><td>${statusTag('发布')}</td><td class="actions">${isView ? '-' : combinationActions(index, total, 'rhythm')}</td></tr>`).join('') : '';
       return `${rhythmVersionViewer()}<section class="form-card"><h2>基础信息配置</h2><div class="form-grid">
-        ${textField('排序', 'rank', state.form.rank, false, false, isView, 'number')}${textField('韵律名', 'name', state.form.name, false, false, isView)}${textField('中文名称', 'displayName', state.form.displayName, false, false, isView)}
+        ${textField('名称', 'name', state.form.name, false, false, isView)}
         ${textField('编码', 'code', state.form.code, false, false, isView)}
         ${selectField('关联动力源', 'source', ['Air2直线电机', '818动力源'], state.form.source)}
         ${selectField('标签', 'tags', ['推荐', '场景'], state.form.tags)}
-        ${textField('时长 & 编排', 'schedule', state.form.schedule, true, true, isView)}
-        ${textField('简介', 'description', state.form.description, true, true, isView)}
-        ${textField('英文简介', 'descriptionEn', state.form.descriptionEn, true, true, isView)}
+        ${textField('描述', 'description', state.form.description, true, true, isView)}
       </div></section>
       <section class="form-card"><div class="form-card__header"><h2>模式组合配置</h2>${isView ? '' : '<button class="btn btn--primary" id="add-combination" type="button">添加模式</button>'}</div>${total ? `<div class="table-shell combo-table"><table class="data-table"><colgroup><col style="width:55px"><col style="width:140px"><col style="width:100px"><col style="width:110px"><col style="width:145px"><col style="width:80px"><col style="width:150px"></colgroup><thead><tr><th>顺序</th><th>模式名称</th><th>模式编码</th><th>模式类型</th><th>循环时间（单位：s）</th><th>状态</th><th>操作</th></tr></thead><tbody>${rowsMarkup}</tbody></table></div>` : '<div class="combo-empty">暂无数据，请先添加模式</div>'}</section>
       <section class="form-card"><h2>韵律阶段预览</h2>${rhythmPreview()}</section>`;
