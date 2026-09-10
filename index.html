@@ -276,7 +276,7 @@
     .data-table td { height: 45px; font-size: 13px; vertical-align: middle; }
     .data-table tbody tr:hover td { background: #fafbfc; }
     .cell-text { display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .rhythm-list-table td { height: auto; min-height: 58px; vertical-align: top; }
+    .rhythm-list-table td { height: 54px; min-height: 54px; vertical-align: middle; }
     .rhythm-list-table .cell-text { overflow: visible; line-height: 1.55; text-overflow: clip; white-space: normal; overflow-wrap: anywhere; }
     .actions { white-space: nowrap; }
     .actions button { border: 0; padding: 0; color: var(--primary); background: transparent; font-size: 13px; font-weight: 500; cursor: pointer; }
@@ -466,6 +466,8 @@
     .rhythm-version-meta { margin-top: 12px; padding: 10px 12px; display: flex; flex-wrap: wrap; gap: 8px 24px; color: #664d03; border-top: 1px solid #e6bd39; font-size: 12px; }
     .rhythm-version-meta strong { margin-left: 4px; }
     .rhythm-version-meta p { width: 100%; margin: 0; }
+    .rhythm-revision-card .form-card__header, .mode-unit-version-card .form-card__header { align-items: flex-start; }
+    .rhythm-revision-card .form-card__header p, .mode-unit-version-card .form-card__header p { margin: 5px 0 0; color: #7a5a00; font-size: 12px; font-weight: 400; }
     .version-history-table { overflow-x: auto; }
     .version-history-table .data-table { min-width: 940px; }
     .version-history-table .data-table th { color: #664d03; background: #fff3ad; }
@@ -538,6 +540,6 @@
   </div>
   <div class="toast" id="toast">操作成功</div>
 
-  <script src="./mode-units-prototype.js?v=20260910-4" defer></script>
+  <script src="./mode-units-prototype.js?v=20260910-7" defer></script>
 </body>
 </html>
