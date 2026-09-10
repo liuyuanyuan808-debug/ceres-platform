@@ -265,7 +265,7 @@
       let viewSnapshot = null;
       state.form = {
         suction: '', suctionStep: '', gearCount: '', speedStrategy: '按 Speed 档位配置', speedLevels: '', frequencyStrategy: '', variablePreset: '', fixedFrequency: '', variableFastFrequency: '70', variableMediumFrequency: '60', variableSlowFrequency: '50',
-        durationStrategy: '', durationRatio: '', pressureTime: '',
+        durationStrategy: '', durationRatio: '', workDurationPercent: '', pressureTime: '', holdTime: '', intervalTime: '',
         project: row?.project || '', motorType: '', pumpType: '', valveType: '', pulseCount: '4', frequencyMin: '', frequencyMax: '', holdMin: '', holdMax: '', intervalMin: '', intervalMax: '',
         modeType: row?.modeType || '', source: row?.source || '', tags: row?.tags || '', modalSelection: '', modalVersion: '', modalAmount: '3',
         ...savedConfig,
@@ -282,6 +282,7 @@
         viewSnapshot = selectedVersion?.snapshot || null;
         if (viewSnapshot) Object.assign(state.form, viewSnapshot);
       }
+      if (!state.form.workDurationPercent && state.form.durationRatio) state.form.workDurationPercent = String(Number.parseFloat(state.form.durationRatio) || 44);
       if (savedConfig.speedEnabled && !savedConfig.speedStrategy) state.form.speedStrategy = '按 Speed 档位配置';
       if (['快', '中', '慢', '快 / 中 / 慢'].includes(state.form.variablePreset)) state.form.variablePreset = '频率快 / 频率中 / 频率慢';
       state.ruleStep = 1;
@@ -615,7 +616,7 @@
 
     function suctionRange() {
       const start = Number(state.form.suction);
-      const step = Number.parseInt(state.form.suctionStep, 10);
+      const step = Number.parseFloat(state.form.suctionStep);
       const count = Number(state.form.gearCount);
       const end = start && step && count ? start + step * (count - 1) : 0;
       return { start, count, end };
@@ -689,6 +690,7 @@
         const type = variableTypes[Math.max(speedIndex - 1, 0)] || variableTypes[0];
         return `${type.label}：${state.form[type.key] || '未填写'} CPM`;
       }
+      if (state.form.frequencyStrategy === '手动设置') return '手动设置：生成后逐档填写频率';
       return `${prefix}未选择频率策略`;
     }
 
@@ -724,8 +726,13 @@
     }
 
     function ruleCard() {
-      const suctionOptions = Array.from({ length: 15 }, (_, index) => String(index + 10));
-      const suctionSteps = ['1（1倍）', '2（2倍）', '3（3倍）', '4（4倍）', '5（5倍）'];
+      const is818Source = state.form.extra === '818动力源';
+      const suctionOptions = is818Source
+        ? Array.from({ length: 9 }, (_, index) => ((index + 1) * 5.1).toFixed(1))
+        : Array.from({ length: 15 }, (_, index) => String(index + 10));
+      const suctionSteps = is818Source
+        ? Array.from({ length: 5 }, (_, index) => `${((index + 1) * 5.1).toFixed(1)}（${index + 1}倍）`)
+        : ['1（1倍）', '2（2倍）', '3（3倍）', '4（4倍）', '5（5倍）'];
       const frequencyOptions = ['40 CPM', '45 CPM', '50 CPM', '55 CPM', '60 CPM', '65 CPM', '68 CPM', '70 CPM', '75 CPM', '80 CPM'];
       const pressureTimes = ['30 ms', '40 ms', '50 ms', '60 ms', '70 ms', '80 ms'];
       let fields = '';
@@ -733,12 +740,13 @@
       let action = '';
       if (state.ruleStep === 1) {
         const { start, count, end } = suctionRange();
-        const estimate = end ? `${start}-${end} kPa / ${count} 档` : '请选择起始吸力、吸力步进和档位数量';
+        const estimate = end ? `${start}-${Number(end.toFixed(1))} kPa / ${count} 档` : '请选择起始吸力、吸力步进和档位数量';
         fields = `${selectField('起始吸力（kPa）', 'suction', suctionOptions, state.form.suction)}${selectField('吸力步进（kPa）', 'suctionStep', suctionSteps, state.form.suctionStep)}${textField('档位数量', 'gearCount', state.form.gearCount, false, false, false, 'number')}`;
         supplementary = `<div class="estimate"><strong>预计生成吸力列表</strong><span>${estimate}</span></div>`;
-        action = '<button class="btn btn--primary step-next" type="button">下一步</button>';
+        action = `<button class="btn btn--primary step-next" type="button" ${end ? '' : 'disabled'}>下一步</button>`;
       } else if (state.ruleStep === 2) {
-        fields = selectField('频率策略', 'frequencyStrategy', ['定频', '变频'], state.form.frequencyStrategy, false, true, 'new-feature');
+        const frequencyClass = isFixedFrequency() || isVariableFrequency() ? 'new-feature' : '';
+        fields = selectField('频率策略', 'frequencyStrategy', ['手动设置', '定频', '变频'], state.form.frequencyStrategy, false, true, frequencyClass);
         if (isFixedFrequency()) {
           const speedLevelOptions = Array.from({ length: 10 }, (_, index) => `${index + 1}档`);
           fields += selectField('设备 Speed 档位数量', 'speedLevels', speedLevelOptions, state.form.speedLevels, false, true, 'new-feature');
@@ -750,29 +758,28 @@
             ? `${variableTypeFrequencyMatrix()}<p class="new-feature strategy-note"><strong>频率快、频率中、频率慢是三个变频预设方案，不是 Speed 档位。</strong>生成结果按三个频率方案 Tab 展示。</p>`
             : '<p class="new-feature strategy-note"><strong>变频预设方案为可选项。</strong>不选择时直接生成结果；选择后同时生成“频率快、频率中、频率慢”三个方案并分别配置频率。</p>';
         }
-        action = '<button class="btn btn--primary step-next" type="button">下一步</button>';
-      } else if (state.ruleStep === 3) {
+        if (state.form.frequencyStrategy === '手动设置') {
+          supplementary = '<p class="legacy-strategy-note">生成表格后，按每个吸力档位手动填写频率。</p>';
+        }
+        const frequencyReady = state.form.frequencyStrategy === '手动设置' || isVariableFrequency() || speedIsEnabled();
+        action = `<button class="btn btn--primary step-next" type="button" ${frequencyReady ? '' : 'disabled'}>下一步</button>`;
+      } else {
         fields = selectField('阶段时长策略', 'durationStrategy', ['手动设置', '固定比例', '固定时长'], state.form.durationStrategy);
         if (state.form.durationStrategy === '固定比例') {
-          fields += selectField('(a + b) / (c + d) 的比例', 'durationRatio', ['60% / 40%', '65% / 35%', '70% / 30%', '75% / 25%', '80% / 20%', '85% / 15%'], state.form.durationRatio);
-          fields += selectField('建压时间（单位：ms，可选）', 'pressureTime', pressureTimes, state.form.pressureTime, false, false);
+          fields += textField('工作时长百分比（%）', 'workDurationPercent', state.form.workDurationPercent, false, false, false, 'number');
         }
         if (state.form.durationStrategy === '固定时长') {
           fields += selectField('建压时间（单位：ms）', 'pressureTime', pressureTimes, state.form.pressureTime);
+          fields += textField('保压时间（单位：ms）', 'holdTime', state.form.holdTime, false, false, false, 'number');
+          fields += textField('间歇时间（单位：ms）', 'intervalTime', state.form.intervalTime, false, false, false, 'number');
         }
-        supplementary = state.form.durationStrategy === '固定比例'
-          ? '<p class="new-feature strategy-note"><strong>a = 建压时间，b = 保压时间，c = 卸压时间，d = 间歇时间。</strong>系统按所选占比自动分配两组时长；选择建压时间后，再拆分 a 与 b。</p>'
-          : '';
-        action = '<button class="btn btn--primary step-next" type="button">下一步</button>';
-      } else {
-        const frequencySummary = variableTypesEnabled()
-          ? variableTypes.map((_, index) => frequencyConfigText(index + 1)).join('；')
-          : state.form.frequencyStrategy ? frequencyConfigText(speedIsEnabled() ? 1 : 0) : '未选择频率策略';
-        fields = `<div class="new-feature generation-confirm"><strong>配置确认</strong><span>频率：${frequencySummary}</span><span>阶段时长：${state.form.durationStrategy || '未选择'}</span><span>${isFixedFrequency() ? `生成后按 Speed 1～${selectedSpeedCount()} 分页展示` : variableTypesEnabled() ? '生成后按频率快 / 频率中 / 频率慢分页展示' : '未选择变频预设方案，直接生成结果表格'}</span></div>`;
-        action = '<button class="btn btn--primary" id="generate" type="button">生成结果</button>';
+        const durationReady = state.form.durationStrategy === '手动设置'
+          || (state.form.durationStrategy === '固定比例' && Number(state.form.workDurationPercent) > 0 && Number(state.form.workDurationPercent) <= 100)
+          || (state.form.durationStrategy === '固定时长' && state.form.pressureTime && Number(state.form.holdTime) >= 0 && state.form.holdTime !== '' && Number(state.form.intervalTime) >= 0 && state.form.intervalTime !== '');
+        action = `<button class="btn btn--primary" id="generate" type="button" ${durationReady ? '' : 'disabled'}>生成</button>`;
       }
       return `<section class="form-card"><h2>模式单元生成规则</h2><div class="rule-workflow">
-        <div class="step-list"><button class="step-button${state.ruleStep === 1 ? ' is-active' : ''}" data-step="1" type="button">步骤1: 吸力档位</button><button class="step-button new-feature-step${state.ruleStep === 2 ? ' is-active' : ''}" data-step="2" type="button">步骤2: 频率策略</button><button class="step-button new-feature-step${state.ruleStep === 3 ? ' is-active' : ''}" data-step="3" type="button">步骤3: 时长策略</button><button class="step-button new-feature-step${state.ruleStep === 4 ? ' is-active' : ''}" data-step="4" type="button">步骤4: 生成结果</button></div>
+        <div class="step-list"><button class="step-button${state.ruleStep === 1 ? ' is-active' : ''}" data-step="1" type="button">步骤1: 吸力档位</button><button class="step-button new-feature-step${state.ruleStep === 2 ? ' is-active' : ''}" data-step="2" type="button">步骤2: 频率策略</button><button class="step-button${state.ruleStep === 3 ? ' is-active' : ''}" data-step="3" type="button">步骤3: 阶段时长</button></div>
         <div class="step-content"><div class="rule-fields">${fields}</div>${supplementary}<div class="next-wrap">${action}</div></div>
       </div></section>`;
     }
@@ -782,20 +789,24 @@
       const suctionSummary = end ? `${start}-${end} kPa / ${count} 档，用于生成结果表格的吸力行` : '请选择起始吸力、吸力步进和档位数量，用于生成结果表格的吸力行';
       const speedCount = selectedSpeedCount();
       const typeCount = variableTypesEnabled() ? variableTypes.length : 0;
-      const speedSummary = speedCount ? `定频，共 ${speedCount} 档 Speed` : isVariableFrequency() ? `变频，${typeCount ? '已启用频率快 / 频率中 / 频率慢' : '未选择预设方案'}` : '未选择';
+      const speedSummary = speedCount
+        ? `定频，共 ${speedCount} 档 Speed`
+        : isVariableFrequency()
+          ? `变频，${typeCount ? '已启用频率快 / 频率中 / 频率慢' : '未选择预设方案'}`
+          : state.form.frequencyStrategy === '手动设置' ? '手动设置' : '未选择';
       const frequencySummary = speedCount && state.form.frequencyStrategy
         ? Array.from({ length: speedCount }, (_, index) => frequencyConfigText(index + 1)).join('；')
         : typeCount ? variableTypes.map((_, index) => frequencyConfigText(index + 1)).join('；') : frequencyConfigText(0);
       let durationSummary = '未选择阶段时长策略';
-      if (state.form.durationStrategy === '手动设置') durationSummary = '手动设置阶段时长';
-      if (state.form.durationStrategy === '固定比例') durationSummary = `固定比例：(a + b) / (c + d) = ${state.form.durationRatio || '未选择'}，建压时间 ${state.form.pressureTime || '未选择（可选）'}`;
-      if (state.form.durationStrategy === '固定时长') durationSummary = `固定时长：建压 ${state.form.pressureTime || '未选择'}`;
+      if (state.form.durationStrategy === '手动设置') durationSummary = '手动设置';
+      if (state.form.durationStrategy === '固定比例') durationSummary = `固定比例：工作时长 ${state.form.workDurationPercent || '未填写'}%`;
+      if (state.form.durationStrategy === '固定时长') durationSummary = `固定时长：建压 ${state.form.pressureTime || '未选择'}，保压 ${state.form.holdTime || '未填写'} ms，间歇 ${state.form.intervalTime || '未填写'} ms`;
       return `<section class="form-card"><h2>生成结果表格，在表格中进行微调</h2><div class="rule-summary">
         <div>1. 吸力档位：${suctionSummary}</div>
-        <div>吸力步进：根据起始吸力与导入建压表中下一个吸力的差值，提供 1 到 5 倍选择</div>
-        <div class="new-feature-summary">2. 频率策略：${speedSummary}；${frequencySummary}</div><div>3. 时长策略：${durationSummary}</div><div class="new-feature-summary">4. 生成结果：${speedCount ? '按 Speed 分页展示' : typeCount ? '按频率快 / 频率中 / 频率慢分页展示' : '直接展示结果表格'}</div>
-        <div>最终结果：建压时间从关联动力源“${state.form.extra || '未选择'}”的建压表下拉选择；建压参数按吸力 + 建压时间自动带出且不可编辑</div>
-        <div>最终结果：卸压参数按吸力从关联动力源卸压表自动带出且不可编辑；直线电机显示数组，普通泵阀显示单值</div>
+        <div>吸力步进：由关联动力源的参数范围提供可选值</div>
+        <div class="new-feature-summary">2. 频率策略：${speedSummary}；${frequencySummary}</div>
+        <div>3. 阶段时长：${durationSummary}</div>
+        <div>最终结果：建压参数和卸压参数由关联动力源映射表带出</div>
       </div><div class="result-layout"><div class="blank-panel">暂无数据，请配置规则后点击「生成」</div><div class="chart-panel"><h3>选中行曲线</h3><div class="blank-panel">暂无曲线数据，请先生成配置</div></div></div><div class="overview-empty"><h2>全档位吸力曲线总览</h2><p>暂无曲线数据，请先生成配置</p></div></section>`;
     }
 
@@ -829,8 +840,8 @@
       const activeSpeed = resultTabCount ? Math.min(Math.max(Number(state.resultSpeedTab) || 1, 1), resultTabCount) : 0;
       state.resultSpeedTab = activeSpeed || 1;
       const strategyLabel = isVariableFrequency()
-        ? typeCount ? frequencyConfigText(activeSpeed) : '未选择变频预设方案'
-        : `定频 ${frequencyAt(0, activeSpeed)} CPM`;
+        ? typeCount ? frequencyConfigText(activeSpeed) : '变频，未选择预设方案'
+        : isFixedFrequency() ? `定频 ${frequencyAt(0, activeSpeed)} CPM` : '手动设置';
       const speedBar = resultTabCount
         ? `<div class="result-speed-bar">${speedCount ? speedTabButtons(activeSpeed, speedCount) : variableTypeTabButtons(activeSpeed)}<div class="new-feature result-speed-summary"><strong>${speedCount ? `当前 Speed：Speed ${activeSpeed}` : `当前方案：${variableTypes[activeSpeed - 1].label}`}</strong><span>频率策略：${strategyLabel}</span></div></div>`
         : '';
@@ -839,28 +850,36 @@
         : '<th>频率 CPM</th>';
       const rowCount = Math.min(Math.max(Number(state.form.gearCount) || 8, 1), 15);
       const suctionStart = Number(state.form.suction) || 10;
-      const suctionStep = Number.parseInt(state.form.suctionStep, 10) || 1;
+      const suctionStep = Number.parseFloat(state.form.suctionStep) || 1;
       const powerSource = modeUnitPowerSource();
+      const is818Source = powerSource.name === '818动力源';
+      const selectableSuctions = is818Source
+        ? Array.from({ length: 9 }, (_, index) => Number((((index + 1) * 5.1).toFixed(1))))
+        : Array.from({ length: 15 }, (_, index) => index + 10);
       const isLinearMotor = powerSource.config.motorType === '直线电机';
       const pressureParameterHeader = isLinearMotor ? '脉冲频率数组' : '建压占空比 %';
       const reliefParameterHeader = isLinearMotor ? '卸压时间数组 ms' : '卸压时间 ms';
       const detailRows = Array.from({ length: rowCount }, (_, i) => {
-        const suction = suctionStart + i * suctionStep;
+        const suction = Number((suctionStart + i * suctionStep).toFixed(1));
         const frequency = frequencyAt(i, activeSpeed);
         const pressure = Number.parseInt(state.form.pressureTime, 10) || 50;
         const pressureParameter = pressureMappingValue(powerSource, suction, pressure);
         const reliefParameter = reliefMappingValue(powerSource, suction);
         const relief = Number.parseInt(reliefParameter.replace('[', ''), 10) || 24;
         const total = Math.round(60000 / frequency);
-        const workRatio = Number.parseFloat(state.form.durationRatio) / 100;
-        const workDuration = state.form.durationStrategy === '固定比例' && workRatio
-          ? Math.min(Math.round(total * workRatio), Math.max(total - relief, 0))
-          : Math.max(total - relief - 150, 0);
-        const interval = state.form.durationStrategy === '固定比例'
-          ? Math.max(total - workDuration - relief, 0)
-          : 150;
-        const hold = Math.max(workDuration - pressure, 0);
-        const suctionOptions = Array.from({ length: 15 }, (_, index) => index + 10).map(value => `<option${value === suction ? ' selected' : ''}>${value}</option>`).join('');
+        const workRatio = Number.parseFloat(state.form.workDurationPercent) / 100;
+        let interval = 150;
+        let hold = Math.max(total - pressure - relief - interval, 0);
+        if (state.form.durationStrategy === '固定比例' && workRatio) {
+          const workDuration = Math.min(Math.round(total * workRatio), Math.max(total - relief, 0));
+          hold = Math.max(workDuration - pressure, 0);
+          interval = Math.max(total - workDuration - relief, 0);
+        }
+        if (state.form.durationStrategy === '固定时长') {
+          interval = Number(state.form.intervalTime) || 150;
+          hold = Number(state.form.holdTime) || Math.max(total - pressure - relief - interval, 0);
+        }
+        const suctionOptions = selectableSuctions.map(value => `<option${Math.abs(value - suction) < 0.01 ? ' selected' : ''}>${value}</option>`).join('');
         const pressureOptions = [30, 40, 50, 60, 70, 80].map(value => `<option${value === pressure ? ' selected' : ''}>${value}</option>`).join('');
         const disabled = editable ? '' : 'disabled';
         const arrayClass = isLinearMotor ? ' class="mapped-array-value"' : '';
@@ -1004,6 +1023,12 @@
           control.addEventListener('change', event => {
             updateValue(event);
             const field = event.currentTarget.dataset.field;
+            if (field === 'extra' && state.section === 'mode-units') {
+              const is818Source = state.form.extra === '818动力源';
+              state.form.suction = is818Source ? '5.1' : '10';
+              state.form.suctionStep = is818Source ? '5.1（1倍）' : '1（1倍）';
+              state.form.gearCount = is818Source ? '9' : '15';
+            }
             if (field === 'frequencyStrategy' && isFixedFrequency() && !speedIsEnabled()) state.form.speedLevels = '3档';
             if (field === 'frequencyStrategy' && isVariableFrequency()) {
               state.form.variablePreset = '频率快 / 频率中 / 频率慢';
@@ -1013,7 +1038,7 @@
               state.resultSpeedTab = 2;
             }
             if (field === 'durationStrategy' && state.form.durationStrategy === '固定比例') {
-              state.form.durationRatio ||= '60% / 40%';
+              state.form.workDurationPercent ||= '44';
             }
             if (field === 'modalSelection' && state.modal === 'mode-unit') {
               const selectedModeUnit = rows.find(row => `${row.name} / ${row.code}` === state.form.modalSelection);
@@ -1021,7 +1046,7 @@
               render();
               return;
             }
-            if (['suction', 'suctionStep', 'frequencyStrategy', 'variablePreset', 'speedLevels', 'durationStrategy', 'motorType'].includes(field)) render();
+            if (['suction', 'suctionStep', 'frequencyStrategy', 'variablePreset', 'speedLevels', 'durationStrategy', 'workDurationPercent', 'pressureTime', 'holdTime', 'intervalTime', 'motorType', 'extra'].includes(field)) render();
           });
         });
         document.querySelectorAll('.step-button').forEach(button => button.addEventListener('click', () => { state.ruleStep = Number(button.dataset.step); render(); }));
@@ -1039,7 +1064,7 @@
           if (pressureValue) pressureValue.value = pressureMappingValue(powerSource, suction, pressureTime);
           if (reliefValue) reliefValue.value = reliefMappingValue(powerSource, suction);
         }));
-        document.querySelector('.step-next')?.addEventListener('click', () => { state.ruleStep = Math.min(4, state.ruleStep + 1); render(); });
+        document.querySelector('.step-next')?.addEventListener('click', () => { state.ruleStep = Math.min(3, state.ruleStep + 1); render(); });
         document.querySelector('#generate')?.addEventListener('click', () => { state.generated = true; state.resultSpeedTab = variableTypesEnabled() ? 2 : 1; render(); showToast('生成成功'); });
         document.querySelectorAll('[data-export]').forEach(button => button.addEventListener('click', () => {
           state.exportConfig = {

@@ -316,11 +316,11 @@
     .required { color: var(--danger); font-style: normal; }
     textarea.control { height: 94px; padding: 10px 12px; resize: vertical; }
     .control:disabled { color: #a8abb2; background: #f5f7fa; cursor: not-allowed; }
-    .rule-workflow { min-height: 330px; display: grid; grid-template-columns: 170px minmax(0, 1fr); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+    .rule-workflow { min-height: 390px; display: grid; grid-template-columns: 230px minmax(0, 1fr); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
     .step-list { background: #dfe7f2; }
-    .step-button { width: 100%; height: 55px; padding: 0 16px; border: 0; border-bottom: 1px solid #cbd5e1; color: #111827; background: #f8fafc; text-align: left; font-size: 13px; font-weight: 600; cursor: pointer; }
+    .step-button { width: 100%; height: 72px; padding: 0 24px; border: 0; border-bottom: 1px solid #cbd5e1; color: #111827; background: #f8fafc; text-align: left; font-size: 15px; font-weight: 600; cursor: pointer; }
     .step-button.is-active { color: #fff; background: #409eff; }
-    .step-content { padding: 16px; display: flex; flex-direction: column; }
+    .step-content { padding: 24px; display: flex; flex-direction: column; }
     .rule-fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
     .estimate { margin-top: 14px; min-height: 62px; padding: 12px 14px; display: flex; justify-content: space-between; gap: 16px; border: 1px solid var(--line); border-radius: 6px; background: #f8fafc; color: var(--muted); font-size: 12px; }
     .estimate strong { color: #374151; font-size: 13px; }
@@ -373,6 +373,7 @@
     .new-feature-summary { margin: 4px -6px; padding: 3px 6px; color: #7a5a00; background: #fff6bf; border-left: 3px solid #e6bd39; }
     .strategy-note { margin: 14px 0 0; color: #7a5a00; font-size: 12px; line-height: 1.7; }
     .strategy-note strong { display: block; color: #664d03; }
+    .legacy-strategy-note { margin: 14px 0 0; color: #606266; font-size: 13px; line-height: 1.7; }
     .generation-confirm { grid-column: 1 / -1; display: grid; gap: 7px; color: #7a5a00; font-size: 12px; line-height: 1.55; }
     .generation-confirm strong { color: #664d03; font-size: 13px; }
     .detail-table th.new-feature-column, .detail-table td.new-feature-column { background: #fff6bf; }
@@ -537,6 +538,6 @@
   </div>
   <div class="toast" id="toast">操作成功</div>
 
-  <script src="./mode-units-prototype.js?v=20260910-3" defer></script>
+  <script src="./mode-units-prototype.js?v=20260910-4" defer></script>
 </body>
 </html>
