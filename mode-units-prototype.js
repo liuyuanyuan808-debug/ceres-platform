@@ -84,15 +84,15 @@
 
     const rhythmRows = [
       {
-        id: 301, rank: '1', tags: '推荐', name: 'Milk Boost（默认内置）', displayName: '高效泌乳', code: 'MILK_BOOST', source: 'Air2直线电机', duration: '1200', currentVersion: 'V2', schedule: '20 min：刺激 2min + 吸乳 8min + 刺激 2min + 吸乳 8min', description: '顺利启动泌乳后，适合日常使用', descriptionEn: 'Most suitable for daily use after successful lactation.', status: '发布', updater: '刘媛媛', time: '2026-09-04 10:00:00',
+        id: 301, rank: '1', tags: '推荐', name: 'Milk Boost（默认内置）', displayName: '高效泌乳', code: '1', source: 'Air2直线电机', duration: '1200', currentVersion: 'V2', schedule: '20 min：刺激 2min + 吸乳 8min + 刺激 2min + 吸乳 8min', description: '顺利启动泌乳后，适合日常使用', descriptionEn: 'Most suitable for daily use after successful lactation.', status: '发布', updater: '刘媛媛', time: '2026-09-04 10:00:00',
         versions: [
           { version: 'V2', status: '发布', current: true, medicalInput: '韵律设计方案 B', applicableModels: 'Air 2', changeSummary: '增加中段二次刺激，优化日常泌乳节奏', publisher: '刘媛媛', publishTime: '2026-09-04 10:00:00', snapshot: { duration: '1200', schedule: '20 min：刺激 2min + 吸乳 8min + 刺激 2min + 吸乳 8min', description: '顺利启动泌乳后，适合日常使用', descriptionEn: 'Most suitable for daily use after successful lactation.', rhythmModes: [{ name: '刺激模式', code: 'STIMULATION', modeType: '激活模式', amount: '120' }, { name: '吸乳模式', code: 'SUCTION', modeType: '吸乳模式', amount: '480' }, { name: '刺激模式', code: 'STIMULATION', modeType: '激活模式', amount: '120' }, { name: '吸乳模式', code: 'SUCTION', modeType: '吸乳模式', amount: '480' }] } },
           { version: 'V1', status: '历史版本', current: false, medicalInput: '韵律设计方案 A', applicableModels: 'Air 2', changeSummary: '初版高效泌乳韵律', publisher: '陈剑泽', publishTime: '2026-06-18 16:29:10', snapshot: { duration: '1080', schedule: '18 min：刺激 2min + 吸乳 16min', description: '初版日常泌乳韵律', descriptionEn: 'Initial daily milk expression rhythm.', rhythmModes: [{ name: '刺激模式', code: 'STIMULATION', modeType: '激活模式', amount: '120' }, { name: '吸乳模式', code: 'SUCTION', modeType: '吸乳模式', amount: '960' }] } }
         ]
       },
-      { id: 302, rank: '2', tags: '推荐', name: 'Quick Relief', displayName: '日间快吸', code: 'QUICK_RELIEF', source: '818动力源', duration: '540', currentVersion: 'V1.2', schedule: '9 min：刺激 1min + 吸乳 8min', description: '短时缓解奶涨，避免堵奶和奶量下降', descriptionEn: 'Quick engorgement relief, prevents clogs & supply drop.', status: '发布', updater: '刘媛媛', time: '2026-09-04 10:00:00' },
-      { id: 303, rank: '3', tags: '推荐', name: 'Power pumping', displayName: '密集追奶', code: 'POWER_PUMPING', source: 'Air2直线电机', duration: '2700', currentVersion: 'V1.1', schedule: '45 min：刺激 2min + 吸乳 13min + 暂停 5min + 刺激 2min + 吸乳 8min + 暂停 5min + 刺激 2min + 吸乳 8min', description: '当奶量下降时，及时提升；每天不超过 1 次', descriptionEn: 'Increase milk supply, no more than once a day.', status: '发布', updater: '刘媛媛', time: '2026-09-04 10:00:00' },
-      { id: 304, rank: '4', tags: '场景', name: 'Before bed', displayName: '睡前场景', code: 'BEFORE_BED', source: '818动力源', duration: '1200', currentVersion: 'V1', schedule: '20 min：刺激 2min + 吸乳 8min + 刺激 2min + 混合 8min', description: '安静低噪音的柔和吸奶', descriptionEn: 'Gentle, low-noise expression for bedtime comfort.', status: '发布', updater: '刘媛媛', time: '2026-09-04 10:00:00' }
+      { id: 302, rank: '2', tags: '推荐', name: 'Quick Relief', displayName: '日间快吸', code: '2', source: '818动力源', duration: '540', currentVersion: 'V1.2', schedule: '9 min：刺激 1min + 吸乳 8min', description: '短时缓解奶涨，避免堵奶和奶量下降', descriptionEn: 'Quick engorgement relief, prevents clogs & supply drop.', status: '发布', updater: '刘媛媛', time: '2026-09-04 10:00:00' },
+      { id: 303, rank: '3', tags: '推荐', name: 'Power pumping', displayName: '密集追奶', code: '3', source: 'Air2直线电机', duration: '2700', currentVersion: 'V1.1', schedule: '45 min：刺激 2min + 吸乳 13min + 暂停 5min + 刺激 2min + 吸乳 8min + 暂停 5min + 刺激 2min + 吸乳 8min', description: '当奶量下降时，及时提升；每天不超过 1 次', descriptionEn: 'Increase milk supply, no more than once a day.', status: '发布', updater: '刘媛媛', time: '2026-09-04 10:00:00' },
+      { id: 304, rank: '4', tags: '场景', name: 'Before bed', displayName: '睡前场景', code: '4', source: '818动力源', duration: '1200', currentVersion: 'V1', schedule: '20 min：刺激 2min + 吸乳 8min + 刺激 2min + 混合 8min', description: '安静低噪音的柔和吸奶', descriptionEn: 'Gentle, low-noise expression for bedtime comfort.', status: '发布', updater: '刘媛媛', time: '2026-09-04 10:00:00' }
     ];
 
     const sections = {
@@ -118,7 +118,7 @@
       'rhythm-libraries': {
         label: '韵律库', title: '韵律库列表管理', addLabel: '新增韵律库', formTitle: '韵律库配置', extraLabel: '关联动力源', extraKey: 'source', rows: rhythmRows,
         options: ['Air2直线电机', '818动力源'],
-        columns: [['name', '名称'], ['code', '编码'], ['source', '关联动力源'], ['tags', '标签'], ['duration', '总时长（min）'], ['status', '状态'], ['updater', '更新人'], ['time', '上次更改'], ['currentVersion', '当前版本']],
+        columns: [['name', '名称'], ['code', '韵律 ID'], ['source', '关联动力源'], ['tags', '标签'], ['duration', '总时长（min）'], ['status', '状态'], ['updater', '更新人'], ['time', '上次更改'], ['currentVersion', '当前版本']],
         columnWidths: [190, 150, 150, 100, 90, 80, 90, 170, 120],
         newFeatureKeys: ['source', 'time', 'currentVersion']
       }
@@ -227,7 +227,7 @@
         <header class="page-header-bar"><h1>${section.title}</h1><div class="page-header-actions"><button class="btn btn--primary" id="add-unit">${section.addLabel}</button></div></header>
         <div class="list-page-body">
           <section class="filter-toolbar">
-            <input class="control" id="search" maxlength="50" placeholder="请输入名称或编码，回车键确认搜索" value="${state.query}">
+            <input class="control" id="search" maxlength="50" placeholder="${state.section === 'rhythm-libraries' ? '请输入名称或韵律 ID，回车键确认搜索' : '请输入名称或编码，回车键确认搜索'}" value="${state.query}">
             <div class="select-wrap"><select class="control" id="status-filter"><option value="all">全部状态</option><option value="草稿">草稿</option><option value="发布">发布</option><option value="停用">停用</option></select><svg class="select-caret" viewBox="0 0 1024 1024"><path fill="currentColor" d="M831.872 340.864 512 652.672 192.128 340.864a30.59 30.59 0 0 0-42.752 0 29.12 29.12 0 0 0 0 41.6L489.664 714.24a32 32 0 0 0 44.672 0l340.288-331.712a29.12 29.12 0 0 0 0-41.728 30.59 30.59 0 0 0-42.752 0z"></path></svg></div>
             <button class="btn btn--outline" id="reset">重置</button>
             <div class="filter-toolbar__counts"><span class="tag tag--success">发布 ${counts.发布}</span><span class="tag tag--warning">草稿 ${counts.草稿}</span><span class="tag tag--info">停用 ${counts.停用}</span></div>
@@ -419,7 +419,7 @@
       const rowsMarkup = total ? state.rhythmModes.map((item, index) => `<tr><td>${index + 1}</td><td>${item.name}</td><td>${item.code}</td><td>${item.modeType}</td><td>${item.amount}</td><td>${statusTag('发布')}</td><td class="actions">${isView ? '-' : combinationActions(index, total, 'rhythm')}</td></tr>`).join('') : '';
       return `${rhythmVersionViewer()}<section class="form-card"><h2>基础信息配置</h2><div class="form-grid">
         ${textField('名称', 'name', state.form.name, false, false, isView)}
-        ${textField('编码', 'code', state.form.code, false, false, isView)}
+        <label class="form-field"><span>韵律 ID<em class="required"> *</em></span><input class="control" data-field="code" type="number" min="1" max="100" step="1" inputmode="numeric" placeholder="请输入 1～100 的整数" value="${escapeHtml(state.form.code || '')}" ${isView ? 'disabled' : ''}><small>韵律 ID 范围：1～100，不可重复</small></label>
         ${selectField('关联动力源', 'source', ['Air2直线电机', '818动力源'], state.form.source)}
         ${selectField('标签', 'tags', ['推荐', '场景'], state.form.tags)}
         ${textField('描述', 'description', state.form.description, true, true, isView)}
@@ -1197,12 +1197,21 @@
         else modeLibraryRows.unshift({ id: Math.max(...modeLibraryRows.map(row => row.id)) + 1, status: '草稿', ...values });
       }
       if (state.section === 'rhythm-libraries') {
+        const rhythmId = Number(state.form.code);
+        if (!/^\d+$/.test(String(state.form.code).trim()) || !Number.isInteger(rhythmId) || rhythmId < 1 || rhythmId > 100) {
+          showToast('韵律 ID 请输入 1～100 的整数');
+          return;
+        }
+        if (rhythmRows.some(row => row !== state.selected && Number(row.code) === rhythmId)) {
+          showToast('该韵律 ID 已存在，请重新输入');
+          return;
+        }
         const values = {
           rank: state.form.rank || String(rhythmRows.length + 1),
           tags: state.form.tags || '推荐',
           name: state.form.name || '未命名韵律',
           displayName: state.form.displayName,
-          code: state.form.code || `RHYTHM-${Math.max(...rhythmRows.map(row => row.id)) + 1}`,
+          code: String(rhythmId),
           source: state.form.source,
           schedule: state.form.schedule,
           description: state.form.description,
