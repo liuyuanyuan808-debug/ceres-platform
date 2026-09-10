@@ -125,7 +125,7 @@
     };
 
     const initialSection = sections[window.location.hash.slice(1)] ? window.location.hash.slice(1) : 'mode-units';
-    const state = { view: 'list', section: initialSection, collapsed: false, menuExpanded: true, query: '', status: 'all', selected: null, viewVersion: null, ruleStep: 1, resultSpeedTab: 1, generated: false, form: {}, modal: null, versionModal: null, exportConfig: null, exportError: '', modeUnits: [], rhythmModes: [], powerImports: { pressure: '', relief: '' } };
+    const state = { view: 'list', section: initialSection, collapsed: false, menuExpanded: true, query: '', status: 'all', selected: null, viewVersion: null, ruleStep: 1, resultSpeedTab: 1, generated: false, form: {}, modal: null, versionModal: null, exportConfig: null, exportError: '', modeUnits: [], rhythmModes: [], powerImports: { pressure: '', relief: '' }, resultAdjustments: {}, resultValidation: {} };
     const app = document.querySelector('#app');
     const overlay = document.querySelector('#overlay');
     const dialogMessage = document.querySelector('#dialog-message');
@@ -307,7 +307,7 @@
           state.form.versionUpdateSummary = draftVersion?.changeSummary || '';
         }
       }
-      if (!state.form.workDurationPercent && state.form.durationRatio) state.form.workDurationPercent = String(Number.parseFloat(state.form.durationRatio) || 44);
+      if (!state.form.workDurationPercent && state.form.durationRatio) state.form.workDurationPercent = String(Number.parseFloat(state.form.durationRatio) || 60);
       if (savedConfig.speedEnabled && !savedConfig.speedStrategy) state.form.speedStrategy = '按 Speed 档位配置';
       if (['快', '中', '慢', '快 / 中 / 慢'].includes(state.form.variablePreset)) state.form.variablePreset = '频率快 / 频率中 / 频率慢';
       state.ruleStep = 1;
@@ -316,6 +316,8 @@
       state.modal = null;
       state.exportConfig = null;
       state.exportError = '';
+      state.resultAdjustments = {};
+      state.resultValidation = {};
       state.modeUnits = (row?.modeUnits || []).map(item => ({ ...item }));
       state.rhythmModes = (viewSnapshot?.rhythmModes || row?.rhythmModes || []).map(item => ({ ...item }));
       state.powerImports = { pressure: '', relief: '', ...(row?.powerImports || {}) };
@@ -438,8 +440,8 @@
 
     function modeUnitVersionFields(isView) {
       if (isView) return '';
-      return `<section class="form-card mode-unit-version-card new-feature"><div class="form-card__header"><div><h2>版本信息 <span class="new-requirement-tag">新增需求</span></h2><p>${state.selected ? '编辑内容将保存为新版本，发布后替换当前版本。' : '请填写首个版本的信息。'}</p></div></div><div class="form-grid">
-        <label class="form-field"><span>版本号<em class="required"> *</em></span><input class="control" data-field="editingVersion" value="${escapeHtml(state.form.editingVersion)}" placeholder="例如：V1、V1.1、V2"><small>同一模式单元内不可重复</small></label>
+      return `<section class="form-card mode-unit-version-card new-feature"><div class="form-card__header"><div><h2>版本信息 <span class="new-requirement-tag">新增需求</span></h2><p>${state.selected ? '编辑内容将保存为新版本，发布后替换当前版本。' : '首个版本默认为 V1，请填写版本说明。'}</p></div></div><div class="form-grid">
+        <label class="form-field"><span>版本号<em class="required"> *</em></span><input class="control" value="${escapeHtml(state.form.editingVersion)}" disabled><small>${state.selected ? '停用已发布版本后再编辑，版本号自动加一' : '首个版本默认为 V1'}，不支持修改</small></label>
         <label class="form-field form-field--wide"><span>版本说明<em class="required"> *</em></span><textarea class="control" data-field="versionUpdateSummary" placeholder="请说明本版本的配置内容或修改点">${escapeHtml(state.form.versionUpdateSummary)}</textarea></label>
       </div></section>`;
     }
@@ -803,16 +805,14 @@
       } else {
         fields = selectField('阶段时长策略', 'durationStrategy', ['手动设置', '固定比例', '固定时长'], state.form.durationStrategy);
         if (state.form.durationStrategy === '固定比例') {
-          fields += textField('工作时长百分比（%）', 'workDurationPercent', state.form.workDurationPercent, false, false, false, 'number');
+          fields += `<div class="rule-field-row rule-field-row--single">${selectField('工作时长百分比（%）', 'workDurationPercent', ['60 / 40', '70 / 30', '80 / 20', '85 / 15', '90 / 10'], state.form.workDurationPercent)}</div>`;
         }
         if (state.form.durationStrategy === '固定时长') {
-          fields += selectField('建压时间（单位：ms）', 'pressureTime', pressureTimes, state.form.pressureTime);
-          fields += textField('保压时间（单位：ms）', 'holdTime', state.form.holdTime, false, false, false, 'number');
-          fields += textField('间歇时间（单位：ms）', 'intervalTime', state.form.intervalTime, false, false, false, 'number');
+          fields += `<div class="rule-field-row">${selectField('建压时间（单位：ms）', 'pressureTime', pressureTimes, state.form.pressureTime)}${textField('保压时间（单位：ms）', 'holdTime', state.form.holdTime, false, false, false, 'number')}<label class="form-field"><span>间歇时间（单位：ms）<em class="required"> *</em></span><input class="control" data-field="intervalTime" type="number" min="150" step="10" placeholder="不低于 150" value="${state.form.intervalTime}"></label></div>`;
         }
         const durationReady = state.form.durationStrategy === '手动设置'
-          || (state.form.durationStrategy === '固定比例' && Number(state.form.workDurationPercent) > 0 && Number(state.form.workDurationPercent) <= 100)
-          || (state.form.durationStrategy === '固定时长' && state.form.pressureTime && Number(state.form.holdTime) >= 0 && state.form.holdTime !== '' && Number(state.form.intervalTime) >= 0 && state.form.intervalTime !== '');
+          || (state.form.durationStrategy === '固定比例' && Number.parseFloat(state.form.workDurationPercent) >= 60 && Number.parseFloat(state.form.workDurationPercent) <= 90)
+          || (state.form.durationStrategy === '固定时长' && state.form.pressureTime && Number(state.form.holdTime) >= 0 && state.form.holdTime !== '' && Number(state.form.intervalTime) >= 150 && state.form.intervalTime !== '');
         action = `<button class="btn btn--primary" id="generate" type="button" ${durationReady ? '' : 'disabled'}>生成</button>`;
       }
       return `<section class="form-card"><h2>模式单元生成规则</h2><div class="rule-workflow">
@@ -836,7 +836,7 @@
         : typeCount ? variableTypes.map((_, index) => frequencyConfigText(index + 1)).join('；') : frequencyConfigText(0);
       let durationSummary = '未选择阶段时长策略';
       if (state.form.durationStrategy === '手动设置') durationSummary = '手动设置';
-      if (state.form.durationStrategy === '固定比例') durationSummary = `固定比例：工作时长 ${state.form.workDurationPercent || '未填写'}%`;
+      if (state.form.durationStrategy === '固定比例') durationSummary = `固定比例：(A+B)/(C+D) = ${state.form.workDurationPercent || '未选择'}`;
       if (state.form.durationStrategy === '固定时长') durationSummary = `固定时长：建压 ${state.form.pressureTime || '未选择'}，保压 ${state.form.holdTime || '未填写'} ms，间歇 ${state.form.intervalTime || '未填写'} ms`;
       return `<section class="form-card"><h2>生成结果表格，在表格中进行微调</h2><div class="rule-summary">
         <div>1. 吸力档位：${suctionSummary}</div>
@@ -870,6 +870,16 @@
       return `[${Array.from({ length: pulseCount }, (_, index) => baseValue + index * 2).join(', ')}]`;
     }
 
+    function resultScopeKey(activeTab) {
+      if (selectedSpeedCount()) return `speed-${activeTab}`;
+      if (variableTypesEnabled()) return `type-${activeTab}`;
+      return "manual";
+    }
+
+    function resultRowKey(activeTab, rowIndex) {
+      return `${resultScopeKey(activeTab)}-${rowIndex}`;
+    }
+
     function detailResults(editable = false) {
       const speedCount = selectedSpeedCount();
       const typeCount = variableTypesEnabled() ? variableTypes.length : 0;
@@ -877,52 +887,111 @@
       const activeSpeed = resultTabCount ? Math.min(Math.max(Number(state.resultSpeedTab) || 1, 1), resultTabCount) : 0;
       state.resultSpeedTab = activeSpeed || 1;
       const strategyLabel = isVariableFrequency()
-        ? typeCount ? frequencyConfigText(activeSpeed) : '变频，未选择预设方案'
-        : isFixedFrequency() ? `定频 ${frequencyAt(0, activeSpeed)} CPM` : '手动设置';
+        ? typeCount ? frequencyConfigText(activeSpeed) : "变频，未选择预设方案"
+        : isFixedFrequency() ? `定频 ${frequencyAt(0, activeSpeed)} CPM` : "手动设置";
       const speedBar = resultTabCount
         ? `<div class="result-speed-bar">${speedCount ? speedTabButtons(activeSpeed, speedCount) : variableTypeTabButtons(activeSpeed)}<div class="new-feature result-speed-summary"><strong>${speedCount ? `当前 Speed：Speed ${activeSpeed}` : `当前方案：${variableTypes[activeSpeed - 1].label}`}</strong><span>频率策略：${strategyLabel}</span></div></div>`
-        : '';
+        : "";
       const frequencyHeader = resultTabCount
         ? `<th class="new-feature-column">频率 CPM<span class="column-unit">${speedCount ? `Speed ${activeSpeed}` : variableTypes[activeSpeed - 1].label}</span></th>`
-        : '<th>频率 CPM</th>';
+        : "<th>频率 CPM</th>";
       const rowCount = Math.min(Math.max(Number(state.form.gearCount) || 8, 1), 15);
       const suctionStart = Number(state.form.suction) || 10;
       const suctionStep = Number.parseFloat(state.form.suctionStep) || 1;
       const powerSource = modeUnitPowerSource();
-      const is818Source = powerSource.name === '818动力源';
+      const is818Source = powerSource.name === "818动力源";
       const selectableSuctions = is818Source
-        ? Array.from({ length: 9 }, (_, index) => Number((((index + 1) * 5.1).toFixed(1))))
+        ? Array.from({ length: 9 }, (_, index) => Number(((index + 1) * 5.1).toFixed(1)))
         : Array.from({ length: 15 }, (_, index) => index + 10);
-      const isLinearMotor = powerSource.config.motorType === '直线电机';
-      const pressureParameterHeader = isLinearMotor ? '脉冲频率数组' : '建压占空比 %';
-      const reliefParameterHeader = isLinearMotor ? '卸压时间数组 ms' : '卸压时间 ms';
-      const detailRows = Array.from({ length: rowCount }, (_, i) => {
-        const suction = Number((suctionStart + i * suctionStep).toFixed(1));
-        const frequency = frequencyAt(i, activeSpeed);
-        const pressure = Number.parseInt(state.form.pressureTime, 10) || 50;
+      const isLinearMotor = powerSource.config.motorType === "直线电机";
+      const pressureParameterHeader = isLinearMotor ? "脉冲频率数组" : "建压占空比 %";
+      const reliefParameterHeader = isLinearMotor ? "泄压时间数组 ms" : "泄压时间 ms";
+      const targetWorkPercent = Math.min(Math.max(Number.parseFloat(state.form.workDurationPercent) || 60, 60), 90);
+      const detailRows = Array.from({ length: rowCount }, (_, rowIndex) => {
+        const key = resultRowKey(activeSpeed, rowIndex);
+        const saved = state.resultAdjustments[key] || {};
+        const suction = Number(saved.suction ?? (suctionStart + rowIndex * suctionStep).toFixed(1));
+        const frequency = Math.max(Number(saved.frequency) || frequencyAt(rowIndex, activeSpeed), 1);
+        const pressure = Number(saved.pressure ?? (Number.parseInt(state.form.pressureTime, 10) || 50));
         const pressureParameter = pressureMappingValue(powerSource, suction, pressure);
         const reliefParameter = reliefMappingValue(powerSource, suction);
-        const relief = Number.parseInt(reliefParameter.replace('[', ''), 10) || 24;
+        const relief = Number.parseInt(String(reliefParameter).replace("[", ""), 10) || 24;
         const total = Math.round(60000 / frequency);
-        const workRatio = Number.parseFloat(state.form.workDurationPercent) / 100;
-        let interval = 150;
+        let interval = Math.max(150, total - Math.round(total * targetWorkPercent / 100) - relief);
         let hold = Math.max(total - pressure - relief - interval, 0);
-        if (state.form.durationStrategy === '固定比例' && workRatio) {
-          const workDuration = Math.min(Math.round(total * workRatio), Math.max(total - relief, 0));
-          hold = Math.max(workDuration - pressure, 0);
-          interval = Math.max(total - workDuration - relief, 0);
-        }
-        if (state.form.durationStrategy === '固定时长') {
-          interval = Number(state.form.intervalTime) || 150;
+        if (state.form.durationStrategy === "固定时长") {
+          interval = Math.max(Number(state.form.intervalTime) || 150, 150);
           hold = Number(state.form.holdTime) || Math.max(total - pressure - relief - interval, 0);
         }
-        const suctionOptions = selectableSuctions.map(value => `<option${Math.abs(value - suction) < 0.01 ? ' selected' : ''}>${value}</option>`).join('');
-        const pressureOptions = [30, 40, 50, 60, 70, 80].map(value => `<option${value === pressure ? ' selected' : ''}>${value}</option>`).join('');
-        const disabled = editable ? '' : 'disabled';
-        const arrayClass = isLinearMotor ? ' class="mapped-array-value"' : '';
-        return `<tr><td>${i + 1}</td><td><select ${disabled} data-result-suction="${i}">${suctionOptions}</select></td><td><select ${disabled} data-result-pressure="${i}">${pressureOptions}</select></td><td><input disabled${arrayClass} data-result-pressure-value="${i}" value="${escapeHtml(pressureParameter)}"></td><td><input ${disabled} value="${hold}"></td><td><input disabled${arrayClass} data-result-relief-value="${i}" value="${escapeHtml(reliefParameter)}"></td><td><input ${disabled} value="${interval}"></td><td class="${resultTabCount ? 'new-feature-column' : ''}"><input ${disabled} value="${frequency}"></td><td><input ${disabled} value="${total}"></td></tr>`;
-      }).join('');
-      return `<section class="form-card"><h2>生成结果表格，在表格中进行微调</h2>${speedBar}<div class="detail-table table-shell"><table class="data-table" style="min-width:${isLinearMotor ? 1180 : 950}px"><thead><tr><th>档位</th><th>吸力 kPa</th><th>建压时间 ms</th><th>${pressureParameterHeader}</th><th>保压时间 ms</th><th>${reliefParameterHeader}</th><th>间歇时间 ms</th>${frequencyHeader}<th>总时长 ms</th></tr></thead><tbody>${detailRows}</tbody></table></div></section>`;
+        if (Number.isFinite(Number(saved.hold))) hold = Number(saved.hold);
+        if (Number.isFinite(Number(saved.interval))) interval = Number(saved.interval);
+        const actualWorkPercent = total > 0 ? Math.round((pressure + hold) / total * 100) : 0;
+        const invalidReason = interval < 150 ? "间歇时间不得低于 150 ms" : actualWorkPercent < 60 ? "工作时长占比不得低于 60%" : "";
+        state.resultValidation[key] = invalidReason;
+        const suctionOptions = selectableSuctions.map(value => `<option${Math.abs(value - suction) < 0.01 ? " selected" : ""}>${value}</option>`).join("");
+        const pressureOptions = [30, 40, 50, 60, 70, 80].map(value => `<option${value === pressure ? " selected" : ""}>${value}</option>`).join("");
+        const disabled = editable ? "" : "disabled";
+        const arrayClass = isLinearMotor ? " mapped-array-value" : "";
+        return `<tr data-result-row="${rowIndex}" data-result-key="${key}" class="${invalidReason ? "result-row-invalid" : ""}"><td>${rowIndex + 1}</td><td><select ${disabled} data-result-field="suction">${suctionOptions}</select></td><td><select ${disabled} data-result-field="pressure">${pressureOptions}</select></td><td><input disabled class="${arrayClass}" data-result-mapped-pressure value="${escapeHtml(pressureParameter)}"></td><td><input ${disabled} data-result-field="hold" type="number" min="0" step="10" value="${hold}"></td><td><input disabled class="${arrayClass}" data-result-relief value="${escapeHtml(reliefParameter)}"></td><td><input ${disabled} data-result-field="interval" type="number" min="150" step="10" value="${interval}"></td><td class="${resultTabCount ? "new-feature-column" : ""}"><input ${disabled} data-result-field="frequency" type="number" min="1" value="${frequency}"></td><td><input disabled data-result-total value="${total}"></td><td class="result-ratio-cell ${invalidReason ? "is-invalid" : ""}" data-result-ratio title="${invalidReason}"><strong>${actualWorkPercent} / ${100 - actualWorkPercent}</strong><small>目标 ${targetWorkPercent} / ${100 - targetWorkPercent}</small></td></tr>`;
+      }).join("");
+      const invalidCount = Object.values(state.resultValidation).filter(Boolean).length;
+      return `<section class="form-card"><h2>生成结果表格，在表格中进行微调</h2>${speedBar}<div class="result-rule-status ${invalidCount ? "is-invalid" : ""}"><span>间歇时间 ≥ 150 ms</span><span>工作时长占比 ≥ 60%</span><strong>${invalidCount ? `${invalidCount} 行不符合策略，暂不可保存` : "当前参数符合策略"}</strong></div><div class="detail-table table-shell"><table class="data-table" style="min-width:${isLinearMotor ? 1320 : 1160}px"><thead><tr><th>档位</th><th>吸力 kPa</th><th>建压时间 ms</th><th>${pressureParameterHeader}</th><th>保压时间 ms</th><th>${reliefParameterHeader}</th><th>间歇时间 ms</th>${frequencyHeader}<th>总时长 ms</th><th>实际比例<span class="column-unit">(A+B)/(C+D)</span></th></tr></thead><tbody>${detailRows}</tbody></table></div></section>`;
+    }
+
+    function updateResultRow(control) {
+      const row = control.closest("tr[data-result-row]");
+      if (!row) return;
+      const rowIndex = Number(row.dataset.resultRow);
+      const key = row.dataset.resultKey;
+      const field = control.dataset.resultField;
+      const adjustment = state.resultAdjustments[key] || {};
+      adjustment.suction = Number(row.querySelector("[data-result-field=suction]").value);
+      adjustment.pressure = Number(row.querySelector("[data-result-field=pressure]").value);
+      adjustment.frequency = Math.max(Number(row.querySelector("[data-result-field=frequency]").value) || 1, 1);
+      const powerSource = modeUnitPowerSource();
+      const mappedPressure = pressureMappingValue(powerSource, adjustment.suction, adjustment.pressure);
+      const reliefParameter = reliefMappingValue(powerSource, adjustment.suction);
+      const relief = Number.parseInt(String(reliefParameter).replace("[", ""), 10) || 24;
+      const total = Math.round(60000 / adjustment.frequency);
+      const targetWorkPercent = Math.min(Math.max(Number.parseFloat(state.form.workDurationPercent) || 60, 60), 90);
+      let hold = Number(row.querySelector("[data-result-field=hold]").value) || 0;
+      let interval = Number(row.querySelector("[data-result-field=interval]").value) || 0;
+      if (["frequency", "pressure", "suction"].includes(field)) {
+        interval = Math.max(150, total - Math.round(total * targetWorkPercent / 100) - relief);
+        hold = Math.max(total - adjustment.pressure - relief - interval, 0);
+      } else if (field === "hold") {
+        hold = Math.max(Math.round(Number(control.value) / 10) * 10, 0);
+        interval = total - adjustment.pressure - relief - hold;
+      } else if (field === "interval") {
+        interval = Math.round(Number(control.value) / 10) * 10;
+        hold = total - adjustment.pressure - relief - interval;
+      }
+      adjustment.hold = hold;
+      adjustment.interval = interval;
+      state.resultAdjustments[key] = adjustment;
+      if (field === "frequency" && isFixedFrequency()) state.form[frequencyFieldKey("fixedFrequency", state.resultSpeedTab)] = String(adjustment.frequency);
+      if (field === "frequency" && variableTypesEnabled()) state.form[variableTypes[state.resultSpeedTab - 1].key] = String(adjustment.frequency);
+      const actualWorkPercent = total > 0 ? Math.round((adjustment.pressure + hold) / total * 100) : 0;
+      const invalidReason = interval < 150 ? "间歇时间不得低于 150 ms" : actualWorkPercent < 60 ? "工作时长占比不得低于 60%" : "";
+      state.resultValidation[key] = invalidReason;
+      row.querySelector("[data-result-mapped-pressure]").value = mappedPressure;
+      row.querySelector("[data-result-relief]").value = reliefParameter;
+      row.querySelector("[data-result-field=hold]").value = hold;
+      row.querySelector("[data-result-field=interval]").value = interval;
+      row.querySelector("[data-result-total]").value = total;
+      const ratio = row.querySelector("[data-result-ratio]");
+      ratio.classList.toggle("is-invalid", Boolean(invalidReason));
+      ratio.title = invalidReason;
+      ratio.innerHTML = `<strong>${actualWorkPercent} / ${100 - actualWorkPercent}</strong><small>目标 ${targetWorkPercent} / ${100 - targetWorkPercent}</small>`;
+      row.classList.toggle("result-row-invalid", Boolean(invalidReason));
+      const invalidCount = Object.values(state.resultValidation).filter(Boolean).length;
+      const status = document.querySelector(".result-rule-status");
+      if (status) {
+        status.classList.toggle("is-invalid", invalidCount > 0);
+        status.querySelector("strong").textContent = invalidCount ? `${invalidCount} 行不符合策略，暂不可保存` : "当前参数符合策略";
+      }
+      const save = document.querySelector("#save");
+      if (save) save.disabled = invalidCount > 0;
     }
 
     function formView() {
@@ -1083,7 +1152,7 @@
               state.resultSpeedTab = 2;
             }
             if (field === 'durationStrategy' && state.form.durationStrategy === '固定比例') {
-              state.form.workDurationPercent ||= '44';
+              if (Number.parseFloat(state.form.workDurationPercent) < 60 || Number.parseFloat(state.form.workDurationPercent) > 90 || !state.form.workDurationPercent) state.form.workDurationPercent = '60 / 40';
             }
             if (field === 'modalSelection' && state.modal === 'mode-unit') {
               const selectedModeUnit = rows.find(row => `${row.name} / ${row.code}` === state.form.modalSelection);
@@ -1099,18 +1168,24 @@
           state.resultSpeedTab = Number(button.dataset.resultSpeedTab);
           render();
         }));
-        document.querySelectorAll('[data-result-suction], [data-result-pressure]').forEach(control => control.addEventListener('change', event => {
-          const rowIndex = event.currentTarget.dataset.resultSuction ?? event.currentTarget.dataset.resultPressure;
-          const suction = Number(document.querySelector(`[data-result-suction="${rowIndex}"]`)?.value);
-          const pressureTime = Number(document.querySelector(`[data-result-pressure="${rowIndex}"]`)?.value);
-          const powerSource = modeUnitPowerSource();
-          const pressureValue = document.querySelector(`[data-result-pressure-value="${rowIndex}"]`);
-          const reliefValue = document.querySelector(`[data-result-relief-value="${rowIndex}"]`);
-          if (pressureValue) pressureValue.value = pressureMappingValue(powerSource, suction, pressureTime);
-          if (reliefValue) reliefValue.value = reliefMappingValue(powerSource, suction);
-        }));
+        document.querySelectorAll("[data-result-field]").forEach(control => {
+          const applyChange = event => {
+            const field = event.currentTarget.dataset.resultField;
+            updateResultRow(event.currentTarget);
+            if (field === "frequency" && (isFixedFrequency() || variableTypesEnabled())) {
+              document.querySelectorAll("[data-result-field=frequency]").forEach(input => {
+                if (input === event.currentTarget) return;
+                input.value = event.currentTarget.value;
+                updateResultRow(input);
+              });
+              const strategySummary = document.querySelector(".result-speed-summary span");
+              if (strategySummary) strategySummary.textContent = `频率策略：${isFixedFrequency() ? `定频 ${event.currentTarget.value} CPM` : `${variableTypes[state.resultSpeedTab - 1].label}：${event.currentTarget.value} CPM`}`;
+            }
+          };
+          control.addEventListener(control.tagName === "SELECT" ? "change" : "input", applyChange);
+        });
         document.querySelector('.step-next')?.addEventListener('click', () => { state.ruleStep = Math.min(3, state.ruleStep + 1); render(); });
-        document.querySelector('#generate')?.addEventListener('click', () => { state.generated = true; state.resultSpeedTab = variableTypesEnabled() ? 2 : 1; render(); showToast('生成成功'); });
+        document.querySelector('#generate')?.addEventListener('click', () => { state.generated = true; state.resultSpeedTab = variableTypesEnabled() ? 2 : 1; state.resultAdjustments = {}; state.resultValidation = {}; render(); showToast('生成成功'); });
         document.querySelectorAll('[data-export]').forEach(button => button.addEventListener('click', () => {
           state.exportConfig = {
             type: button.dataset.export,
@@ -1292,6 +1367,8 @@
 
     function saveCurrentForm() {
       if (state.section === 'mode-units') {
+        const invalidResult = Object.values(state.resultValidation).find(Boolean);
+        if (invalidResult) { showToast(invalidResult); return; }
         const versionNumber = state.form.editingVersion.trim();
         const versionSummary = state.form.versionUpdateSummary.trim();
         if (!/^(?:V)?\d+(?:\.\d+)*$/i.test(versionNumber)) {

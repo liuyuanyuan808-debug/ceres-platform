@@ -322,6 +322,7 @@
     .step-button.is-active { color: #fff; background: #409eff; }
     .step-content { padding: 24px; display: flex; flex-direction: column; }
     .rule-fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+    .rule-field-row { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
     .estimate { margin-top: 14px; min-height: 62px; padding: 12px 14px; display: flex; justify-content: space-between; gap: 16px; border: 1px solid var(--line); border-radius: 6px; background: #f8fafc; color: var(--muted); font-size: 12px; }
     .estimate strong { color: #374151; font-size: 13px; }
     .next-wrap { flex: 1; display: grid; place-items: center; }
@@ -338,6 +339,15 @@
     .detail-table input:not(:disabled), .detail-table select:not(:disabled) { color: #606266; background: #fff; }
     .detail-table select:not(:disabled) { cursor: pointer; }
     .detail-table input.mapped-array-value { min-width: 142px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+    .result-rule-status { margin-bottom: 12px; padding: 9px 12px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; color: #52606d; border: 1px solid #dcdfe6; border-radius: 6px; background: #f8fafc; font-size: 12px; }
+    .result-rule-status strong { margin-left: auto; color: #3f8f29; }
+    .result-rule-status.is-invalid { color: #9f3a38; border-color: #f3b5b5; background: #fff3f3; }
+    .result-rule-status.is-invalid strong { color: #d33c3c; }
+    .result-ratio-cell { min-width: 128px; }
+    .result-ratio-cell strong, .result-ratio-cell small { display: block; white-space: nowrap; }
+    .result-ratio-cell small { margin-top: 3px; color: #909399; font-size: 11px; }
+    .result-ratio-cell.is-invalid strong { color: #d33c3c; }
+    .result-row-invalid td { background: #fff8f8; }
     .new-feature { padding: 10px; border: 1px solid #e6bd39; border-radius: 6px; background: #fff6bf; }
     .new-feature .control { border-color: #d9af2f; background: #fffbea; }
     .new-feature-step:not(.is-active) { color: #7a5a00; background: #fff6bf; }
@@ -523,7 +533,7 @@
       .version-form .form-field--wide, .version-rule-note { grid-column: auto; }
       .filter-toolbar { grid-template-columns: 1fr; }
       .filter-toolbar__counts { justify-content: flex-start; }
-      .form-grid, .rule-fields, .boundary-grid { grid-template-columns: 1fr; }
+      .form-grid, .rule-fields, .rule-field-row, .boundary-grid { grid-template-columns: 1fr; }
       .form-field--wide { grid-column: auto; }
       .export-config-inputs { grid-template-columns: 1fr; }
     }
@@ -540,6 +550,6 @@
   </div>
   <div class="toast" id="toast">操作成功</div>
 
-  <script src="./mode-units-prototype.js?v=20260910-7" defer></script>
+  <script src="./mode-units-prototype.js?v=20260910-10" defer></script>
 </body>
 </html>
