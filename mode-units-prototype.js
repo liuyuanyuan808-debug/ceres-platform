@@ -880,6 +880,44 @@
       return `${resultScopeKey(activeTab)}-${rowIndex}`;
     }
 
+    function numericBoundary(config, key) {
+      const value = Number(config?.[key]);
+      return Number.isFinite(value) ? value : null;
+    }
+
+    function resultLimitReason(powerSource, values) {
+      const config = powerSource.config || {};
+      const frequencyMin = numericBoundary(config, "frequencyMin");
+      const frequencyMax = numericBoundary(config, "frequencyMax");
+      const holdMin = numericBoundary(config, "holdMin");
+      const holdMax = numericBoundary(config, "holdMax");
+      const intervalMin = Math.max(numericBoundary(config, "intervalMin") ?? 0, 150);
+      const intervalMax = numericBoundary(config, "intervalMax");
+      const reasons = [];
+      if (frequencyMin !== null && values.frequency < frequencyMin) reasons.push(`频率不得低于 ${frequencyMin} CPM`);
+      if (frequencyMax !== null && values.frequency > frequencyMax) reasons.push(`频率不得高于 ${frequencyMax} CPM`);
+      if (holdMin !== null && values.hold < holdMin) reasons.push(`保压时间不得低于 ${holdMin} ms`);
+      if (holdMax !== null && values.hold > holdMax) reasons.push(`保压时间不得高于 ${holdMax} ms`);
+      if (values.interval < intervalMin) reasons.push(`间歇时间不得低于 ${intervalMin} ms`);
+      if (intervalMax !== null && values.interval > intervalMax) reasons.push(`间歇时间不得高于 ${intervalMax} ms`);
+      if (values.actualWorkPercent < 60) reasons.push("工作时长占比不得低于 60%");
+      return reasons.join("；");
+    }
+
+    function sourceBoundaryPanel(powerSource) {
+      const config = powerSource.config || {};
+      const range = (minKey, maxKey, unit) => `${config[minKey] || "-"}～${config[maxKey] || "-"} ${unit}`;
+      return `<div class="source-boundary-panel">
+        <div class="source-boundary-panel__title"><strong>当前动力源参数范围</strong><span>${escapeHtml(powerSource.name)}</span></div>
+        <div class="source-boundary-panel__items">
+          <span><em>频率</em>${range("frequencyMin", "frequencyMax", "CPM")}</span>
+          <span><em>保压时间</em>${range("holdMin", "holdMax", "ms")}</span>
+          <span><em>间歇时间</em>${range("intervalMin", "intervalMax", "ms")}</span>
+        </div>
+        <p>微调需满足动力源范围；间歇时间还需满足系统下限 150 ms。</p>
+      </div>`;
+    }
+
     function detailResults(editable = false) {
       const speedCount = selectedSpeedCount();
       const typeCount = variableTypesEnabled() ? variableTypes.length : 0;
@@ -926,16 +964,16 @@
         if (Number.isFinite(Number(saved.hold))) hold = Number(saved.hold);
         if (Number.isFinite(Number(saved.interval))) interval = Number(saved.interval);
         const actualWorkPercent = total > 0 ? Math.round((pressure + hold) / total * 100) : 0;
-        const invalidReason = interval < 150 ? "间歇时间不得低于 150 ms" : actualWorkPercent < 60 ? "工作时长占比不得低于 60%" : "";
+        const invalidReason = resultLimitReason(powerSource, { frequency, hold, interval, actualWorkPercent });
         state.resultValidation[key] = invalidReason;
         const suctionOptions = selectableSuctions.map(value => `<option${Math.abs(value - suction) < 0.01 ? " selected" : ""}>${value}</option>`).join("");
         const pressureOptions = [30, 40, 50, 60, 70, 80].map(value => `<option${value === pressure ? " selected" : ""}>${value}</option>`).join("");
         const disabled = editable ? "" : "disabled";
         const arrayClass = isLinearMotor ? " mapped-array-value" : "";
-        return `<tr data-result-row="${rowIndex}" data-result-key="${key}" class="${invalidReason ? "result-row-invalid" : ""}"><td>${rowIndex + 1}</td><td><select ${disabled} data-result-field="suction">${suctionOptions}</select></td><td><select ${disabled} data-result-field="pressure">${pressureOptions}</select></td><td><input disabled class="${arrayClass}" data-result-mapped-pressure value="${escapeHtml(pressureParameter)}"></td><td><input ${disabled} data-result-field="hold" type="number" min="0" step="10" value="${hold}"></td><td><input disabled class="${arrayClass}" data-result-relief value="${escapeHtml(reliefParameter)}"></td><td><input ${disabled} data-result-field="interval" type="number" min="150" step="10" value="${interval}"></td><td class="${resultTabCount ? "new-feature-column" : ""}"><input ${disabled} data-result-field="frequency" type="number" min="1" value="${frequency}"></td><td><input disabled data-result-total value="${total}"></td><td class="result-ratio-cell ${invalidReason ? "is-invalid" : ""}" data-result-ratio title="${invalidReason}"><strong>${actualWorkPercent} / ${100 - actualWorkPercent}</strong><small>目标 ${targetWorkPercent} / ${100 - targetWorkPercent}</small></td></tr>`;
+        return `<tr data-result-row="${rowIndex}" data-result-key="${key}" class="${invalidReason ? "result-row-invalid" : ""}"><td>${rowIndex + 1}</td><td><select ${disabled} data-result-field="suction">${suctionOptions}</select></td><td><select ${disabled} data-result-field="pressure">${pressureOptions}</select></td><td><input disabled class="${arrayClass}" data-result-mapped-pressure value="${escapeHtml(pressureParameter)}"></td><td><input ${disabled} data-result-field="hold" type="number" min="${powerSource.config.holdMin}" max="${powerSource.config.holdMax}" step="10" value="${hold}"></td><td><input disabled class="${arrayClass}" data-result-relief value="${escapeHtml(reliefParameter)}"></td><td><input ${disabled} data-result-field="interval" type="number" min="${Math.max(Number(powerSource.config.intervalMin) || 0, 150)}" max="${powerSource.config.intervalMax}" step="10" value="${interval}"></td><td class="${resultTabCount ? "new-feature-column" : ""}"><input ${disabled} data-result-field="frequency" type="number" min="${powerSource.config.frequencyMin}" max="${powerSource.config.frequencyMax}" value="${frequency}"></td><td><input disabled data-result-total value="${total}"></td><td class="result-ratio-cell ${invalidReason ? "is-invalid" : ""}" data-result-ratio title="${escapeHtml(invalidReason)}"><strong>${actualWorkPercent} / ${100 - actualWorkPercent}</strong><small>目标 ${targetWorkPercent} / ${100 - targetWorkPercent}</small></td></tr>`;
       }).join("");
       const invalidCount = Object.values(state.resultValidation).filter(Boolean).length;
-      return `<section class="form-card"><h2>生成结果表格，在表格中进行微调</h2>${speedBar}<div class="result-rule-status ${invalidCount ? "is-invalid" : ""}"><span>间歇时间 ≥ 150 ms</span><span>工作时长占比 ≥ 60%</span><strong>${invalidCount ? `${invalidCount} 行不符合策略，暂不可保存` : "当前参数符合策略"}</strong></div><div class="detail-table table-shell"><table class="data-table" style="min-width:${isLinearMotor ? 1320 : 1160}px"><thead><tr><th>档位</th><th>吸力 kPa</th><th>建压时间 ms</th><th>${pressureParameterHeader}</th><th>保压时间 ms</th><th>${reliefParameterHeader}</th><th>间歇时间 ms</th>${frequencyHeader}<th>总时长 ms</th><th>实际比例<span class="column-unit">(A+B)/(C+D)</span></th></tr></thead><tbody>${detailRows}</tbody></table></div></section>`;
+      return `<section class="form-card"><h2>生成结果表格，在表格中进行微调</h2>${speedBar}${sourceBoundaryPanel(powerSource)}<div class="result-rule-status ${invalidCount ? "is-invalid" : ""}"><span>间歇时间 ≥ 150 ms</span><span>工作时长占比 ≥ 60%</span><strong>${invalidCount ? `${invalidCount} 行不符合策略，暂不可保存` : "当前参数符合策略"}</strong></div><div class="detail-table table-shell"><table class="data-table" style="min-width:${isLinearMotor ? 1320 : 1160}px"><thead><tr><th>档位</th><th>吸力 kPa</th><th>建压时间 ms</th><th>${pressureParameterHeader}</th><th>保压时间 ms</th><th>${reliefParameterHeader}</th><th>间歇时间 ms</th>${frequencyHeader}<th>总时长 ms</th><th>实际比例<span class="column-unit">(A+B)/(C+D)</span></th></tr></thead><tbody>${detailRows}</tbody></table></div></section>`;
     }
 
     function updateResultRow(control) {
@@ -972,7 +1010,12 @@
       if (field === "frequency" && isFixedFrequency()) state.form[frequencyFieldKey("fixedFrequency", state.resultSpeedTab)] = String(adjustment.frequency);
       if (field === "frequency" && variableTypesEnabled()) state.form[variableTypes[state.resultSpeedTab - 1].key] = String(adjustment.frequency);
       const actualWorkPercent = total > 0 ? Math.round((adjustment.pressure + hold) / total * 100) : 0;
-      const invalidReason = interval < 150 ? "间歇时间不得低于 150 ms" : actualWorkPercent < 60 ? "工作时长占比不得低于 60%" : "";
+      const invalidReason = resultLimitReason(powerSource, {
+        frequency: adjustment.frequency,
+        hold,
+        interval,
+        actualWorkPercent
+      });
       state.resultValidation[key] = invalidReason;
       row.querySelector("[data-result-mapped-pressure]").value = mappedPressure;
       row.querySelector("[data-result-relief]").value = reliefParameter;
@@ -1003,7 +1046,8 @@
       if (state.section === 'power-sources') formBody = powerSourceForm(isView);
       if (state.section === 'mode-libraries') formBody = modeLibraryForm(isView);
       if (state.section === 'rhythm-libraries') formBody = rhythmLibraryForm(isView);
-      return `<section class="page-stack"><header class="page-header-bar"><div class="page-header-title"><button class="back-button" id="back">${chevron('left')}</button><h1>${section.formTitle}</h1></div><div class="page-header-actions">${isView ? '<button class="btn btn--outline" id="cancel">返回</button>' : '<button class="btn btn--outline" id="cancel">取消</button><button class="btn btn--primary" id="save">保存</button>'}</div></header>
+      const hasInvalidResults = state.section === 'mode-units' && state.generated && Object.values(state.resultValidation).some(Boolean);
+      return `<section class="page-stack"><header class="page-header-bar"><div class="page-header-title"><button class="back-button" id="back">${chevron('left')}</button><h1>${section.formTitle}</h1></div><div class="page-header-actions">${isView ? '<button class="btn btn--outline" id="cancel">返回</button>' : `<button class="btn btn--outline" id="cancel">取消</button><button class="btn btn--primary" id="save" ${hasInvalidResults ? 'disabled' : ''}>保存</button>`}</div></header>
         <div class="form-page">${formBody}</div></section>`;
     }
 

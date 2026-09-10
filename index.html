@@ -339,6 +339,14 @@
     .detail-table input:not(:disabled), .detail-table select:not(:disabled) { color: #606266; background: #fff; }
     .detail-table select:not(:disabled) { cursor: pointer; }
     .detail-table input.mapped-array-value { min-width: 142px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+    .source-boundary-panel { margin-bottom: 12px; padding: 10px 12px; border-left: 3px solid #e6bd39; background: #fffbea; color: #664d03; }
+    .source-boundary-panel__title { display: flex; align-items: center; gap: 10px; }
+    .source-boundary-panel__title strong { font-size: 13px; }
+    .source-boundary-panel__title span { color: #7a5a00; font-size: 12px; }
+    .source-boundary-panel__items { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 8px 24px; }
+    .source-boundary-panel__items span { white-space: nowrap; font-size: 12px; }
+    .source-boundary-panel__items em { margin-right: 6px; color: #7a5a00; font-style: normal; }
+    .source-boundary-panel p { margin: 7px 0 0; color: #7a5a00; font-size: 12px; }
     .result-rule-status { margin-bottom: 12px; padding: 9px 12px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; color: #52606d; border: 1px solid #dcdfe6; border-radius: 6px; background: #f8fafc; font-size: 12px; }
     .result-rule-status strong { margin-left: auto; color: #3f8f29; }
     .result-rule-status.is-invalid { color: #9f3a38; border-color: #f3b5b5; background: #fff3f3; }
@@ -550,6 +558,6 @@
   </div>
   <div class="toast" id="toast">操作成功</div>
 
-  <script src="./mode-units-prototype.js?v=20260910-10" defer></script>
+  <script src="./mode-units-prototype.js?v=20260910-12" defer></script>
 </body>
 </html>
