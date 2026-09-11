@@ -95,6 +95,39 @@
       { id: 304, rank: '4', tags: '场景', name: 'Before bed', displayName: '睡前场景', code: '4', source: '818动力源', duration: '1200', currentVersion: 'V1', schedule: '20 min：刺激 2min + 吸乳 8min + 刺激 2min + 混合 8min', description: '安静低噪音的柔和吸奶', descriptionEn: 'Gentle, low-noise expression for bedtime comfort.', status: '发布', updater: '刘媛媛', time: '2026-09-04 10:00:00' }
     ];
 
+    const languagePackRows = [
+      {
+        id: 401, name: 'V3 Pro 中文语言包', code: 'LP-001', language: '简体中文', locale: 'zh-CN', version: 'V1.3.0', models: 'V3 Pro', firmware: 'V3.4.0+', size: '428 KB', status: '发布', updater: '陈剑泽', time: '2026-09-09 17:42:00', note: '更新专家韵律名称及设备提示文案', fileName: 'v3-pro-zh-cn-v1.3.0.zip',
+        history: [
+          { version: 'V1.3.0', status: '发布', note: '更新专家韵律名称及设备提示文案', updater: '陈剑泽', time: '2026-09-09 17:42:00' },
+          { version: 'V1.2.0', status: '停用', note: '补充设备异常提示文案', updater: '池浩', time: '2026-08-20 16:30:00' }
+        ],
+        updateLogs: [
+          { version: 'V1.3.0', type: '全量发布', target: 'V3 Pro · 全部渠道 · 全部设备', result: '发布中', operator: '陈剑泽', time: '2026-09-09 18:10:00' },
+          { version: 'V1.3.0', type: '设备更新', target: 'V3P-A8F214', result: '更新成功', operator: '系统', time: '2026-09-10 14:26:00' },
+          { version: 'V1.2.0', type: '停止发布', target: 'V3 Pro · 全部渠道', result: '已停止', operator: '池浩', time: '2026-09-07 20:12:00' }
+        ]
+      },
+      {
+        id: 402, name: 'V3 Pro English Pack', code: 'LP-002', language: 'English', locale: 'en-US', version: 'V1.2.1', models: 'V3 Pro', firmware: 'V3.4.0+', size: '412 KB', status: '发布', updater: '刘媛媛', time: '2026-09-10 09:45:00', note: 'Fix terminology for expert programs', fileName: 'v3-pro-en-us-v1.2.1.zip',
+        history: [{ version: 'V1.2.1', status: '发布', note: 'Fix terminology for expert programs', updater: '刘媛媛', time: '2026-09-10 09:45:00' }],
+        updateLogs: [
+          { version: 'V1.2.1', type: '灰度发布', target: 'V3 Pro · Amazon US · 20% 设备', result: '发布中', operator: '刘媛媛', time: '2026-09-10 09:45:00' },
+          { version: 'V1.2.1', type: '设备更新', target: 'V3P-B19C02', result: '写入失败', operator: '系统', time: '2026-09-10 14:22:00' }
+        ]
+      },
+      {
+        id: 403, name: 'V3 Pro Deutsch Pack', code: 'LP-003', language: 'Deutsch', locale: 'de-DE', version: 'V1.0.0', models: 'V3 Pro', firmware: 'V3.5.0+', size: '436 KB', status: '草稿', updater: '刘媛媛', time: '2026-09-10 11:06:00', note: '德语首版，等待测试设备验证', fileName: 'v3-pro-de-de-v1.0.0.zip',
+        history: [{ version: 'V1.0.0', status: '草稿', note: '德语首版，等待测试设备验证', updater: '刘媛媛', time: '2026-09-10 11:06:00' }],
+        updateLogs: [{ version: 'V1.0.0', type: '上传版本', target: 'V3 Pro · 德语', result: '草稿', operator: '刘媛媛', time: '2026-09-10 11:06:00' }]
+      },
+      {
+        id: 404, name: 'Air 2 中文语言包', code: 'LP-014', language: '简体中文', locale: 'zh-CN', version: 'V1.1.0', models: 'Air 2', firmware: 'V2.8.0+', size: '405 KB', status: '停用', updater: '池浩', time: '2026-08-28 09:30:00', note: '历史版本，已由 V1.1.1 替代', fileName: 'air2-zh-cn-v1.1.0.zip',
+        history: [{ version: 'V1.1.0', status: '停用', note: '历史版本，已由 V1.1.1 替代', updater: '池浩', time: '2026-08-28 09:30:00' }],
+        updateLogs: [{ version: 'V1.1.0', type: '停止发布', target: 'Air 2 · 全部设备', result: '已停止', operator: '池浩', time: '2026-08-28 09:30:00' }]
+      }
+    ];
+
     const sections = {
       'power-sources': {
         label: '动力源方案管理', title: '动力源列表管理', addLabel: '新增动力源', formTitle: '项目动力源配置', extraLabel: '关联项目', extraKey: 'project', rows: powerSourceRows,
@@ -121,11 +154,16 @@
         columns: [['name', '名称'], ['code', '编码'], ['source', '关联动力源'], ['tags', '标签'], ['duration', '总时长（min）'], ['status', '状态'], ['updater', '更新人'], ['time', '更新时间'], ['currentVersion', '版本信息']],
         columnWidths: [180, 100, 160, 150, 110, 90, 100, 170, 130],
         newFeatureKeys: ['source', 'currentVersion']
+      },
+      'language-packs': {
+        label: '语言包管理', title: '语言包列表管理', addLabel: '上传语言包', formTitle: '语言包配置', rows: languagePackRows,
+        columns: [['name', '语言包'], ['language', '语种'], ['version', '当前版本'], ['models', '适用机型'], ['size', '大小'], ['status', '状态'], ['updater', '更新人'], ['time', '更新时间']],
+        columnWidths: [210, 130, 120, 130, 90, 90, 100, 180]
       }
     };
 
     const initialSection = sections[window.location.hash.slice(1)] ? window.location.hash.slice(1) : 'mode-units';
-    const state = { view: 'list', section: initialSection, collapsed: false, menuExpanded: true, query: '', status: 'all', selected: null, viewVersion: null, ruleStep: 1, resultSpeedTab: 1, generated: false, form: {}, modal: null, versionModal: null, exportConfig: null, exportError: '', modeUnits: [], rhythmModes: [], powerImports: { pressure: '', relief: '' }, resultAdjustments: {}, resultValidation: {} };
+    const state = { view: 'list', section: initialSection, collapsed: false, menuExpanded: true, languageMenuExpanded: true, query: '', status: 'all', selected: null, viewVersion: null, ruleStep: 1, resultSpeedTab: 1, generated: false, form: {}, modal: null, versionModal: null, languagePublish: null, exportConfig: null, exportError: '', modeUnits: [], rhythmModes: [], powerImports: { pressure: '', relief: '' }, resultAdjustments: {}, resultValidation: {} };
     const app = document.querySelector('#app');
     const overlay = document.querySelector('#overlay');
     const dialogMessage = document.querySelector('#dialog-message');
@@ -135,9 +173,10 @@
     const chevron = direction => `<svg viewBox="0 0 1024 1024" aria-hidden="true"><path fill="currentColor" d="${direction === 'left' ? 'M609.408 149.376 277.76 489.6a32 32 0 0 0 0 44.672l331.648 340.352a29.12 29.12 0 0 0 41.728 0 30.59 30.59 0 0 0 0-42.752L339.264 511.936l311.872-319.872a30.59 30.59 0 0 0 0-42.688 29.12 29.12 0 0 0-41.728 0' : 'M340.864 149.312a30.59 30.59 0 0 0 0 42.752L652.736 512 340.864 831.872a30.59 30.59 0 0 0 0 42.752 29.12 29.12 0 0 0 41.728 0L714.24 534.336a32 32 0 0 0 0-44.672L382.592 149.376a29.12 29.12 0 0 0-41.728 0z'}"></path></svg>`;
 
     function sidebar() {
-      const navItems = Object.entries(sections).map(([key, section]) =>
+      const navItems = Object.entries(sections).filter(([key]) => key !== 'language-packs').map(([key, section]) =>
         `<a class="sidebar-menu__child${state.section === key ? ' is-active' : ''}" href="#${key}" data-section="${key}"><span class="sidebar-menu__icon sidebar-menu__icon--child"></span><span class="sidebar-menu__label">${section.label}</span></a>`
       ).join('');
+      const languageItem = `<a class="sidebar-menu__child${state.section === 'language-packs' ? ' is-active' : ''}" href="#language-packs" data-section="language-packs"><span class="sidebar-menu__icon sidebar-menu__icon--child"></span><span class="sidebar-menu__label">语言包管理</span></a>`;
       return `<aside class="sidebar">
         <div class="brand-row">
           <div class="brand-logo" aria-hidden="true">C</div>
@@ -147,8 +186,10 @@
           </button>
         </div>
         <nav class="sidebar-menu" aria-label="主导航">
-          <button class="sidebar-menu__parent is-active" id="menu-parent" type="button" aria-expanded="${state.menuExpanded}"><span class="sidebar-menu__icon"></span><span class="sidebar-menu__label">吸乳方案配置</span></button>
+          <button class="sidebar-menu__parent${state.section !== 'language-packs' ? ' is-active' : ''}" id="menu-parent" type="button" aria-expanded="${state.menuExpanded}"><span class="sidebar-menu__icon"></span><span class="sidebar-menu__label">吸乳方案配置</span></button>
           <div class="sidebar-menu__children${state.menuExpanded ? '' : ' is-hidden'}">${navItems}</div>
+          <button class="sidebar-menu__parent${state.section === 'language-packs' ? ' is-active' : ''}" id="language-menu-parent" type="button" aria-expanded="${state.languageMenuExpanded}"><span class="sidebar-menu__icon"></span><span class="sidebar-menu__label">多语言包</span></button>
+          <div class="sidebar-menu__children${state.languageMenuExpanded ? '' : ' is-hidden'}">${languageItem}</div>
         </nav>
         <div class="user-footer"><div class="user-card">
           <img class="avatar-image" src="./assets/ceres-avatar.png" alt="">
@@ -159,7 +200,10 @@
     }
 
     function statusTag(status, small = true) {
-      const type = status === '发布' ? 'success' : status === '草稿' ? 'warning' : 'info';
+      const type = ['发布', '更新成功'].includes(status) ? 'success'
+        : ['草稿'].includes(status) ? 'warning'
+          : ['发布中', '验证中'].includes(status) ? 'primary'
+            : ['写入失败', '下载失败'].includes(status) ? 'danger' : 'info';
       return `<span class="tag tag--${type}${small ? ' tag--small' : ''}">${status}</span>`;
     }
 
@@ -201,6 +245,12 @@
       return `V${highestMajor + 1}`;
     }
 
+    function nextLanguageVersion(row) {
+      const match = String(row?.version || 'V1.0.0').match(/^V?(\d+)\.(\d+)\.(\d+)$/i);
+      if (!match) return 'V1.0.0';
+      return `V${match[1]}.${match[2]}.${Number(match[3]) + 1}`;
+    }
+
 
     function versionCell(row) {
       const versions = versionsFor(row);
@@ -212,32 +262,45 @@
       const section = sections[state.section];
       const activeRows = section.rows;
       const visible = activeRows.filter(row => {
-        const matchesQuery = !state.query || row.name.toLowerCase().includes(state.query.toLowerCase()) || row.code.toLowerCase().includes(state.query.toLowerCase());
+        const searchable = state.section === 'language-packs'
+          ? [row.name, row.code, row.language, row.locale, row.models, row.version].join(' ')
+          : [row.name, row.code].join(' ');
+        const matchesQuery = !state.query || searchable.toLowerCase().includes(state.query.toLowerCase());
         const matchesStatus = state.status === 'all' || row.status === state.status;
         return matchesQuery && matchesStatus;
       });
       const counts = activeRows.reduce((acc, row) => (acc[row.status]++, acc), { 发布: 0, 草稿: 0, 停用: 0 });
       const versionedSection = state.section === 'mode-units' || state.section === 'rhythm-libraries';
+      const isLanguagePack = state.section === 'language-packs';
       const isNewFeatureColumn = key => section.newFeatureKeys?.includes(key);
       const cellValue = (row, key) => {
+        if (isLanguagePack && key === 'name') return `<span class="language-package-cell"><strong>${escapeHtml(row.name)}</strong><small>${escapeHtml(row.code)}</small></span>`;
+        if (isLanguagePack && key === 'language') return `<span class="language-package-cell"><strong>${escapeHtml(row.language)}</strong><small>${escapeHtml(row.locale)}</small></span>`;
+        if (isLanguagePack && key === 'version') return `<strong>${escapeHtml(row.version)}</strong>`;
         if (state.section === 'rhythm-libraries' && key === 'duration') {
           const minutes = Number(row.duration) / 60;
           return Number.isFinite(minutes) ? `${Number(minutes.toFixed(2))} min` : row.duration;
         }
         return row[key] || '';
       };
+      const rowActions = row => {
+        if (isLanguagePack) {
+          return `<button data-action="view">查看</button><button data-action="new-version">新建版本</button><button data-action="publish">发布</button>`;
+        }
+        return `<button data-action="view">查看</button>${row.status !== '发布' ? '<button data-action="edit">编辑</button><button data-action="publish">发布</button><button class="danger" data-action="delete">删除</button>' : '<button data-action="disable">停用</button>'}`;
+      };
       const tableRows = visible.length ? visible.map(row => `<tr data-id="${row.id}">
         ${section.columns.map(([key]) => `<td${(versionedSection && key === 'currentVersion') || isNewFeatureColumn(key) ? ' class="version-feature-cell"' : ''}>${key === 'status' ? statusTag(row.status) : key === 'currentVersion' ? versionCell(row) : `<span class="cell-text">${cellValue(row, key)}</span>`}</td>`).join('')}
-        <td class="actions"><button data-action="view">查看</button>${row.status !== '发布' ? '<button data-action="edit">编辑</button><button data-action="publish">发布</button><button class="danger" data-action="delete">删除</button>' : '<button data-action="disable">停用</button>'}</td>
+        <td class="actions">${rowActions(row)}</td>
       </tr>`).join('') : `<tr class="empty-row"><td colspan="${section.columns.length + 1}">暂无数据</td></tr>`;
-      const actionWidth = versionedSection ? 240 : 190;
+      const actionWidth = versionedSection || isLanguagePack ? 240 : 190;
       const columnWidths = section.columnWidths || section.columns.map(() => 128);
       const tableMinWidth = Math.max(830, columnWidths.reduce((sum, width) => sum + width, 0) + actionWidth);
       return `<section class="page-stack">
         <header class="page-header-bar"><h1>${section.title}</h1><div class="page-header-actions"><button class="btn btn--primary" id="add-unit">${section.addLabel}</button></div></header>
         <div class="list-page-body">
           <section class="filter-toolbar">
-            <input class="control" id="search" maxlength="50" placeholder="${state.section === 'rhythm-libraries' ? '请输入名称或编码，回车键确认搜索' : '请输入名称或编码，回车键确认搜索'}" value="${state.query}">
+            <input class="control" id="search" maxlength="50" placeholder="${isLanguagePack ? '请输入语言包名称、编码、语种或版本' : '请输入名称或编码，回车键确认搜索'}" value="${state.query}">
             <div class="select-wrap"><select class="control" id="status-filter"><option value="all">全部状态</option><option value="草稿">草稿</option><option value="发布">发布</option><option value="停用">停用</option></select><svg class="select-caret" viewBox="0 0 1024 1024"><path fill="currentColor" d="M831.872 340.864 512 652.672 192.128 340.864a30.59 30.59 0 0 0-42.752 0 29.12 29.12 0 0 0 0 41.6L489.664 714.24a32 32 0 0 0 44.672 0l340.288-331.712a29.12 29.12 0 0 0 0-41.728 30.59 30.59 0 0 0-42.752 0z"></path></svg></div>
             <button class="btn btn--outline" id="reset">重置</button>
             <div class="filter-toolbar__counts"><span class="tag tag--success">发布 ${counts.发布}</span><span class="tag tag--warning">草稿 ${counts.草稿}</span><span class="tag tag--info">停用 ${counts.停用}</span></div>
@@ -280,7 +343,8 @@
         modeType: row?.modeType || '', source: row?.source || '', tags: row?.tags || '', modalSelection: '', modalVersion: '', modalAmount: '3',
         ...savedConfig,
         editingVersion: '', versionUpdateSummary: '', isRevisionEdit: false,
-        name: row?.name || '', code: row?.code || '', rank: row?.rank || '', displayName: row?.displayName || '', schedule: row?.schedule || '', description: row?.description || '', descriptionEn: row?.descriptionEn || '', extra: savedConfig.extra || row?.[section.extraKey] || ''
+        name: row?.name || '', code: row?.code || '', rank: row?.rank || '', displayName: row?.displayName || '', schedule: row?.schedule || '', description: row?.description || '', descriptionEn: row?.descriptionEn || '', extra: savedConfig.extra || row?.[section.extraKey] || '',
+        locale: row?.locale || 'zh-CN', models: row?.models || 'V3 Pro', version: row?.version || 'V1.0.0', firmware: row?.firmware || '', note: row?.note || '', size: row?.size || '', fileName: row?.fileName || ''
       };
       state.viewVersion = row?.currentVersion || null;
       if (state.section === 'rhythm-libraries' && row) {
@@ -306,6 +370,11 @@
           state.form.editingVersion = draftVersion?.version || (row ? nextVersionFor(row) : 'V1');
           state.form.versionUpdateSummary = draftVersion?.changeSummary || '';
         }
+      }
+      if (state.section === 'language-packs' && state.view === 'new-version') {
+        state.form.version = nextLanguageVersion(row);
+        state.form.note = '';
+        state.form.fileName = '';
       }
       if (!state.form.workDurationPercent && state.form.durationRatio) state.form.workDurationPercent = String(Number.parseFloat(state.form.durationRatio) || 60);
       if (savedConfig.speedEnabled && !savedConfig.speedStrategy) state.form.speedStrategy = '按 Speed 档位配置';
@@ -338,6 +407,52 @@
         ${textField('编码', 'code', state.form.code, false, false, disabled)}
         ${selectField(section.extraLabel, 'extra', section.options, state.form.extra)}
         ${textField('描述', 'description', state.form.description, true, true, disabled)}
+      </div></section>`;
+    }
+
+    function languagePackageHistory(row) {
+      const history = row?.history?.length ? row.history : [{
+        version: state.form.version,
+        status: row?.status || '草稿',
+        note: state.form.note || '-',
+        updater: row?.updater || '刘媛媛',
+        time: row?.time || '-'
+      }];
+      const body = history.map(item => `<tr><td><strong>${escapeHtml(item.version)}</strong></td><td>${statusTag(item.status)}</td><td>${escapeHtml(item.note)}</td><td>${escapeHtml(item.updater)}<small>${escapeHtml(item.time)}</small></td></tr>`).join('');
+      return `<section class="form-card language-history-card"><h2>历史版本</h2><div class="table-shell"><table class="data-table"><thead><tr><th>版本</th><th>状态</th><th>版本说明</th><th>更新信息</th></tr></thead><tbody>${body}</tbody></table></div></section>`;
+    }
+
+    function languagePackageUpdateLog(row) {
+      const logs = row?.updateLogs || [];
+      const body = logs.length ? logs.map(item => `<tr><td><strong>${escapeHtml(item.version)}</strong></td><td>${escapeHtml(item.type)}</td><td><span class="cell-text" title="${escapeHtml(item.target)}">${escapeHtml(item.target)}</span></td><td>${statusTag(item.result)}</td><td>${escapeHtml(item.operator)}</td><td>${escapeHtml(item.time)}</td></tr>`).join('') : '<tr class="empty-row"><td colspan="6">暂无更新记录</td></tr>';
+      return `<section class="form-card language-update-log"><div class="form-card__header"><div><h2>更新日志</h2><p>统一记录语言包上传、发布及设备更新结果。</p></div></div><div class="table-shell"><table class="data-table"><thead><tr><th>版本</th><th>更新类型</th><th>发布范围 / 设备</th><th>结果</th><th>操作人</th><th>时间</th></tr></thead><tbody>${body}</tbody></table></div></section>`;
+    }
+
+    function languagePackageForm(isView) {
+      const row = state.selected;
+      if (isView) {
+        return `<section class="form-card"><h2>语言包信息</h2><dl class="language-detail-grid">
+          <dt>语言包名称</dt><dd>${escapeHtml(row.name)}</dd><dt>语言包编码</dt><dd>${escapeHtml(row.code)}</dd>
+          <dt>语种</dt><dd>${escapeHtml(row.language)}（${escapeHtml(row.locale)}）</dd><dt>当前版本</dt><dd><strong>${escapeHtml(row.version)}</strong></dd>
+          <dt>适用机型</dt><dd>${escapeHtml(row.models)}</dd><dt>最低固件版本</dt><dd>${escapeHtml(row.firmware)}</dd>
+          <dt>文件大小</dt><dd>${escapeHtml(row.size)}</dd><dt>当前状态</dt><dd>${statusTag(row.status)}</dd>
+          <dt>语言包文件</dt><dd>${escapeHtml(row.fileName)}</dd><dt>版本说明</dt><dd>${escapeHtml(row.note)}</dd>
+        </dl></section>${languagePackageHistory(row)}${languagePackageUpdateLog(row)}`;
+      }
+      const title = state.view === 'new-version' ? `基于 ${escapeHtml(row.name)} 新建版本` : '上传语言包文件';
+      return `<section class="form-card"><h2>${title}</h2><label class="language-file-drop">
+        <input id="language-package-file" type="file" accept=".bin,.zip" hidden>
+        <strong>${state.form.fileName ? escapeHtml(state.form.fileName) : '点击选择 .bin / .zip 文件'}</strong>
+        <span>单个文件不超过 5 MB</span>
+      </label></section>
+      <section class="form-card"><h2>基础信息配置</h2><div class="form-grid">
+        ${textField('语言包名称', 'name', state.form.name)}
+        ${textField('语言包编码', 'code', state.form.code)}
+        ${selectField('语种', 'locale', ['zh-CN', 'en-US', 'de-DE'], state.form.locale)}
+        ${selectField('适用机型', 'models', ['V3 Pro', 'Air 2', '全部机型'], state.form.models)}
+        ${textField('版本号', 'version', state.form.version)}
+        ${textField('最低固件版本', 'firmware', state.form.firmware)}
+        ${textField('版本说明', 'note', state.form.note, true, true)}
       </div></section>`;
     }
 
@@ -651,6 +766,22 @@
       }
       const versionRows = versions.map(item => `<tr><td><strong>${item.version}</strong></td><td>${statusTag(item.status)}</td><td>${escapeHtml(item.medicalInput)}</td><td>${escapeHtml(item.applicableModels)}</td><td>${escapeHtml(item.changeSummary)}</td><td>${escapeHtml(item.publisher)}<small>${escapeHtml(item.publishTime || '未发布')}</small></td><td class="actions"><button class="version-action" data-version-action="compare" data-version="${item.version}">对比</button>${state.section !== 'rhythm-libraries' && item.status === '草稿' ? `<button class="version-action" data-version-action="publish" data-version="${item.version}">发布</button>` : ''}</td></tr>`).join('');
       return `<div class="form-modal-overlay version-modal-overlay"><section class="form-modal version-dialog version-dialog--wide" role="dialog" aria-modal="true" aria-label="版本记录"><header><div><h2>${escapeHtml(row.name)} · 版本记录 <span class="new-requirement-tag">更新日志</span></h2><p>版本归属：${escapeHtml(versionScope)}；记录各版本的变更内容和发布信息。</p></div>${closeButton}</header><div class="form-modal__body"><div class="version-history-toolbar new-feature"><div><strong>当前版本：${row.currentVersion || 'V1'}</strong><span>${state.section === 'rhythm-libraries' ? '停用已发布韵律后，编辑并保存即可生成下一版本。' : '附件副本默认复制当前版本；已使用历史版本的方案不会自动升级。'}</span></div>${state.section === 'rhythm-libraries' ? '' : '<button class="btn version-primary" id="history-new-version" type="button">附件副本</button>'}</div><div class="table-shell version-history-table"><table class="data-table"><thead><tr><th>版本</th><th>状态</th><th>${versionInputLabel}</th><th>适用机型</th><th>更新说明</th><th>发布信息</th><th>操作</th></tr></thead><tbody>${versionRows}</tbody></table></div></div><footer><button class="btn btn--outline" id="version-modal-cancel" type="button">关闭</button></footer></section></div>`;
+    }
+
+    function languagePublishModal() {
+      const row = state.languagePublish;
+      if (!row) return '';
+      return `<div class="form-modal-overlay"><section class="form-modal language-publish-dialog" role="dialog" aria-modal="true" aria-label="发布语言包"><header><div><h2>发布语言包</h2><p>${escapeHtml(row.name)} · ${escapeHtml(row.version)}</p></div><button class="dialog-close" id="language-publish-close" type="button" aria-label="关闭">×</button></header>
+        <div class="form-modal__body language-publish-form">
+          <label class="form-field"><span>发布方式<em class="required"> *</em></span><div class="select-wrap"><select class="control" id="language-release-mode"><option>测试白名单</option><option>灰度发布</option><option>全量发布</option></select><svg class="select-caret" viewBox="0 0 1024 1024" aria-hidden="true"><path fill="currentColor" d="M831.872 340.864 512 652.672 192.128 340.864a30.59 30.59 0 0 0-42.752 0 29.12 29.12 0 0 0 0 41.6L489.664 714.24a32 32 0 0 0 44.672 0l340.288-331.712a29.12 29.12 0 0 0 0-41.728 30.59 30.59 0 0 0-42.752 0z"></path></svg></div></label>
+          <label class="form-field"><span>渠道<em class="required"> *</em></span><div class="select-wrap"><select class="control" id="language-release-channel"><option>全部渠道</option><option>Amazon US</option><option>EU</option><option>中国大陆</option></select><svg class="select-caret" viewBox="0 0 1024 1024" aria-hidden="true"><path fill="currentColor" d="M831.872 340.864 512 652.672 192.128 340.864a30.59 30.59 0 0 0-42.752 0 29.12 29.12 0 0 0 0 41.6L489.664 714.24a32 32 0 0 0 44.672 0l340.288-331.712a29.12 29.12 0 0 0 0-41.728 30.59 30.59 0 0 0-42.752 0z"></path></svg></div></label>
+          <label class="form-field"><span>最低固件版本<em class="required"> *</em></span><input class="control" id="language-release-firmware" value="${escapeHtml(row.firmware)}"></label>
+          <label class="form-field"><span>设备范围</span><input class="control" id="language-release-scope" placeholder="请输入设备 SN，多个用逗号分隔"></label>
+          <label class="form-field form-field--wide"><span>发布说明<em class="required"> *</em></span><textarea class="control" id="language-release-note" placeholder="说明发布目的和验证重点"></textarea></label>
+          <p class="language-release-note form-field--wide">停止发布只阻止新设备命中，不会恢复已经完成更新的设备。</p>
+          <p class="language-release-error form-field--wide" id="language-release-error"></p>
+        </div><footer><button class="btn btn--outline" id="language-publish-cancel" type="button">取消</button><button class="btn btn--primary" id="language-publish-confirm" type="button">确认发布</button></footer>
+      </section></div>`;
     }
 
     function suctionRange() {
@@ -1046,13 +1177,15 @@
       if (state.section === 'power-sources') formBody = powerSourceForm(isView);
       if (state.section === 'mode-libraries') formBody = modeLibraryForm(isView);
       if (state.section === 'rhythm-libraries') formBody = rhythmLibraryForm(isView);
+      if (state.section === 'language-packs') formBody = languagePackageForm(isView);
       const hasInvalidResults = state.section === 'mode-units' && state.generated && Object.values(state.resultValidation).some(Boolean);
-      return `<section class="page-stack"><header class="page-header-bar"><div class="page-header-title"><button class="back-button" id="back">${chevron('left')}</button><h1>${section.formTitle}</h1></div><div class="page-header-actions">${isView ? '<button class="btn btn--outline" id="cancel">返回</button>' : `<button class="btn btn--outline" id="cancel">取消</button><button class="btn btn--primary" id="save" ${hasInvalidResults ? 'disabled' : ''}>保存</button>`}</div></header>
+      const formTitle = state.section === 'language-packs' && state.view === 'new-version' ? '新建语言包版本' : section.formTitle;
+      return `<section class="page-stack"><header class="page-header-bar"><div class="page-header-title"><button class="back-button" id="back">${chevron('left')}</button><h1>${formTitle}</h1></div><div class="page-header-actions">${isView ? '<button class="btn btn--outline" id="cancel">返回</button>' : `<button class="btn btn--outline" id="cancel">取消</button><button class="btn btn--primary" id="save" ${hasInvalidResults ? 'disabled' : ''}>保存</button>`}</div></header>
         <div class="form-page">${formBody}</div></section>`;
     }
 
     function render() {
-      app.innerHTML = `<div class="admin-shell${state.collapsed ? ' is-collapsed' : ''}">${sidebar()}<main class="content-shell">${state.view === 'list' ? listView() : formView()}</main></div>${combinationModal()}${exportTemplateModal()}${versionModal()}`;
+      app.innerHTML = `<div class="admin-shell${state.collapsed ? ' is-collapsed' : ''}">${sidebar()}<main class="content-shell">${state.view === 'list' ? listView() : formView()}</main></div>${combinationModal()}${exportTemplateModal()}${versionModal()}${languagePublishModal()}`;
       bindEvents();
     }
 
@@ -1102,9 +1235,51 @@
       }));
     }
 
+    function bindLanguagePublishModal() {
+      if (!state.languagePublish) return;
+      const close = () => { state.languagePublish = null; render(); };
+      document.querySelector('#language-publish-close')?.addEventListener('click', close);
+      document.querySelector('#language-publish-cancel')?.addEventListener('click', close);
+      document.querySelector('#language-publish-confirm')?.addEventListener('click', () => {
+        const row = state.languagePublish;
+        const mode = document.querySelector('#language-release-mode').value;
+        const channel = document.querySelector('#language-release-channel').value;
+        const firmware = document.querySelector('#language-release-firmware').value.trim();
+        const scope = document.querySelector('#language-release-scope').value.trim();
+        const note = document.querySelector('#language-release-note').value.trim();
+        const error = document.querySelector('#language-release-error');
+        if (!firmware || !note || (mode === '测试白名单' && !scope)) {
+          error.textContent = mode === '测试白名单' && !scope ? '测试白名单发布需填写设备 SN。' : '请填写最低固件版本和发布说明。';
+          return;
+        }
+        const now = currentTimestamp();
+        row.firmware = firmware;
+        row.status = '发布';
+        row.updater = '刘媛媛';
+        row.time = now;
+        const history = row.history?.find(item => item.version === row.version);
+        if (history) Object.assign(history, { status: '发布', updater: row.updater, time: now });
+        row.updateLogs ||= [];
+        row.updateLogs.unshift({
+          version: row.version,
+          type: mode,
+          target: `${row.models} · ${channel} · ${scope || (mode === '灰度发布' ? '20% 设备' : '全部设备')}`,
+          result: mode === '测试白名单' ? '验证中' : '发布中',
+          operator: row.updater,
+          time: now,
+          note
+        });
+        state.languagePublish = null;
+        render();
+        showToast('发布任务已创建');
+      });
+    }
+
     function bindEvents() {
       document.querySelector('#sidebar-toggle').addEventListener('click', () => { state.collapsed = !state.collapsed; render(); });
       document.querySelector('#menu-parent').addEventListener('click', () => { state.menuExpanded = !state.menuExpanded; render(); });
+      document.querySelector('#language-menu-parent').addEventListener('click', () => { state.languageMenuExpanded = !state.languageMenuExpanded; render(); });
+      bindLanguagePublishModal();
       document.querySelectorAll('.sidebar-menu__child').forEach(link => link.addEventListener('click', event => {
         event.preventDefault();
         const section = event.currentTarget.dataset.section;
@@ -1131,6 +1306,8 @@
           const activeRows = sections[state.section].rows;
           const row = activeRows.find(item => item.id === Number(tr.dataset.id));
           if (action === 'view' || action === 'edit') { openForm(action, row); return; }
+          if (action === 'new-version' && state.section === 'language-packs') { openForm('new-version', row); return; }
+          if (action === 'publish' && state.section === 'language-packs') { state.languagePublish = row; render(); return; }
           if (action === 'version-history') { state.versionModal = { type: 'history', row }; render(); return; }
           if (action === 'new-version') { state.versionModal = { type: 'create', row }; render(); return; }
           if (action === 'publish' && (state.section === 'rhythm-libraries' || state.section === 'mode-units') && !versionsFor(row).some(item => item.status === '草稿')) {
@@ -1143,7 +1320,19 @@
             if (action === 'publish') {
               if (state.section === 'rhythm-libraries') publishRhythmDraft(row);
               else if (state.section === 'mode-units') publishModeUnitDraft(row);
-              else row.status = '发布';
+              else if (state.section === 'language-packs') {
+                row.status = '发布';
+                row.updater = '刘媛媛';
+                row.time = currentTimestamp();
+                const currentHistory = row.history?.find(item => item.version === row.version);
+                if (currentHistory) {
+                  currentHistory.status = '发布';
+                  currentHistory.updater = row.updater;
+                  currentHistory.time = row.time;
+                }
+                row.updateLogs ||= [];
+                row.updateLogs.unshift({ version: row.version, type: '全量发布', target: `${row.models} · 全部渠道 · 全部设备`, result: '发布中', operator: row.updater, time: row.time });
+              } else row.status = '发布';
             }
             if (action === 'disable') row.status = '停用';
             showToast('操作成功'); render();
@@ -1206,6 +1395,14 @@
             }
             if (['suction', 'suctionStep', 'frequencyStrategy', 'variablePreset', 'speedLevels', 'durationStrategy', 'workDurationPercent', 'pressureTime', 'holdTime', 'intervalTime', 'motorType', 'extra'].includes(field)) render();
           });
+        });
+        document.querySelector('#language-package-file')?.addEventListener('change', event => {
+          const file = event.currentTarget.files?.[0];
+          if (!file) return;
+          state.form.fileName = file.name;
+          state.form.size = `${Math.ceil(file.size / 1024)} KB`;
+          const label = event.currentTarget.closest('.language-file-drop');
+          label.querySelector('strong').textContent = `${file.name} · ${Math.ceil(file.size / 1024)} KB`;
         });
         document.querySelectorAll('.step-button').forEach(button => button.addEventListener('click', () => { state.ruleStep = Number(button.dataset.step); render(); }));
         document.querySelectorAll('[data-result-speed-tab]').forEach(button => button.addEventListener('click', () => {
@@ -1523,6 +1720,54 @@
         if (state.selected) Object.assign(state.selected, { ...values, rhythmModes: state.rhythmModes.map(item => ({ ...item })) });
         else rhythmRows.push({ id: Math.max(...rhythmRows.map(row => row.id)) + 1, status: '草稿', ...values, rhythmModes: state.rhythmModes.map(item => ({ ...item })) });
         rhythmRows.sort((left, right) => Number(left.rank) - Number(right.rank));
+      }
+      if (state.section === 'language-packs') {
+        const name = state.form.name.trim();
+        const code = state.form.code.trim();
+        const version = state.form.version.trim();
+        const note = state.form.note.trim();
+        if (!name || !code || !/^V\d+\.\d+\.\d+$/i.test(version) || !note) {
+          showToast('请填写名称、编码、三段式版本号和版本说明');
+          return;
+        }
+        if (languagePackRows.some(row => row !== state.selected && row.locale === state.form.locale && row.models === state.form.models && row.version.toLowerCase() === version.toLowerCase())) {
+          showToast('该机型与语种下已存在相同版本');
+          return;
+        }
+        const languageNames = { 'zh-CN': '简体中文', 'en-US': 'English', 'de-DE': 'Deutsch' };
+        const now = currentTimestamp();
+        const values = {
+          name,
+          code,
+          language: languageNames[state.form.locale] || state.form.locale,
+          locale: state.form.locale,
+          version,
+          models: state.form.models,
+          firmware: state.form.firmware || '待发布时配置',
+          size: state.form.size || '待上传',
+          note,
+          fileName: state.form.fileName || '待上传',
+          updater: '刘媛媛',
+          time: now
+        };
+        const versionRecord = { version, status: '草稿', note, updater: '刘媛媛', time: now };
+        if (state.selected) {
+          Object.assign(state.selected, values, { status: '草稿' });
+          state.selected.history ||= [];
+          const existingVersion = state.selected.history.find(item => item.version.toLowerCase() === version.toLowerCase());
+          if (existingVersion) Object.assign(existingVersion, versionRecord);
+          else state.selected.history.unshift(versionRecord);
+          state.selected.updateLogs ||= [];
+          state.selected.updateLogs.unshift({ version, type: '上传版本', target: `${values.models} · ${values.language}`, result: '草稿', operator: '刘媛媛', time: now });
+        } else {
+          languagePackRows.unshift({
+            id: Math.max(...languagePackRows.map(row => row.id)) + 1,
+            status: '草稿',
+            history: [versionRecord],
+            updateLogs: [{ version, type: '上传版本', target: `${values.models} · ${values.language}`, result: '草稿', operator: '刘媛媛', time: now }],
+            ...values
+          });
+        }
       }
       showToast('保存成功');
       returnToList();

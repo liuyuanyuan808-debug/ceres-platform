@@ -253,6 +253,8 @@
     .tag--success { color: #67c23a; background: #f0f9eb; border-color: #e1f3d8; }
     .tag--warning { color: #e6a23c; background: #fdf6ec; border-color: #faecd8; }
     .tag--info { color: #909399; background: #f4f4f5; border-color: #e9e9eb; }
+    .tag--primary { color: #409eff; background: #ecf5ff; border-color: #d9ecff; }
+    .tag--danger { color: #f56c6c; background: #fef0f0; border-color: #fde2e2; }
     .tag--small { height: 24px; padding: 0 8px; line-height: 22px; }
 
     .list-table-card {
@@ -347,6 +349,23 @@
     .source-boundary-panel__items span { white-space: nowrap; font-size: 12px; }
     .source-boundary-panel__items em { margin-right: 6px; color: #7a5a00; font-style: normal; }
     .source-boundary-panel p { margin: 7px 0 0; color: #7a5a00; font-size: 12px; }
+    .language-package-cell { display: grid; gap: 3px; }
+    .language-package-cell strong { color: #303133; font-weight: 600; }
+    .language-package-cell small { color: #909399; font-size: 11px; }
+    .language-file-drop { min-height: 92px; padding: 18px; display: grid; place-items: center; align-content: center; gap: 7px; color: #606266; border: 1px dashed #b8c2cc; border-radius: 6px; background: #fafafa; cursor: pointer; }
+    .language-file-drop:hover { color: #409eff; border-color: #409eff; background: #f5faff; }
+    .language-file-drop strong { max-width: 100%; overflow: hidden; font-size: 14px; text-overflow: ellipsis; white-space: nowrap; }
+    .language-file-drop span { color: #909399; font-size: 12px; }
+    .language-detail-grid { display: grid; grid-template-columns: 150px minmax(180px, 1fr) 150px minmax(180px, 1fr); border-top: 1px solid var(--line); border-left: 1px solid var(--line); }
+    .language-detail-grid dt, .language-detail-grid dd { min-width: 0; margin: 0; padding: 11px 13px; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+    .language-detail-grid dt { color: #606266; background: #f5f7fa; }
+    .language-detail-grid dd { overflow-wrap: anywhere; }
+    .language-history-card .table-shell, .language-update-log .table-shell { overflow-x: auto; }
+    .language-history-card .data-table { min-width: 760px; }
+    .language-history-card td small { display: block; margin-top: 3px; color: #909399; font-size: 11px; }
+    .language-update-log .form-card__header { align-items: flex-start; }
+    .language-update-log .form-card__header p { margin: 5px 0 0; color: #909399; font-size: 12px; font-weight: 400; }
+    .language-update-log .data-table { min-width: 900px; }
     .result-rule-status { margin-bottom: 12px; padding: 9px 12px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; color: #52606d; border: 1px solid #dcdfe6; border-radius: 6px; background: #f8fafc; font-size: 12px; }
     .result-rule-status strong { margin-left: auto; color: #3f8f29; }
     .result-rule-status.is-invalid { color: #9f3a38; border-color: #f3b5b5; background: #fff3f3; }
@@ -544,6 +563,7 @@
       .form-grid, .rule-fields, .rule-field-row, .boundary-grid { grid-template-columns: 1fr; }
       .form-field--wide { grid-column: auto; }
       .export-config-inputs { grid-template-columns: 1fr; }
+      .language-detail-grid { grid-template-columns: 120px minmax(0, 1fr); }
     }
   </style>
 </head>
@@ -558,6 +578,6 @@
   </div>
   <div class="toast" id="toast">操作成功</div>
 
-  <script src="./mode-units-prototype.js?v=20260910-12" defer></script>
+  <script src="./mode-units-prototype.js?v=20260911-2" defer></script>
 </body>
 </html>
