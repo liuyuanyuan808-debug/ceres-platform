@@ -312,9 +312,9 @@
       </section>`;
     }
 
-    function textField(label, key, value = '', wide = false, textarea = false, disabled = false, type = 'text') {
+    function textField(label, key, value = '', wide = false, textarea = false, disabled = false, type = 'text', required = true) {
       const control = textarea ? `<textarea class="control" data-field="${key}" placeholder="请输入" ${disabled ? 'disabled' : ''}>${value}</textarea>` : `<input class="control" data-field="${key}" type="${type}" placeholder="请输入" value="${value}" ${disabled ? 'disabled' : ''}>`;
-      return `<label class="form-field${wide ? ' form-field--wide' : ''}"><span>${label}${label !== '描述' ? '<em class="required"> *</em>' : ''}</span>${control}</label>`;
+      return `<label class="form-field${wide ? ' form-field--wide' : ''}"><span>${label}${required && label !== '描述' ? '<em class="required"> *</em>' : ''}</span>${control}</label>`;
     }
 
     function optionList(options, selected = '') {
@@ -507,9 +507,9 @@
         ${selectField('阀类型', 'valveType', ['电磁阀'], state.form.valveType)}
         ${textField('描述', 'description', state.form.description, true, true, isView)}
       </div></section>`}${mappingPanel('pressure')}${mappingPanel('relief')}<section class="form-card"><h2>边界配置</h2><div class="boundary-grid">
-        <section class="boundary-group"><h3>频率</h3><div class="boundary-fields">${textField('最小值 CPM', 'frequencyMin', state.form.frequencyMin, false, false, isView)}${textField('最大值 CPM', 'frequencyMax', state.form.frequencyMax, false, false, isView)}</div></section>
-        <section class="boundary-group"><h3>保压</h3><div class="boundary-fields">${textField('最小值 ms', 'holdMin', state.form.holdMin, false, false, isView)}${textField('最大值 ms', 'holdMax', state.form.holdMax, false, false, isView)}</div></section>
-        <section class="boundary-group"><h3>间歇</h3><div class="boundary-fields">${textField('最小值 ms', 'intervalMin', state.form.intervalMin, false, false, isView)}${textField('最大值 ms', 'intervalMax', state.form.intervalMax, false, false, isView)}</div></section>
+        <section class="boundary-group"><h3>频率</h3><div class="boundary-fields">${textField('最小值 CPM', 'frequencyMin', state.form.frequencyMin, false, false, isView, 'text', false)}${textField('最大值 CPM', 'frequencyMax', state.form.frequencyMax, false, false, isView, 'text', false)}</div></section>
+        <section class="boundary-group"><h3>保压</h3><div class="boundary-fields">${textField('最小值 ms', 'holdMin', state.form.holdMin, false, false, isView, 'text', false)}${textField('最大值 ms', 'holdMax', state.form.holdMax, false, false, isView, 'text', false)}</div></section>
+        <section class="boundary-group"><h3>间歇</h3><div class="boundary-fields">${textField('最小值 ms', 'intervalMin', state.form.intervalMin, false, false, isView, 'text', false)}${textField('最大值 ms', 'intervalMax', state.form.intervalMax, false, false, isView, 'text', false)}</div></section>
       </div></section>`;
     }
 
@@ -531,7 +531,7 @@
         ${selectField('关联动力源', 'source', ['Air2直线电机', '818动力源'], state.form.source)}
         ${textField('描述', 'description', state.form.description, true, true, isView)}
       </div></section>
-      <section class="form-card"><div class="form-card__header"><h2>模式单元组合配置 <span class="new-requirement-tag">锁定引用版本</span></h2>${isView ? '' : '<button class="btn btn--primary" id="add-combination" type="button">添加模式单元</button>'}</div>${total ? `<div class="table-shell combo-table"><table class="data-table" style="min-width:900px"><colgroup><col style="width:55px"><col style="width:135px"><col style="width:90px"><col style="width:115px"><col style="width:85px"><col style="width:85px"><col style="width:85px"><col style="width:75px"><col style="width:150px"></colgroup><thead><tr><th>顺序</th><th>模式单元名称</th><th>模式编码</th><th class="version-feature-cell">引用版本</th><th>最小吸力</th><th>最大吸力</th><th>循环次数</th><th>状态</th><th>操作</th></tr></thead><tbody>${rowsMarkup}</tbody></table></div>` : '<div class="combo-empty">暂无数据，请先添加模式单元</div>'}</section>
+      <section class="form-card"><div class="form-card__header"><h2>模式单元组合配置 <span class="new-requirement-tag">锁定引用版本</span></h2>${isView ? '' : `<button class="btn btn--primary" id="add-combination" type="button" ${state.form.source ? '' : 'disabled'}>添加模式单元</button>`}</div>${total ? `<div class="table-shell combo-table"><table class="data-table" style="min-width:900px"><colgroup><col style="width:55px"><col style="width:135px"><col style="width:90px"><col style="width:115px"><col style="width:85px"><col style="width:85px"><col style="width:85px"><col style="width:75px"><col style="width:150px"></colgroup><thead><tr><th>顺序</th><th>模式单元名称</th><th>模式编码</th><th class="version-feature-cell">引用版本</th><th>最小吸力</th><th>最大吸力</th><th>循环次数</th><th>状态</th><th>操作</th></tr></thead><tbody>${rowsMarkup}</tbody></table></div>` : '<div class="combo-empty">暂无数据，请先添加模式单元</div>'}</section>
       <section class="form-card"><h2>模式库预览</h2>${modeLibraryPreview()}</section>`;
     }
 
@@ -579,7 +579,7 @@
         ${selectField('标签', 'tags', ['推荐', '场景'], state.form.tags)}
         ${textField('描述', 'description', state.form.description, true, true, isView)}
       </div></section>
-      <section class="form-card"><div class="form-card__header"><h2>模式组合配置</h2>${isView ? '' : '<button class="btn btn--primary" id="add-combination" type="button">添加模式</button>'}</div>${total ? `<div class="table-shell combo-table"><table class="data-table"><colgroup><col style="width:55px"><col style="width:140px"><col style="width:100px"><col style="width:110px"><col style="width:145px"><col style="width:80px"><col style="width:150px"></colgroup><thead><tr><th>顺序</th><th>模式名称</th><th>模式编码</th><th>模式类型</th><th>循环时间（单位：s）</th><th>状态</th><th>操作</th></tr></thead><tbody>${rowsMarkup}</tbody></table></div>` : '<div class="combo-empty">暂无数据，请先添加模式</div>'}</section>
+      <section class="form-card"><div class="form-card__header"><h2>模式组合配置</h2>${isView ? '' : `<button class="btn btn--primary" id="add-combination" type="button" ${state.form.source ? '' : 'disabled'}>添加模式</button>`}</div>${total ? `<div class="table-shell combo-table"><table class="data-table"><colgroup><col style="width:55px"><col style="width:140px"><col style="width:100px"><col style="width:110px"><col style="width:145px"><col style="width:80px"><col style="width:150px"></colgroup><thead><tr><th>顺序</th><th>模式名称</th><th>模式编码</th><th>模式类型</th><th>循环时间（单位：s）</th><th>状态</th><th>操作</th></tr></thead><tbody>${rowsMarkup}</tbody></table></div>` : '<div class="combo-empty">暂无数据，请先添加模式</div>'}</section>
       <section class="form-card"><h2>韵律阶段预览</h2>${rhythmPreview()}</section>`;
     }
 
@@ -971,10 +971,11 @@
       if (state.form.durationStrategy === '固定时长') durationSummary = `固定时长：建压 ${state.form.pressureTime || '未选择'}，保压 ${state.form.holdTime || '未填写'} ms，间歇 ${state.form.intervalTime || '未填写'} ms`;
       return `<section class="form-card"><h2>生成结果表格，在表格中进行微调</h2><div class="rule-summary">
         <div>1. 吸力档位：${suctionSummary}</div>
-        <div>吸力步进：由关联动力源的参数范围提供可选值</div>
+        <div>吸力步进：根据起始吸力与导入建压表中下一个吸力的差值，提供 1 到 5 倍选择</div>
         <div class="new-feature-summary">2. 频率策略：${speedSummary}；${frequencySummary}</div>
         <div>3. 阶段时长：${durationSummary}</div>
-        <div>最终结果：建压参数和卸压参数由关联动力源映射表带出</div>
+        <div>最终结果：建压时间从关联动力源“${state.form.extra || '未选择'}”的建压表下拉选择，建压占空比按吸力 + 建压时间自动带出</div>
+        <div>最终结果：卸压时间不可编辑，按吸力从关联动力源卸压表自动带出；用户仍可在表格中微调未锁定字段</div>
       </div><div class="result-layout"><div class="blank-panel">暂无数据，请配置规则后点击「生成」</div><div class="chart-panel"><h3>选中行曲线</h3><div class="blank-panel">暂无曲线数据，请先生成配置</div></div></div><div class="overview-empty"><h2>全档位吸力曲线总览</h2><p>暂无曲线数据，请先生成配置</p></div></section>`;
     }
 
@@ -1284,14 +1285,16 @@
         event.preventDefault();
         const section = event.currentTarget.dataset.section;
         if (!sections[section]) return;
-        state.section = section;
-        state.view = 'list';
-        state.query = '';
-        state.status = 'all';
-        state.selected = null;
-        window.history.replaceState(null, '', `#${section}`);
-        render();
-        window.scrollTo(0, 0);
+        confirmFormExit(() => {
+          state.section = section;
+          state.view = 'list';
+          state.query = '';
+          state.status = 'all';
+          state.selected = null;
+          window.history.replaceState(null, '', `#${section}`);
+          render();
+          window.scrollTo(0, 0);
+        });
       }));
       if (state.view === 'list') {
         const status = document.querySelector('#status-filter');
@@ -1540,8 +1543,8 @@
           if (button.dataset.comboAction === 'down' && index < collection.length - 1) [collection[index], collection[index + 1]] = [collection[index + 1], collection[index]];
           render();
         }));
-        document.querySelector('#back').addEventListener('click', returnToList);
-        document.querySelector('#cancel').addEventListener('click', returnToList);
+        document.querySelector('#back').addEventListener('click', () => confirmFormExit(returnToList));
+        document.querySelector('#cancel').addEventListener('click', () => confirmFormExit(returnToList));
         document.querySelector('#save')?.addEventListener('click', saveCurrentForm);
       }
       bindVersionModalEvents();
@@ -1774,8 +1777,26 @@
     }
 
     function returnToList() { state.view = 'list'; state.selected = null; state.modal = null; state.exportConfig = null; state.exportError = ''; render(); window.scrollTo(0, 0); }
-    function showDialog(message, action) { dialogMessage.textContent = message; pendingAction = action; overlay.classList.add('is-open'); overlay.setAttribute('aria-hidden', 'false'); document.querySelector('#dialog-confirm').focus(); }
-    function hideDialog() { overlay.classList.remove('is-open'); overlay.setAttribute('aria-hidden', 'true'); pendingAction = null; }
+    function confirmFormExit(action) {
+      if (state.view === 'list' || state.view === 'view') { action(); return; }
+      showDialog('当前有未保存的修改，离开页面后数据将清空，确定要离开吗？', action, '留在此页', '离开');
+    }
+    function showDialog(message, action, cancelLabel = '取消', confirmLabel = '确定') {
+      dialogMessage.textContent = message;
+      document.querySelector('#dialog-cancel').textContent = cancelLabel;
+      document.querySelector('#dialog-confirm').textContent = confirmLabel;
+      pendingAction = action;
+      overlay.classList.add('is-open');
+      overlay.setAttribute('aria-hidden', 'false');
+      document.querySelector('#dialog-confirm').focus();
+    }
+    function hideDialog() {
+      overlay.classList.remove('is-open');
+      overlay.setAttribute('aria-hidden', 'true');
+      document.querySelector('#dialog-cancel').textContent = '取消';
+      document.querySelector('#dialog-confirm').textContent = '确定';
+      pendingAction = null;
+    }
     function showToast(message) { toast.textContent = message; toast.classList.add('is-open'); window.setTimeout(() => toast.classList.remove('is-open'), 1800); }
     document.querySelector('#dialog-close').addEventListener('click', hideDialog);
     document.querySelector('#dialog-cancel').addEventListener('click', hideDialog);
