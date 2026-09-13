@@ -347,13 +347,15 @@
         locale: row?.locale || 'zh-CN', models: row?.models || 'V3 Pro', version: row?.version || 'V1.0.0', firmware: row?.firmware || '', note: row?.note || '', size: row?.size || '', fileName: row?.fileName || ''
       };
       state.viewVersion = row?.currentVersion || null;
-      if (state.section === 'rhythm-libraries' && row) {
-        const draftVersion = state.view === 'edit' && row.status === '停用' ? versionsFor(row).find(item => item.status === '草稿') : null;
-        const selectedVersion = draftVersion || versionsFor(row).find(item => item.version === state.viewVersion) || versionsFor(row)[0];
+      if (state.section === 'rhythm-libraries') {
+        const draftVersion = row && state.view === 'edit' && row.status === '停用' ? versionsFor(row).find(item => item.status === '草稿') : null;
+        const selectedVersion = row ? draftVersion || versionsFor(row).find(item => item.version === state.viewVersion) || versionsFor(row)[0] : null;
         state.viewVersion = selectedVersion?.version || state.viewVersion;
         viewSnapshot = selectedVersion?.snapshot || null;
         if (viewSnapshot) Object.assign(state.form, viewSnapshot);
-        if (state.view === 'edit' && row.status === '停用') {
+        state.form.editingVersion = selectedVersion?.version || (row ? row.currentVersion || 'V1' : 'V1');
+        state.form.versionUpdateSummary = selectedVersion?.changeSummary || '';
+        if (state.view === 'edit' && row?.status === '停用') {
           state.form.isRevisionEdit = true;
           state.form.editingVersion = draftVersion?.version || nextMajorRhythmVersion(row);
           state.form.versionUpdateSummary = draftVersion?.changeSummary || '';
@@ -402,10 +404,12 @@
 
     function basicForm(row, disabled) {
       const section = sections[state.section];
+      const versionFields = state.section === 'mode-units' ? versionInfoFields('模式单元', disabled) : '';
       return `<section class="form-card"><h2>基础信息配置</h2><div class="form-grid">
         ${textField('名称', 'name', state.form.name, false, false, disabled)}
         ${textField('编码', 'code', state.form.code, false, false, disabled)}
         ${selectField(section.extraLabel, 'extra', section.options, state.form.extra)}
+        ${versionFields}
         ${textField('描述', 'description', state.form.description, true, true, disabled)}
       </div></section>`;
     }
@@ -542,41 +546,25 @@
       return `<div class="rhythm-preview"><strong>总执行时长 ${minutes}分${seconds}秒</strong>${total ? `<div class="rhythm-stages">${state.rhythmModes.map(item => `<div style="flex:${Math.max(1, Number(item.amount))}" aria-label="${item.name} · ${item.amount}s">${item.name} · ${item.amount}s</div>`).join('')}</div>` : ''}<p>总执行时长限制 1-7200s（当前 ${total}s）</p></div>`;
     }
 
-    function versionSnapshotViewer(entityLabel, ariaLabel) {
-      if (state.view !== 'view' || !state.selected) return '';
-      const versions = versionsFor(state.selected);
-      const active = versions.find(item => item.version === state.viewVersion) || versions[0];
-      return `<section class="form-card rhythm-version-viewer new-feature"><div class="form-card__header"><div><h2>${entityLabel}版本查看</h2><p>切换版本可查看当时保存的完整配置，历史版本不会被覆盖。</p></div>${state.section === 'rhythm-libraries' ? '<button class="btn version-primary" id="view-version-log" type="button">版本记录</button>' : ''}</div><div class="rhythm-version-tabs" role="tablist" aria-label="${ariaLabel}">${versions.map(item => `<button class="rhythm-version-tab${item.version === active.version ? ' is-active' : ''}" type="button" role="tab" aria-selected="${item.version === active.version}" data-view-version="${escapeHtml(item.version)}"><strong>${escapeHtml(item.version)}</strong><span>${escapeHtml(item.status)}</span></button>`).join('')}</div><div class="rhythm-version-meta"><span>版本状态：<strong>${escapeHtml(active.status)}</strong></span><span>更新时间：<strong>${escapeHtml(active.publishTime || '未发布')}</strong></span><span>更新人：<strong>${escapeHtml(active.publisher || '-')}</strong></span><p>更新说明：${escapeHtml(active.changeSummary || '-')}</p></div></section>`;
-    }
-
-    function modeUnitVersionViewer() {
-      return versionSnapshotViewer('模式单元', '模式单元版本');
-    }
-
-    function modeUnitVersionFields(isView) {
-      if (isView) return '';
-      return `<section class="form-card mode-unit-version-card new-feature"><div class="form-card__header"><div><h2>版本信息 <span class="new-requirement-tag">新增需求</span></h2><p>${state.selected ? '编辑内容将保存为新版本，发布后替换当前版本。' : '首个版本默认为 V1，请填写版本说明。'}</p></div></div><div class="form-grid">
-        <label class="form-field"><span>版本号<em class="required"> *</em></span><input class="control" value="${escapeHtml(state.form.editingVersion)}" disabled><small>${state.selected ? '停用已发布版本后再编辑，版本号自动加一' : '首个版本默认为 V1'}，不支持修改</small></label>
-        <label class="form-field form-field--wide"><span>版本说明<em class="required"> *</em></span><textarea class="control" data-field="versionUpdateSummary" placeholder="请说明本版本的配置内容或修改点">${escapeHtml(state.form.versionUpdateSummary)}</textarea></label>
-      </div></section>`;
-    }
-
-    function rhythmVersionViewer() {
-      return versionSnapshotViewer('韵律方案', '韵律方案版本');
+    function versionInfoFields(entityLabel, isView) {
+      const versions = state.selected ? versionsFor(state.selected) : [];
+      const active = versions.find(item => item.version === state.viewVersion) || versions[0] || {};
+      const version = isView ? active.version || state.form.editingVersion || 'V1' : state.form.editingVersion || 'V1';
+      const summary = isView ? active.changeSummary || '' : state.form.versionUpdateSummary;
+      const switcher = isView && state.selected ? `<div class="form-field form-field--wide new-feature version-switch-field"><span>版本切换</span><div class="version-switch-row"><div class="rhythm-version-tabs" role="tablist" aria-label="${entityLabel}版本">${versions.map(item => `<button class="rhythm-version-tab${item.version === active.version ? ' is-active' : ''}" type="button" role="tab" aria-selected="${item.version === active.version}" data-view-version="${escapeHtml(item.version)}"><strong>${escapeHtml(item.version)}</strong><span>${escapeHtml(item.status)}</span></button>`).join('')}</div>${state.section === 'rhythm-libraries' ? '<button class="btn version-primary" id="view-version-log" type="button">版本记录</button>' : ''}</div><div class="rhythm-version-meta"><span>版本状态：<strong>${escapeHtml(active.status || '-')}</strong></span><span>更新时间：<strong>${escapeHtml(active.publishTime || '未发布')}</strong></span><span>更新人：<strong>${escapeHtml(active.publisher || '-')}</strong></span></div></div>` : '';
+      const help = state.selected ? '停用已发布版本后编辑，版本号自动加一' : '首个版本默认为 V1';
+      return `${switcher}<label class="form-field new-feature"><span>版本号<em class="required"> *</em></span><input class="control" value="${escapeHtml(version)}" disabled>${isView ? '' : `<small>${help}，不支持修改</small>`}</label><label class="form-field form-field--wide new-feature"><span>版本说明<em class="required"> *</em></span><textarea class="control" ${isView ? 'disabled' : 'data-field="versionUpdateSummary"'} placeholder="请说明本版本的配置内容或修改点">${escapeHtml(summary)}</textarea></label>`;
     }
 
     function rhythmLibraryForm(isView) {
       const total = state.rhythmModes.length;
       const rowsMarkup = total ? state.rhythmModes.map((item, index) => `<tr><td>${index + 1}</td><td>${item.name}</td><td>${item.code}</td><td>${item.modeType}</td><td>${item.amount}</td><td>${statusTag('发布')}</td><td class="actions">${isView ? '-' : combinationActions(index, total, 'rhythm')}</td></tr>`).join('') : '';
-      const revisionCard = state.form.isRevisionEdit ? `<section class="form-card rhythm-revision-card new-feature"><div class="form-card__header"><div><h2>版本信息 <span class="new-requirement-tag">自动生成</span></h2><p>本次编辑将保存为新版本，发布后替换当前版本。</p></div></div><div class="form-grid">
-        <label class="form-field"><span>版本号<em class="required"> *</em></span><input class="control" value="${escapeHtml(state.form.editingVersion)}" disabled><small>系统自动生成，不支持修改</small></label>
-        <label class="form-field form-field--wide"><span>版本更新说明<em class="required"> *</em></span><textarea class="control" data-field="versionUpdateSummary" placeholder="请说明本次修改内容">${escapeHtml(state.form.versionUpdateSummary)}</textarea></label>
-      </div></section>` : '';
-      return `${rhythmVersionViewer()}${revisionCard}<section class="form-card"><h2>基础信息配置</h2><div class="form-grid">
+      return `<section class="form-card"><h2>基础信息配置</h2><div class="form-grid">
         ${textField('名称', 'name', state.form.name, false, false, isView)}
         <label class="form-field"><span>韵律 ID<em class="required"> *</em></span><input class="control" data-field="code" type="number" min="1" max="100" step="1" inputmode="numeric" placeholder="请输入 1～100 的整数" value="${escapeHtml(state.form.code || '')}" ${isView ? 'disabled' : ''}><small>韵律 ID 范围：1～100，不可重复</small></label>
         ${selectField('关联动力源', 'source', ['Air2直线电机', '818动力源'], state.form.source)}
         ${selectField('标签', 'tags', ['推荐', '场景'], state.form.tags)}
+        ${versionInfoFields('韵律方案', isView)}
         ${textField('描述', 'description', state.form.description, true, true, isView)}
       </div></section>
       <section class="form-card"><div class="form-card__header"><h2>模式组合配置</h2>${isView ? '' : `<button class="btn btn--primary" id="add-combination" type="button" ${state.form.source ? '' : 'disabled'}>添加模式</button>`}</div>${total ? `<div class="table-shell combo-table"><table class="data-table"><colgroup><col style="width:55px"><col style="width:140px"><col style="width:100px"><col style="width:110px"><col style="width:145px"><col style="width:80px"><col style="width:150px"></colgroup><thead><tr><th>顺序</th><th>模式名称</th><th>模式编码</th><th>模式类型</th><th>循环时间（单位：s）</th><th>状态</th><th>操作</th></tr></thead><tbody>${rowsMarkup}</tbody></table></div>` : '<div class="combo-empty">暂无数据，请先添加模式</div>'}</section>
@@ -1174,7 +1162,7 @@
       const row = state.selected;
       const isView = state.view === 'view';
       let formBody = '';
-      if (state.section === 'mode-units') formBody = `${modeUnitVersionViewer()}${modeUnitVersionFields(isView)}${basicForm(row, isView)}${isView ? detailResults(false) : ruleCard() + (state.generated ? detailResults(true) : emptyResults())}`;
+      if (state.section === 'mode-units') formBody = `${basicForm(row, isView)}${isView ? detailResults(false) : ruleCard() + (state.generated ? detailResults(true) : emptyResults())}`;
       if (state.section === 'power-sources') formBody = powerSourceForm(isView);
       if (state.section === 'mode-libraries') formBody = modeLibraryForm(isView);
       if (state.section === 'rhythm-libraries') formBody = rhythmLibraryForm(isView);
@@ -1682,8 +1670,8 @@
           showToast('该韵律 ID 已存在，请重新输入');
           return;
         }
-        if (state.form.isRevisionEdit && !state.form.versionUpdateSummary.trim()) {
-          showToast('请填写版本更新说明');
+        if (!state.form.versionUpdateSummary.trim()) {
+          showToast('请填写版本说明');
           return;
         }
         const values = {
@@ -1721,7 +1709,21 @@
           return;
         }
         if (state.selected) Object.assign(state.selected, { ...values, rhythmModes: state.rhythmModes.map(item => ({ ...item })) });
-        else rhythmRows.push({ id: Math.max(...rhythmRows.map(row => row.id)) + 1, status: '草稿', ...values, rhythmModes: state.rhythmModes.map(item => ({ ...item })) });
+        else {
+          const versionRecord = {
+            version: state.form.editingVersion || 'V1',
+            baseVersion: '',
+            status: '草稿',
+            current: false,
+            medicalInput: '韵律初始配置',
+            applicableModels: values.source || '未配置',
+            changeSummary: state.form.versionUpdateSummary.trim(),
+            publisher: '刘媛媛',
+            publishTime: '未发布',
+            snapshot: { ...values, rhythmModes: state.rhythmModes.map(item => ({ ...item })) }
+          };
+          rhythmRows.push({ id: Math.max(...rhythmRows.map(row => row.id)) + 1, status: '草稿', currentVersion: versionRecord.version, versions: [versionRecord], ...values, rhythmModes: state.rhythmModes.map(item => ({ ...item })) });
+        }
         rhythmRows.sort((left, right) => Number(left.rank) - Number(right.rank));
       }
       if (state.section === 'language-packs') {
