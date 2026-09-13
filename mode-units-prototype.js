@@ -284,6 +284,9 @@
         return row[key] || '';
       };
       const rowActions = row => {
+        if (isLanguagePack) {
+          return '<button data-action="view">查看</button><button data-action="edit">编辑</button><button data-action="publish">发布</button><button class="danger" data-action="delete">删除</button>';
+        }
         return `<button data-action="view">查看</button>${row.status !== '发布' ? '<button data-action="edit">编辑</button><button data-action="publish">发布</button><button class="danger" data-action="delete">删除</button>' : '<button data-action="disable">停用</button>'}`;
       };
       const tableRows = visible.length ? visible.map(row => `<tr data-id="${row.id}">
