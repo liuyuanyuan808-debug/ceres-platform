@@ -274,8 +274,8 @@
       const isLanguagePack = state.section === 'language-packs';
       const isNewFeatureColumn = key => section.newFeatureKeys?.includes(key);
       const cellValue = (row, key) => {
-        if (isLanguagePack && key === 'name') return `<span class="language-package-cell"><strong>${escapeHtml(row.name)}</strong><small>${escapeHtml(row.code)}</small></span>`;
-        if (isLanguagePack && key === 'language') return `<span class="language-package-cell"><strong>${escapeHtml(row.language)}</strong><small>${escapeHtml(row.locale)}</small></span>`;
+        if (isLanguagePack && key === 'name') return `<span class="language-package-cell"><span class="language-package-primary">${escapeHtml(row.name)}</span><small>${escapeHtml(row.code)}</small></span>`;
+        if (isLanguagePack && key === 'language') return `<span class="language-package-cell"><span class="language-package-primary">${escapeHtml(row.language)}</span><small>${escapeHtml(row.locale)}</small></span>`;
         if (isLanguagePack && key === 'version') return `<strong>${escapeHtml(row.version)}</strong>`;
         if (state.section === 'rhythm-libraries' && key === 'duration') {
           const minutes = Number(row.duration) / 60;
@@ -284,9 +284,6 @@
         return row[key] || '';
       };
       const rowActions = row => {
-        if (isLanguagePack) {
-          return `<button data-action="view">查看</button><button data-action="new-version">新建版本</button><button data-action="publish">发布</button>`;
-        }
         return `<button data-action="view">查看</button>${row.status !== '发布' ? '<button data-action="edit">编辑</button><button data-action="publish">发布</button><button class="danger" data-action="delete">删除</button>' : '<button data-action="disable">停用</button>'}`;
       };
       const tableRows = visible.length ? visible.map(row => `<tr data-id="${row.id}">
