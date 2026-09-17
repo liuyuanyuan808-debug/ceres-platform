@@ -325,8 +325,11 @@
     .step-content { padding: 24px; display: flex; flex-direction: column; }
     .rule-fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
     .rule-field-row { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
-    .estimate { margin-top: 14px; min-height: 62px; padding: 12px 14px; display: flex; justify-content: space-between; gap: 16px; border: 1px solid var(--line); border-radius: 6px; background: #f8fafc; color: var(--muted); font-size: 12px; }
+    .estimate { margin-top: 14px; min-height: 82px; padding: 12px 14px; display: grid; gap: 12px; border: 1px solid var(--line); border-radius: 6px; background: #f8fafc; color: var(--muted); font-size: 12px; }
     .estimate strong { color: #374151; font-size: 13px; }
+    .estimate__header { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+    .estimate__chips { display: flex; flex-wrap: wrap; gap: 8px; }
+    .estimate__chip { min-width: 64px; padding: 6px 12px; border-radius: 16px; color: #337ecc; background: #ecf5ff; text-align: center; font-weight: 600; }
     .next-wrap { flex: 1; display: grid; place-items: center; }
     .rule-summary { padding: 12px 14px; color: var(--muted); background: #f8fafc; border: 1px solid var(--line); border-radius: 6px; font-size: 12px; line-height: 2; }
     .result-layout { margin-top: 16px; min-height: 250px; display: grid; grid-template-columns: 1.4fr .9fr; gap: 16px; }
@@ -597,6 +600,6 @@
   </div>
   <div class="toast" id="toast">操作成功</div>
 
-  <script src="./mode-units-prototype.js?v=20260916-1917" defer></script>
+  <script src="./mode-units-prototype.js?v=20260917-1137" defer></script>
 </body>
 </html>

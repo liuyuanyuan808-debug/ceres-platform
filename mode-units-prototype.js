@@ -781,6 +781,18 @@
       return { start, count, end };
     }
 
+    function formatSuction(value) {
+      return Number(Number(value).toFixed(1));
+    }
+
+    function suctionPreviewContent() {
+      const { start, count, end } = suctionRange();
+      const valid = start > 0 && Number.isInteger(count) && count > 0 && end > 0;
+      if (!valid) return '<div class="estimate__header"><strong>预计生成吸力列表</strong><span>请选择起始吸力、吸力步进和档位数量</span></div>';
+      const values = Array.from({ length: count }, (_, index) => formatSuction(start + Number.parseFloat(state.form.suctionStep) * index));
+      return `<div class="estimate__header"><strong>预计生成吸力列表</strong><span>${formatSuction(start)}～${formatSuction(end)} kPa / ${count} 档</span></div><div class="estimate__chips">${values.map(value => `<span class="estimate__chip">${value} kPa</span>`).join('')}</div>`;
+    }
+
     function isFixedFrequency() {
       return state.form.frequencyStrategy === '定频' || state.form.frequencyStrategy === '固定频率';
     }
@@ -879,11 +891,6 @@
       return `<div class="new-feature speed-frequency-matrix"><div class="speed-frequency-grid speed-frequency-grid--${isFixed ? 'fixed' : 'decreasing'}">${headers.map(header => `<strong class="speed-frequency-cell speed-frequency-head">${header}<em class="required"> *</em></strong>`).join('')}${rows}</div></div>`;
     }
 
-    function variableTypeFrequencyMatrix() {
-      const rows = variableTypes.map(type => `<strong class="speed-frequency-cell speed-frequency-label">${type.label}</strong><div class="speed-frequency-cell"><input class="control" data-field="${type.key}" type="number" min="1" placeholder="请输入" value="${state.form[type.key] || ''}" aria-label="${type.label}"></div>`).join('');
-      return `<div class="new-feature speed-frequency-matrix"><div class="speed-frequency-grid speed-frequency-grid--fixed"><strong class="speed-frequency-cell speed-frequency-head">变频预设方案</strong><strong class="speed-frequency-cell speed-frequency-head">频率 CPM<em class="required"> *</em></strong>${rows}</div></div>`;
-    }
-
     function ruleCard() {
       const is818Source = state.form.extra === '818动力源';
       const suctionOptions = is818Source
@@ -898,10 +905,9 @@
       let supplementary = '';
       let action = '';
       if (state.ruleStep === 1) {
-        const { start, count, end } = suctionRange();
-        const estimate = end ? `${start}-${Number(end.toFixed(1))} kPa / ${count} 档` : '请选择起始吸力、吸力步进和档位数量';
+        const { end } = suctionRange();
         fields = `${selectField('起始吸力（kPa）', 'suction', suctionOptions, state.form.suction)}${selectField('吸力步进（kPa）', 'suctionStep', suctionSteps, state.form.suctionStep)}${textField('档位数量', 'gearCount', state.form.gearCount, false, false, false, 'number')}`;
-        supplementary = `<div class="estimate"><strong>预计生成吸力列表</strong><span>${estimate}</span></div>`;
+        supplementary = `<div class="estimate">${suctionPreviewContent()}</div>`;
         action = `<button class="btn btn--primary step-next" type="button" ${end ? '' : 'disabled'}>下一步</button>`;
       } else if (state.ruleStep === 2) {
         const frequencyClass = isFixedFrequency() || isVariableFrequency() ? 'new-feature' : '';
@@ -914,7 +920,7 @@
         if (isVariableFrequency()) {
           fields += selectField('变频预设方案', 'variablePreset', ['频率快 / 频率中 / 频率慢'], state.form.variablePreset, false, false, 'new-feature');
           supplementary = variableTypesEnabled()
-            ? `${variableTypeFrequencyMatrix()}<p class="new-feature strategy-note"><strong>频率快、频率中、频率慢是三个变频预设方案，不是 Speed 档位。</strong>生成结果按三个频率方案 Tab 展示。</p>`
+            ? '<p class="new-feature strategy-note"><strong>频率快、频率中、频率慢是三个变频预设方案，不是 Speed 档位。</strong>生成结果按三个频率方案 Tab 展示。</p>'
             : '<p class="new-feature strategy-note"><strong>变频预设方案为可选项。</strong>不选择时直接生成结果；选择后同时生成“频率快、频率中、频率慢”三个方案并分别配置频率。</p>';
         }
         if (state.form.frequencyStrategy === '手动设置') {
@@ -925,13 +931,13 @@
       } else {
         fields = selectField('阶段时长策略', 'durationStrategy', ['手动设置', '固定比例', '固定时长'], state.form.durationStrategy);
         if (state.form.durationStrategy === '固定比例') {
-          fields += `<div class="rule-field-row rule-field-row--single">${selectField('工作时长百分比（%）', 'workDurationPercent', ['60 / 40', '70 / 30', '80 / 20', '85 / 15', '90 / 10'], state.form.workDurationPercent)}</div>`;
+          fields += `<div class="rule-field-row rule-field-row--single"><label class="form-field"><span>工作时长百分比（%）<em class="required"> *</em></span><input class="control" data-field="workDurationPercent" type="number" min="1" max="99" step="1" inputmode="numeric" placeholder="请输入 1～99" value="${escapeHtml(state.form.workDurationPercent)}"></label></div>`;
         }
         if (state.form.durationStrategy === '固定时长') {
           fields += `<div class="rule-field-row">${selectField('建压时间（单位：ms）', 'pressureTime', pressureTimes, state.form.pressureTime)}${textField('保压时间（单位：ms）', 'holdTime', state.form.holdTime, false, false, false, 'number')}<label class="form-field"><span>间歇时间（单位：ms）<em class="required"> *</em></span><input class="control" data-field="intervalTime" type="number" min="150" step="10" placeholder="不低于 150" value="${state.form.intervalTime}"></label></div>`;
         }
         const durationReady = state.form.durationStrategy === '手动设置'
-          || (state.form.durationStrategy === '固定比例' && Number.parseFloat(state.form.workDurationPercent) >= 60 && Number.parseFloat(state.form.workDurationPercent) <= 90)
+          || (state.form.durationStrategy === '固定比例' && Number.parseFloat(state.form.workDurationPercent) >= 1 && Number.parseFloat(state.form.workDurationPercent) <= 99)
           || (state.form.durationStrategy === '固定时长' && state.form.pressureTime && Number(state.form.holdTime) >= 0 && state.form.holdTime !== '' && Number(state.form.intervalTime) >= 150 && state.form.intervalTime !== '');
         action = `<button class="btn btn--primary" id="generate" type="button" ${durationReady ? '' : 'disabled'}>生成</button>`;
       }
@@ -956,7 +962,10 @@
         : typeCount ? variableTypes.map((_, index) => frequencyConfigText(index + 1)).join('；') : frequencyConfigText(0);
       let durationSummary = '未选择阶段时长策略';
       if (state.form.durationStrategy === '手动设置') durationSummary = '手动设置';
-      if (state.form.durationStrategy === '固定比例') durationSummary = `固定比例：(A+B)/(C+D) = ${state.form.workDurationPercent || '未选择'}`;
+      if (state.form.durationStrategy === '固定比例') {
+        const workPercent = Number.parseFloat(state.form.workDurationPercent);
+        durationSummary = Number.isFinite(workPercent) ? `固定比例：工作时长 ${workPercent}% / 非工作时长 ${100 - workPercent}%` : '固定比例：未填写工作时长百分比';
+      }
       if (state.form.durationStrategy === '固定时长') durationSummary = `固定时长：建压 ${state.form.pressureTime || '未选择'}，保压 ${state.form.holdTime || '未填写'} ms，间歇 ${state.form.intervalTime || '未填写'} ms`;
       return `<section class="form-card"><h2>生成结果表格，在表格中进行微调</h2><div class="rule-summary">
         <div>1. 吸力档位：${suctionSummary}</div>
@@ -1079,7 +1088,7 @@
       const isLinearMotor = powerSource.config.motorType === "直线电机";
       const pressureParameterHeader = isLinearMotor ? "脉冲频率数组" : "建压占空比 %";
       const reliefParameterHeader = isLinearMotor ? "泄压时间数组 ms" : "泄压时间 ms";
-      const targetWorkPercent = Math.min(Math.max(Number.parseFloat(state.form.workDurationPercent) || 60, 60), 90);
+      const targetWorkPercent = Math.min(Math.max(Number.parseFloat(state.form.workDurationPercent) || 60, 1), 99);
       const rowOutcomes = [];
       const detailRows = Array.from({ length: rowCount }, (_, rowIndex) => {
         const key = resultRowKey(activeSpeed, rowIndex);
@@ -1136,7 +1145,7 @@
       const reliefParameter = reliefMappingValue(powerSource, adjustment.suction);
       const relief = Number.parseInt(String(reliefParameter).replace("[", ""), 10) || 24;
       const total = Math.round(60000 / adjustment.frequency);
-      const targetWorkPercent = Math.min(Math.max(Number.parseFloat(state.form.workDurationPercent) || 60, 60), 90);
+      const targetWorkPercent = Math.min(Math.max(Number.parseFloat(state.form.workDurationPercent) || 60, 1), 99);
       let hold = Number(row.querySelector("[data-result-field=hold]").value) || 0;
       let interval = Number(row.querySelector("[data-result-field=interval]").value) || 0;
       if (["frequency", "pressure", "suction"].includes(field)) {
@@ -1395,8 +1404,8 @@
             state.form[field] = event.currentTarget.value;
             if (field === 'gearCount') {
               const { start, count, end } = suctionRange();
-              const estimate = document.querySelector('.estimate span');
-              if (estimate) estimate.textContent = end ? `${start}-${end} kPa / ${count} 档` : '请选择起始吸力、吸力步进和档位数量';
+              const estimate = document.querySelector('.estimate');
+              if (estimate) estimate.innerHTML = suctionPreviewContent();
               const summary = document.querySelector('.rule-summary div:first-child');
               if (summary) summary.textContent = `1. 吸力档位：${end ? `${start}-${end} kPa / ${count} 档，用于生成结果表格的吸力行` : '请选择起始吸力、吸力步进和档位数量，用于生成结果表格的吸力行'}`;
             }
@@ -1420,7 +1429,7 @@
               state.resultSpeedTab = 2;
             }
             if (field === 'durationStrategy' && state.form.durationStrategy === '固定比例') {
-              if (Number.parseFloat(state.form.workDurationPercent) < 60 || Number.parseFloat(state.form.workDurationPercent) > 90 || !state.form.workDurationPercent) state.form.workDurationPercent = '60 / 40';
+              if (Number.parseFloat(state.form.workDurationPercent) < 1 || Number.parseFloat(state.form.workDurationPercent) > 99 || !state.form.workDurationPercent) state.form.workDurationPercent = '60';
             }
             if (field === 'modalSelection' && state.modal === 'mode-unit') {
               const selectedModeUnit = rows.find(row => `${row.name} / ${row.code}` === state.form.modalSelection);
