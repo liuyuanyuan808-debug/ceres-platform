@@ -89,6 +89,12 @@
     const gearArchiveRows = [
       ...createGearArchiveMode('Air 2', 'Air2直线电机', '直线电机类', '刺激模式', '刺激', [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21], [100, 97, 94, 91, 88, 85, 82, 79, 76, 73, 70, 67], [], '2026-09-20 10:18:00'),
       ...createGearArchiveMode('Air 2', 'Air2直线电机', '直线电机类', '吸乳模式', '吸乳', [15, 17, 19, 21, 23, 25, 27, 29, 31.5, 34, 36.5, 39], [62, 58, 55, 52, 49, 46, 43, 40, 37, 34, 31, 28], ['Speed 1', 'Speed 1', 'Speed 1', 'Speed 2', 'Speed 2', 'Speed 2', 'Speed 3', 'Speed 3', 'Speed 4', 'Speed 4', 'Speed 5', 'Speed 5'], '2026-09-20 10:30:00'),
+      ...createGearArchiveMode('M10 Lite', 'M10 Lite动力源', '隔膜泵类', '刺激模式', '刺激', [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21], [100, 97, 94, 91, 88, 85, 82, 79, 76, 73, 70, 67], [], '2026-09-22 14:55:00'),
+      ...createGearArchiveMode('M10 Lite', 'M10 Lite动力源', '隔膜泵类', '吸乳模式', '吸乳', [15, 17, 19, 21, 23, 25, 27, 29, 31.5, 34, 36.5, 39], [62, 58, 55, 52, 49, 46, 43, 40, 37, 34, 31, 28], [], '2026-09-22 14:55:00'),
+      ...createGearArchiveMode('M10', 'M10动力源', '隔膜泵类', '刺激模式', '刺激', [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21], [100, 97, 94, 91, 88, 85, 82, 79, 76, 73, 70, 67], [], '2026-09-22 14:55:00'),
+      ...createGearArchiveMode('M10', 'M10动力源', '隔膜泵类', '吸乳模式', '吸乳', [15, 17, 19, 21, 23, 25, 27, 29, 31.5, 34, 36.5, 39], [62, 58, 55, 52, 49, 46, 43, 40, 37, 34, 31, 28], [], '2026-09-22 14:55:00'),
+      ...createGearArchiveMode('M5 Smart', 'M5 Smart动力源', '隔膜泵类', '刺激模式', '刺激', [10, 10.5, 12, 13, 14, 15, 16, 17, 18], [121, 103, 90, 80, 71, 65, 59, 55, 51], [], '2026-09-22 14:55:00'),
+      ...createGearArchiveMode('M5 Smart', 'M5 Smart动力源', '隔膜泵类', '吸乳模式', '吸乳', [16, 19, 23, 27, 29, 32, 34, 36, 40], [58, 49, 42, 37, 34, 30, 28, 25, 24], [], '2026-09-22 14:55:00'),
       ...createGearArchiveMode('V3 Pro', '818动力源', '隔膜泵类', '按摩模式', '按摩', [6, 12, 18, 23, 26], [70, 80, 90, 100, 105], [], '2026-09-20 09:50:00'),
       ...createGearArchiveMode('V3 Pro', '818动力源', '隔膜泵类', '吸乳模式', '吸乳', [5, 10, 15, 18, 21, 24, 26, 28, 30, 32, 34, 36, 38, 39], [38, 38, 42, 42, 46, 46, 46, 50, 50, 50, 54, 54, 54, 54], [], '2026-09-20 09:45:00'),
       ...createGearArchiveMode('V3', '818动力源', '隔膜泵类', '按摩模式', '按摩', [6, 12, 18, 23, 26], [70, 80, 90, 100, 105], [], '2026-09-19 16:25:00'),
@@ -181,7 +187,7 @@
       },
       'model-gear-archives': {
         label: '型号档位参数档案', title: '型号档位参数档案', rows: gearArchiveRows,
-        options: ['Air 2', 'V3 Pro', 'V3'],
+        options: ['Air 2', 'M10 Lite', 'M10', 'M5 Smart', 'V3', 'V3 Pro'],
         columns: [['model', '型号'], ['mode', '模式名称'], ['modeType', '模式类型'], ['gear', '档位'], ['suction', '吸力（kPa）'], ['frequency', '频率（CPM）'], ['source', '关联动力源'], ['sourceType', '动力源类型'], ['time', '更新时间']],
         columnWidths: [110, 140, 90, 80, 105, 110, 155, 115, 175],
         newFeatureKeys: ['model', 'mode', 'modeType', 'gear', 'suction', 'frequency', 'source', 'sourceType']
@@ -290,10 +296,7 @@
     }
 
     function gearArchiveView(section, visibleRows) {
-      const tabs = ['all', ...section.options].map(model => {
-        const label = model === 'all' ? '全部型号' : model;
-        return `<button class="gear-model-tab${state.sourceFilter === model ? ' is-active' : ''}" type="button" data-model-filter="${escapeHtml(model)}">${escapeHtml(label)}</button>`;
-      }).join('');
+      const modelOptions = section.options.map(model => `<option value="${escapeHtml(model)}"${state.sourceFilter === model ? ' selected' : ''}>${escapeHtml(model)}</option>`).join('');
       const grouped = visibleRows.reduce((models, row) => {
         models[row.model] ||= {};
         models[row.model][row.mode] ||= [];
@@ -326,8 +329,12 @@
       return `<section class="page-stack">
         <header class="page-header-bar"><h1>${section.title}<span class="new-requirement-tag">新增档案</span></h1></header>
         <div class="list-page-body gear-archive-body">
-          <nav class="gear-model-tabs" aria-label="型号切换">${tabs}</nav>
-          <section class="gear-archive-toolbar"><input class="control" id="search" maxlength="50" placeholder="请输入模式名称，回车搜索" value="${escapeHtml(state.query)}"><button class="btn btn--outline" id="reset">重置</button><div class="gear-archive-summary">当前展示 ${modelCount} 个型号 · ${modeCount} 个模式 · ${visibleRows.length} 条档位参数</div></section>
+          <section class="gear-archive-toolbar new-feature">
+            <label class="gear-filter-field"><span>型号</span><div class="select-wrap"><select class="control" id="source-filter"><option value="all">全部型号</option>${modelOptions}</select><svg class="select-caret" viewBox="0 0 1024 1024" aria-hidden="true"><path fill="currentColor" d="M831.872 340.864 512 652.672 192.128 340.864a30.59 30.59 0 0 0-42.752 0 29.12 29.12 0 0 0 0 41.6L489.664 714.24a32 32 0 0 0 44.672 0l340.288-331.712a29.12 29.12 0 0 0 0-41.728 30.59 30.59 0 0 0-42.752 0z"></path></svg></div></label>
+            <label class="gear-filter-field"><span>模式名称</span><input class="control" id="search" maxlength="50" placeholder="请输入模式名称，回车搜索" value="${escapeHtml(state.query)}"></label>
+            <button class="btn btn--outline" id="reset">重置</button>
+            <div class="gear-archive-summary">当前展示 ${modelCount} 个型号 · ${modeCount} 个模式 · ${visibleRows.length} 条档位参数</div>
+          </section>
           ${modelSections || '<div class="gear-archive-empty">暂无符合条件的档位参数</div>'}
         </div>
       </section>`;
