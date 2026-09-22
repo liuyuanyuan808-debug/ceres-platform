@@ -154,9 +154,9 @@
 
     const sections = {
       'power-sources': {
-        label: '动力源方案管理', title: '动力源列表管理', addLabel: '新增动力源', formTitle: '项目动力源配置', extraLabel: '关联项目', extraKey: 'project', rows: powerSourceRows,
+        label: '动力源方案管理', title: '动力源列表管理', addLabel: '新增动力源', formTitle: '项目动力源配置', extraLabel: '关联型号', extraKey: 'project', rows: powerSourceRows,
         options: ['M5 Smart', 'M9', 'M10', 'Air 1', 'M8', 'V3', 'V3 Pro', 'M10 Lite', 'Air 2', 'L2'],
-        columns: [['name', '名称'], ['code', '编码'], ['project', '关联项目'], ['status', '状态'], ['updater', '更新人'], ['time', '更新时间']]
+        columns: [['name', '名称'], ['code', '编码'], ['project', '关联型号'], ['status', '状态'], ['updater', '更新人'], ['time', '更新时间']]
       },
       'mode-units': {
         label: '模式单元库', title: '模式单元列表管理', addLabel: '新增模式单元', formTitle: '模式单元配置', extraLabel: '关联动力源', extraKey: 'source', rows,
@@ -601,7 +601,7 @@
       return `${`<section class="form-card"><h2>基础信息配置</h2><div class="form-grid">
         ${textField('动力源名称', 'name', state.form.name, false, false, isView)}
         ${textField('动力源编码', 'code', state.form.code, false, false, isView)}
-        ${selectField('关联项目', 'project', sections['power-sources'].options, state.form.project)}
+        ${selectField('关联型号', 'project', sections['power-sources'].options, state.form.project)}
         ${selectField('动力源类型', 'powerSourceType', ['直线电机类', '隔膜泵类'], state.form.powerSourceType, false, true, 'new-feature')}
         ${textField('描述', 'description', state.form.description, true, true, isView)}
       </div></section>`}${mappingPanel('pressure')}${mappingPanel('relief')}<section class="form-card"><h2>边界配置</h2><div class="boundary-grid">
