@@ -43,28 +43,28 @@
     const powerSourceRows = [
       {
         id: 101, name: '818动力源', code: '818', project: 'V3、V3 Pro', status: '发布', updater: '陈剑泽', time: '2026-08-18 16:28:12', description: '',
-        config: { powerSourceType: '隔膜泵类', frequencyMin: '40', frequencyMax: '80', holdMin: '100', holdMax: '900', intervalMin: '0', intervalMax: '500' },
+        config: { powerSourceType: '隔膜泵类', motorType: '旋转电机', pumpType: '隔膜泵', valveType: '电磁阀', frequencyMin: '40', frequencyMax: '80', holdMin: '100', holdMax: '900', intervalMin: '0', intervalMax: '500' },
         pressureRows: percentagePressureRows,
         reliefRows: standardReliefRows,
         powerImports: { pressure: '818-pump-pressure.xlsx', relief: '818-valve-relief.xlsx' }
       },
       {
         id: 102, name: 'Air2直线电机', code: '1001', project: 'Air 2', status: '发布', updater: '池浩', time: '2026-08-18 15:37:43', description: '',
-        config: { powerSourceType: '直线电机类', pulseCount: '4', frequencyMin: '40', frequencyMax: '80', holdMin: '20', holdMax: '500', intervalMin: '0', intervalMax: '500' },
+        config: { powerSourceType: '直线电机类', motorType: '直线电机', pumpType: '无', valveType: '电磁阀', pulseCount: '4', frequencyMin: '40', frequencyMax: '80', holdMin: '20', holdMax: '500', intervalMin: '0', intervalMax: '500' },
         pressureRows: air2LinearPressureRows,
         reliefRows: air2ReliefRows,
         powerImports: { pressure: 'air2-linear-pressure.xlsx', relief: 'air2-valve-relief.xlsx' }
       },
       {
         id: 103, name: 'new air2直线电机方案', code: 'NEW-AIR2-LINEAR', project: 'Air 2', status: '草稿', updater: '刘媛媛', time: '2026-09-02 13:50:00', description: '直线电机四段驱动参数方案',
-        config: { powerSourceType: '直线电机类', pulseCount: '4', frequencyMin: '30', frequencyMax: '120', holdMin: '20', holdMax: '300', intervalMin: '0', intervalMax: '500' },
+        config: { powerSourceType: '直线电机类', motorType: '直线电机', pumpType: '无', valveType: '电磁阀', pulseCount: '4', frequencyMin: '30', frequencyMax: '120', holdMin: '20', holdMax: '300', intervalMin: '0', intervalMax: '500' },
         pressureRows: linearMotorPressureRows,
         reliefRows: standardReliefRows,
         powerImports: { pressure: 'new-air2-linear-pressure.xlsx', relief: 'new-air2-valve-relief.xlsx' }
       },
       {
         id: 104, name: 'L2直线方案New', code: 'L2-LINEAR-NEW', project: 'L2', status: '草稿', updater: '刘媛媛', time: '2026-09-02 14:20:00', description: 'L2直线电机脉冲频率数组方案',
-        config: { powerSourceType: '直线电机类', pulseCount: '4', frequencyMin: '35', frequencyMax: '90', holdMin: '20', holdMax: '420', intervalMin: '0', intervalMax: '450' },
+        config: { powerSourceType: '直线电机类', motorType: '直线电机', pumpType: '无', valveType: '电磁阀', pulseCount: '4', frequencyMin: '35', frequencyMax: '90', holdMin: '20', holdMax: '420', intervalMin: '0', intervalMax: '450' },
         pressureRows: l2LinearPressureRows,
         reliefRows: [['10', '20'], ['15', '29'], ['20', '38']],
         powerImports: { pressure: 'l2-linear-new-pressure.xlsx', relief: 'l2-linear-new-relief.xlsx' }
@@ -72,7 +72,7 @@
     ];
 
     let gearArchiveId = 400;
-    const createGearArchiveMode = (model, source, sourceType, mode, modeType, suctions, frequencies, speeds, time) => suctions.map((suction, index) => ({
+    const createGearArchiveMode = (model, source, sourceType, mode, modeType, suctions, frequencies, speeds, time, origin = '系统生成') => suctions.map((suction, index) => ({
       id: ++gearArchiveId,
       model,
       source,
@@ -82,7 +82,9 @@
       gear: `L${index + 1}`,
       suction: String(suction),
       frequency: String(frequencies[index]),
+      frequencyMedium: ['Air 2', 'Air 1', 'M9'].includes(model) ? String(frequencies[index]) : undefined,
       speed: speeds[index] || '-',
+      origin,
       status: '发布',
       time
     }));
@@ -98,8 +100,20 @@
       ...createGearArchiveMode('V3 Pro', '818动力源', '隔膜泵类', '按摩模式', '按摩', [6, 12, 18, 23, 26], [70, 80, 90, 100, 105], [], '2026-09-20 09:50:00'),
       ...createGearArchiveMode('V3 Pro', '818动力源', '隔膜泵类', '吸乳模式', '吸乳', [5, 10, 15, 18, 21, 24, 26, 28, 30, 32, 34, 36, 38, 39], [38, 38, 42, 42, 46, 46, 46, 50, 50, 50, 54, 54, 54, 54], [], '2026-09-20 09:45:00'),
       ...createGearArchiveMode('V3', '818动力源', '隔膜泵类', '按摩模式', '按摩', [6, 12, 18, 23, 26], [70, 80, 90, 100, 105], [], '2026-09-19 16:25:00'),
-      ...createGearArchiveMode('V3', '818动力源', '隔膜泵类', '吸乳模式', '吸乳', [5, 10, 15, 18, 21, 24, 26, 28, 30, 32, 34, 36, 38, 39], [38, 38, 42, 42, 46, 46, 46, 50, 50, 50, 54, 54, 54, 54], [], '2026-09-19 16:20:00')
+      ...createGearArchiveMode('V3', '818动力源', '隔膜泵类', '吸乳模式', '吸乳', [5, 10, 15, 18, 21, 24, 26, 28, 30, 32, 34, 36, 38, 39], [38, 38, 42, 42, 46, 46, 46, 50, 50, 50, 54, 54, 54, 54], [], '2026-09-19 16:20:00'),
+      ...createGearArchiveMode('M9', 'M9动力源', '隔膜泵类', '刺激模式', '刺激', [9, 11, 13, 15, 17], [70, 68, 66, 64, 62], [], '2026-09-22 16:10:00'),
+      ...createGearArchiveMode('M9', 'M9动力源', '隔膜泵类', '吸乳模式', '吸乳', [14, 18, 22, 26, 30, 34], [60, 58, 56, 54, 52, 50], [], '2026-09-22 16:10:00'),
+      ...createGearArchiveMode('Air 1', 'Air1动力源', '隔膜泵类', '刺激模式', '刺激', [8, 10, 12, 14, 16], [72, 70, 68, 66, 64], [], '2026-09-22 16:12:00'),
+      ...createGearArchiveMode('Air 1', 'Air1动力源', '隔膜泵类', '吸乳模式', '吸乳', [13, 17, 21, 25, 29, 33], [62, 60, 58, 56, 54, 52], [], '2026-09-22 16:12:00', '手动导入')
     ];
+
+    const gearModelProfiles = {
+      'M9': { frequencyStrategy: '变频' },
+      'Air 1': { frequencyStrategy: '变频' },
+      'Air 2': { frequencyStrategy: '变频' },
+      'V3': { frequencyStrategy: '定频' },
+      'V3 Pro': { frequencyStrategy: '定频' }
+    };
 
     const modeLibraryRows = [
       {
@@ -187,7 +201,7 @@
       },
       'model-gear-archives': {
         label: '型号档位参数档案', title: '型号档位参数档案', rows: gearArchiveRows,
-        options: ['Air 2', 'M10 Lite', 'M10', 'M5 Smart', 'V3', 'V3 Pro'],
+        options: ['Air 2', 'Air 1', 'M9', 'M10 Lite', 'M10', 'M5 Smart', 'V3', 'V3 Pro'],
         columns: [['model', '型号'], ['mode', '模式名称'], ['modeType', '模式类型'], ['gear', '档位'], ['suction', '吸力（kPa）'], ['frequency', '频率（CPM）'], ['source', '关联动力源'], ['sourceType', '动力源类型'], ['time', '更新时间']],
         columnWidths: [110, 140, 90, 80, 105, 110, 155, 115, 175],
         newFeatureKeys: ['model', 'mode', 'modeType', 'gear', 'suction', 'frequency', 'source', 'sourceType']
@@ -200,7 +214,7 @@
     };
 
     const initialSection = sections[window.location.hash.slice(1)] ? window.location.hash.slice(1) : 'mode-units';
-    const state = { view: 'list', section: initialSection, collapsed: false, menuExpanded: true, languageMenuExpanded: true, query: '', sourceFilter: 'all', status: 'all', selected: null, viewVersion: null, ruleStep: 1, resultSpeedTab: 1, generated: false, form: {}, modal: null, versionModal: null, languagePublish: null, exportConfig: null, exportError: '', modeUnits: [], rhythmModes: [], powerImports: { pressure: '', relief: '' }, resultAdjustments: {}, resultValidation: {}, resultWarnings: {} };
+    const state = { view: 'list', section: initialSection, collapsed: false, menuExpanded: true, languageMenuExpanded: true, query: '', sourceFilter: 'all', status: 'all', selected: null, viewVersion: null, ruleStep: 1, resultSpeedTab: 1, generated: false, form: {}, modal: null, versionModal: null, languagePublish: null, gearManualEntry: false, gearImportFileName: '', gearImportRows: [], exportConfig: null, exportError: '', modeUnits: [], rhythmModes: [], powerImports: { pressure: '', relief: '' }, resultAdjustments: {}, resultValidation: {}, resultWarnings: {} };
     const app = document.querySelector('#app');
     const overlay = document.querySelector('#overlay');
     const dialogMessage = document.querySelector('#dialog-message');
@@ -304,28 +318,32 @@
         return models;
       }, {});
       const modelSections = Object.entries(grouped).map(([model, modes]) => {
+        const modelRows = Object.values(modes).flat();
+        const modelFirst = modelRows[0];
+        const profile = gearModelProfiles[model] || { frequencyStrategy: '定频' };
+        const maxGearCount = Math.max(...Object.values(modes).map(items => items.length));
+        const origins = [...new Set(modelRows.map(item => item.origin || '系统生成'))];
         const modeBlocks = Object.entries(modes).map(([mode, archiveRows]) => {
-          const orderedRows = [...archiveRows].sort((left, right) => Number.parseInt(left.gear, 10) - Number.parseInt(right.gear, 10));
+          const orderedRows = [...archiveRows].sort((left, right) => Number(left.gear.replace(/\D/g, '')) - Number(right.gear.replace(/\D/g, '')));
           const first = orderedRows[0];
           const hasSpeedLevels = model === 'V3 Pro' || model === 'V3';
           const speedFrequencies = mode.includes('刺激') || mode.includes('按摩') ? [70, 80, 90, 100, 105] : [38, 42, 46, 50, 54];
           const cells = key => orderedRows.map(row => `<td><strong>${escapeHtml(row[key])}</strong></td>`).join('');
-          const frequencyRows = hasSpeedLevels
+          const frequencyRows = profile.frequencyStrategy === '变频'
+            ? [['频率快', 'frequencyFast'], ['频率中', 'frequencyMedium'], ['频率慢', 'frequencySlow']].map(([label, key]) => `<tr class="gear-variable-frequency"><th class="gear-row-label">${label}（CPM）</th>${orderedRows.map(row => `<td><strong>${escapeHtml(row[key] ?? '—')}</strong></td>`).join('')}</tr>`).join('')
+            : hasSpeedLevels
             ? speedFrequencies.map((frequency, index) => `<tr><th class="gear-row-label">频率-速度${index + 1}</th><td class="gear-speed-value" colspan="${orderedRows.length}"><strong>${frequency}</strong><span>CPM</span></td></tr>`).join('')
             : `<tr><th class="gear-row-label">频率（CPM）</th>${cells('frequency')}</tr>`;
           return `<section class="gear-mode-block">
-            <header class="gear-mode-header"><h3>${escapeHtml(mode)}</h3><div class="gear-mode-meta"><span>模式类型：${escapeHtml(first.modeType)}</span><span>关联动力源：${escapeHtml(first.source)}</span><span>${escapeHtml(first.sourceType)}</span>${hasSpeedLevels ? '<span class="gear-speed-tag">5 个速度档位</span>' : ''}</div></header>
+            <header class="gear-mode-header"><h3>${escapeHtml(mode)}</h3>${hasSpeedLevels ? '<span class="gear-speed-tag">5 个速度档位</span>' : ''}</header>
             <div class="gear-matrix-scroll"><table class="gear-matrix"><thead><tr><th class="gear-row-label">档位</th>${orderedRows.map(row => `<th>${escapeHtml(row.gear)}</th>`).join('')}</tr></thead><tbody>
               <tr><th class="gear-row-label">吸力（kPa）</th>${cells('suction')}</tr>
               ${frequencyRows}
             </tbody></table></div>
           </section>`;
         }).join('');
-        const gearCount = Object.values(modes).reduce((count, rows) => count + rows.length, 0);
-        return `<section class="gear-model-section"><header class="gear-model-heading"><h2>${escapeHtml(model)}</h2><span>${Object.keys(modes).length} 个模式 · ${gearCount} 条档位参数</span></header>${modeBlocks}</section>`;
+        return `<section class="gear-model-section"><header class="gear-model-heading new-feature"><div><h2>${escapeHtml(model)}</h2></div><div class="gear-model-profile"><span>动力源类型：${escapeHtml(modelFirst.sourceType)}</span><span>频率策略：${escapeHtml(profile.frequencyStrategy)}</span><span>档位范围：1～${maxGearCount} 档</span><span>关联动力源：${escapeHtml(modelFirst.source)}</span>${origins.map(origin => `<b class="gear-origin-tag">${escapeHtml(origin)}</b>`).join('')}</div></header>${modeBlocks}</section>`;
       }).join('');
-      const modelCount = Object.keys(grouped).length;
-      const modeCount = Object.values(grouped).reduce((count, modes) => count + Object.keys(modes).length, 0);
       return `<section class="page-stack">
         <header class="page-header-bar"><h1>${section.title}<span class="new-requirement-tag">新增档案</span></h1></header>
         <div class="list-page-body gear-archive-body">
@@ -333,7 +351,7 @@
             <label class="gear-filter-field"><span>型号</span><div class="select-wrap"><select class="control" id="source-filter"><option value="all">全部型号</option>${modelOptions}</select><svg class="select-caret" viewBox="0 0 1024 1024" aria-hidden="true"><path fill="currentColor" d="M831.872 340.864 512 652.672 192.128 340.864a30.59 30.59 0 0 0-42.752 0 29.12 29.12 0 0 0 0 41.6L489.664 714.24a32 32 0 0 0 44.672 0l340.288-331.712a29.12 29.12 0 0 0 0-41.728 30.59 30.59 0 0 0-42.752 0z"></path></svg></div></label>
             <label class="gear-filter-field"><span>模式名称</span><input class="control" id="search" maxlength="50" placeholder="请输入模式名称，回车搜索" value="${escapeHtml(state.query)}"></label>
             <button class="btn btn--outline" id="reset">重置</button>
-            <div class="gear-archive-summary">当前展示 ${modelCount} 个型号 · ${modeCount} 个模式 · ${visibleRows.length} 条档位参数</div>
+            <div class="gear-archive-actions"><button class="btn btn--primary" id="gear-manual-entry" type="button">手动导入</button><button class="btn btn--outline" id="gear-export" type="button">导出</button></div>
           </section>
           ${modelSections || '<div class="gear-archive-empty">暂无符合条件的档位参数</div>'}
         </div>
@@ -424,6 +442,12 @@
       return `<label class="form-field${wide ? ' form-field--wide' : ''}${className ? ` ${className}` : ''}"><span>${label}${required ? '<em class="required"> *</em>' : ''}</span><div class="select-wrap"><select class="control" data-field="${key}" ${disabled}>${optionList(options, selected)}</select><svg class="select-caret" viewBox="0 0 1024 1024" aria-hidden="true"><path fill="currentColor" d="M831.872 340.864 512 652.672 192.128 340.864a30.59 30.59 0 0 0-42.752 0 29.12 29.12 0 0 0 0 41.6L489.664 714.24a32 32 0 0 0 44.672 0l340.288-331.712a29.12 29.12 0 0 0 0-41.728 30.59 30.59 0 0 0-42.752 0z"></path></svg></div></label>`;
     }
 
+    function modelMultiSelectField(selected = '') {
+      const selectedModels = String(selected).split('、').filter(Boolean);
+      const disabled = state.view === 'view' ? 'disabled' : '';
+      return `<fieldset class="form-field form-field--wide model-multi-select new-feature"><legend>关联型号<em class="required"> *</em></legend><div class="model-multi-select__options">${sections['power-sources'].options.map(model => `<label><input type="checkbox" data-multi-model="${escapeHtml(model)}" ${selectedModels.includes(model) ? 'checked' : ''} ${disabled}><span>${escapeHtml(model)}</span></label>`).join('')}</div><small>支持多选，同一动力源可关联多个型号。</small></fieldset>`;
+    }
+
     function initializeForm(row = null) {
       const section = sections[state.section];
       const savedConfig = row?.config || {};
@@ -431,7 +455,7 @@
       state.form = {
         suction: '', suctionStep: '', gearCount: '', speedStrategy: '按 Speed 档位配置', speedLevels: '', frequencyStrategy: '', variablePreset: '', fixedFrequency: '', variableFastFrequency: '70', variableMediumFrequency: '60', variableSlowFrequency: '50',
         durationStrategy: '', durationRatio: '', workDurationPercent: '', pressureTime: '', holdTime: '', intervalTime: '',
-        project: row?.project || '', powerSourceType: '', pulseCount: '4', frequencyMin: '', frequencyMax: '', holdMin: '', holdMax: '', intervalMin: '', intervalMax: '',
+        project: row?.project || '', powerSourceType: '', motorType: '', pumpType: '', valveType: '', pulseCount: '4', frequencyMin: '', frequencyMax: '', holdMin: '', holdMax: '', intervalMin: '', intervalMax: '',
         modeType: row?.modeType || '', source: row?.source || '', tags: row?.tags || '', modalSelection: '', modalVersion: '', modalAmount: '3',
         ...savedConfig,
         editingVersion: '', versionUpdateSummary: '', isRevisionEdit: false,
@@ -471,6 +495,7 @@
         state.form.fileName = '';
       }
       if (!state.form.workDurationPercent && state.form.durationRatio) state.form.workDurationPercent = String(Number.parseFloat(state.form.durationRatio) || 60);
+      if (state.form.frequencyStrategy === '手动设置') state.form.frequencyStrategy = '自定义';
       if (savedConfig.speedEnabled && !savedConfig.speedStrategy) state.form.speedStrategy = '按 Speed 档位配置';
       if (['快', '中', '慢', '快 / 中 / 慢'].includes(state.form.variablePreset)) state.form.variablePreset = '频率快 / 频率中 / 频率慢';
       state.ruleStep = 1;
@@ -608,8 +633,11 @@
       return `${`<section class="form-card"><h2>基础信息配置</h2><div class="form-grid">
         ${textField('动力源名称', 'name', state.form.name, false, false, isView)}
         ${textField('动力源编码', 'code', state.form.code, false, false, isView)}
-        ${selectField('关联型号', 'project', sections['power-sources'].options, state.form.project)}
         ${selectField('动力源类型', 'powerSourceType', ['直线电机类', '隔膜泵类'], state.form.powerSourceType, false, true, 'new-feature')}
+        ${selectField('电机类型', 'motorType', ['直线电机', '旋转电机', '无'], state.form.motorType, false, false, 'new-feature optional-source-field')}
+        ${selectField('泵类型', 'pumpType', ['隔膜泵', '活塞泵', '无'], state.form.pumpType, false, false, 'new-feature optional-source-field')}
+        ${selectField('阀类型', 'valveType', ['电磁阀', '鸭嘴阀', '无'], state.form.valveType, false, false, 'new-feature optional-source-field')}
+        ${modelMultiSelectField(state.form.project)}
         ${textField('描述', 'description', state.form.description, true, true, isView)}
       </div></section>`}${mappingPanel('pressure')}${mappingPanel('relief')}<section class="form-card"><h2>边界配置</h2><div class="boundary-grid">
         <section class="boundary-group"><h3>频率</h3><div class="boundary-fields">${textField('最小值 CPM', 'frequencyMin', state.form.frequencyMin, false, false, isView, 'text', false)}${textField('最大值 CPM', 'frequencyMax', state.form.frequencyMax, false, false, isView, 'text', false)}</div></section>
@@ -877,7 +905,7 @@
       const start = Number(state.form.suction);
       const step = Number.parseFloat(state.form.suctionStep);
       const count = Number(state.form.gearCount);
-      const end = start && step && count ? start + step * (count - 1) : 0;
+      const end = start && step && count ? Number((start + step * (count - 1)).toFixed(6)) : 0;
       return { start, count, end };
     }
 
@@ -961,7 +989,7 @@
         const type = variableTypes[Math.max(speedIndex - 1, 0)] || variableTypes[0];
         return `${type.label}：${state.form[type.key] || '未填写'} CPM`;
       }
-      if (state.form.frequencyStrategy === '手动设置') return '手动设置：生成后逐档填写频率';
+      if (state.form.frequencyStrategy === '自定义') return '自定义：生成后逐档填写频率';
       return `${prefix}未选择频率策略`;
     }
 
@@ -1019,7 +1047,7 @@
         action = `<button class="btn btn--primary step-next" type="button" ${end ? '' : 'disabled'}>下一步</button>`;
       } else if (state.ruleStep === 2) {
         const frequencyClass = isFixedFrequency() || isVariableFrequency() ? 'new-feature' : '';
-        fields = selectField('频率策略', 'frequencyStrategy', ['手动设置', '定频', '变频'], state.form.frequencyStrategy, false, true, frequencyClass);
+        fields = selectField('频率策略', 'frequencyStrategy', ['定频', '变频', '自定义'], state.form.frequencyStrategy, false, true, frequencyClass);
         if (isFixedFrequency()) {
           const speedLevelOptions = Array.from({ length: 10 }, (_, index) => `${index + 1}档`);
           fields += selectField('设备 Speed 档位数量', 'speedLevels', speedLevelOptions, state.form.speedLevels, false, true, 'new-feature');
@@ -1031,20 +1059,21 @@
             ? '<p class="new-feature strategy-note"><strong>频率快、频率中、频率慢是三个变频预设方案，不是 Speed 档位。</strong>生成结果按三个频率方案 Tab 展示。</p>'
             : '<p class="new-feature strategy-note"><strong>变频预设方案为可选项。</strong>不选择时直接生成结果；选择后同时生成“频率快、频率中、频率慢”三个方案并分别配置频率。</p>';
         }
-        if (state.form.frequencyStrategy === '手动设置') {
-          supplementary = '<p class="legacy-strategy-note">生成表格后，按每个吸力档位手动填写频率。</p>';
+        if (state.form.frequencyStrategy === '自定义') {
+          supplementary = '<p class="legacy-strategy-note">低优先级兼容入口：生成表格后，按每个吸力档位填写频率。</p>';
         }
-        const frequencyReady = state.form.frequencyStrategy === '手动设置' || isVariableFrequency() || speedIsEnabled();
+        const frequencyReady = state.form.frequencyStrategy === '自定义' || isVariableFrequency() || speedIsEnabled();
         action = `<button class="btn btn--primary step-next" type="button" ${frequencyReady ? '' : 'disabled'}>下一步</button>`;
       } else {
         fields = selectField('阶段时长策略', 'durationStrategy', ['手动设置', '固定比例', '固定时长'], state.form.durationStrategy);
         if (state.form.durationStrategy === '固定比例') {
-          fields += `<div class="rule-field-row rule-field-row--single"><label class="form-field"><span>工作时长百分比（%）<em class="required"> *</em></span><input class="control" data-field="workDurationPercent" type="number" min="1" max="99" step="1" inputmode="numeric" placeholder="请输入 1～99" value="${escapeHtml(state.form.workDurationPercent)}"></label></div>`;
+          fields += `<div class="rule-field-row rule-field-row--single new-feature"><label class="form-field"><span>(A+B)/(A+B+C+D)（%）<em class="required"> *</em></span><input class="control" data-field="workDurationPercent" type="number" min="1" max="99" step="1" inputmode="numeric" placeholder="请输入 1～99" value="${escapeHtml(state.form.workDurationPercent)}"><small>A 建压，B 保压，C 间歇，D 泄压</small></label></div>`;
         }
-        if (state.form.durationStrategy === '固定时长') {
-          fields += `<div class="rule-field-row">${selectField('建压时间（单位：ms）', 'pressureTime', pressureTimes, state.form.pressureTime)}${textField('保压时间（单位：ms）', 'holdTime', state.form.holdTime, false, false, false, 'number')}<label class="form-field"><span>间歇时间（单位：ms）<em class="required"> *</em></span><input class="control" data-field="intervalTime" type="number" min="150" step="10" placeholder="不低于 150" value="${state.form.intervalTime}"></label></div>`;
+        if (state.form.durationStrategy === '固定时长' || state.form.durationStrategy === '手动设置') {
+          const reliefPreview = reliefMappingValue(modeUnitPowerSource(), Number(state.form.suction) || 10);
+          fields += `<div class="rule-field-row new-feature">${selectField('A 建压时间（ms）', 'pressureTime', pressureTimes, state.form.pressureTime)}${textField('B 保压时间（ms）', 'holdTime', state.form.holdTime, false, false, false, 'number')}<label class="form-field"><span>C 间歇时间（ms）<em class="required"> *</em></span><input class="control" data-field="intervalTime" type="number" min="150" step="10" placeholder="不低于 150" value="${state.form.intervalTime}"></label><label class="form-field"><span>D 泄压时间（ms）</span><input class="control" value="${escapeHtml(reliefPreview)}" disabled><small>由动力源映射表带出，不可编辑</small></label></div>`;
         }
-        const durationReady = state.form.durationStrategy === '手动设置'
+        const durationReady = (state.form.durationStrategy === '手动设置' && state.form.pressureTime && Number(state.form.holdTime) >= 0 && state.form.holdTime !== '' && Number(state.form.intervalTime) >= 150 && state.form.intervalTime !== '')
           || (state.form.durationStrategy === '固定比例' && Number.parseFloat(state.form.workDurationPercent) >= 1 && Number.parseFloat(state.form.workDurationPercent) <= 99)
           || (state.form.durationStrategy === '固定时长' && state.form.pressureTime && Number(state.form.holdTime) >= 0 && state.form.holdTime !== '' && Number(state.form.intervalTime) >= 150 && state.form.intervalTime !== '');
         action = `<button class="btn btn--primary" id="generate" type="button" ${durationReady ? '' : 'disabled'}>生成</button>`;
@@ -1065,17 +1094,17 @@
         ? `定频，共 ${speedCount} 档 Speed`
         : isVariableFrequency()
           ? `变频，${typeCount ? '已启用频率快 / 频率中 / 频率慢' : '未选择预设方案'}`
-          : state.form.frequencyStrategy === '手动设置' ? '手动设置' : '未选择';
+          : state.form.frequencyStrategy === '自定义' ? '自定义' : '未选择';
       const frequencySummary = speedCount && state.form.frequencyStrategy
         ? Array.from({ length: speedCount }, (_, index) => frequencyConfigText(index + 1)).join('；')
         : typeCount ? variableTypes.map((_, index) => frequencyConfigText(index + 1)).join('；') : frequencyConfigText(0);
       let durationSummary = '未选择阶段时长策略';
-      if (state.form.durationStrategy === '手动设置') durationSummary = '手动设置';
+      if (state.form.durationStrategy === '手动设置') durationSummary = `手动设置：A 建压 ${state.form.pressureTime || '未选择'}，B 保压 ${state.form.holdTime || '未填写'} ms，C 间歇 ${state.form.intervalTime || '未填写'} ms，D 泄压由动力源带出`;
       if (state.form.durationStrategy === '固定比例') {
         const workPercent = Number.parseFloat(state.form.workDurationPercent);
-        durationSummary = Number.isFinite(workPercent) ? `固定比例：工作时长 ${workPercent}% / 非工作时长 ${100 - workPercent}%` : '固定比例：未填写工作时长百分比';
+        durationSummary = Number.isFinite(workPercent) ? `固定比例：(A+B)/(A+B+C+D) = ${workPercent}%` : '固定比例：未填写比例';
       }
-      if (state.form.durationStrategy === '固定时长') durationSummary = `固定时长：建压 ${state.form.pressureTime || '未选择'}，保压 ${state.form.holdTime || '未填写'} ms，间歇 ${state.form.intervalTime || '未填写'} ms`;
+      if (state.form.durationStrategy === '固定时长') durationSummary = `固定时长：A 建压 ${state.form.pressureTime || '未选择'}，B 保压 ${state.form.holdTime || '未填写'} ms，C 间歇 ${state.form.intervalTime || '未填写'} ms，D 泄压由动力源带出`;
       return `<section class="form-card"><h2>生成结果表格，在表格中进行微调</h2><div class="rule-summary">
         <div>1. 吸力档位：${suctionSummary}</div>
         <div>吸力步进：根据起始吸力与导入建压表中下一个吸力的差值，提供 1 到 5 倍选择</div>
@@ -1165,10 +1194,44 @@
         return `${min}～${max} ${unit}`;
       };
       const version = state.form.editingVersion || state.viewVersion || state.selected?.currentVersion || "V1";
+      const strategy = isVariableFrequency() ? '变频' : isFixedFrequency() ? '定频' : '自定义';
+      const workPercent = Math.min(Math.max(Number.parseFloat(state.form.workDurationPercent) || 60, 1), 99);
       return `<div class="tuning-overview new-feature">
-        <div class="tuning-overview__line"><strong>当前配置</strong><span>动力源：${escapeHtml(powerSource.name)}</span><span>模式单元：${escapeHtml(state.form.name || "未命名")} ${escapeHtml(version)}</span><span class="tuning-overview__strategy">频率策略：${escapeHtml(strategyLabel)}</span><span>${rowCount} 档</span></div>
+        <div class="tuning-overview__line"><strong>当前配置</strong><span>动力源：${escapeHtml(powerSource.name)}</span><span>模式单元：${escapeHtml(state.form.name || "未命名")} ${escapeHtml(version)}</span><span class="tuning-overview__strategy">频率策略：${escapeHtml(strategy)}</span><span>档位范围：1～${rowCount} 档</span><span>(A+B)/(A+B+C+D)：${workPercent}%</span></div>
         <div class="tuning-overview__line"><strong>微调范围</strong><span>频率 ${range("frequencyMin", "frequencyMax", "CPM")}</span><span>保压时间 ${range("holdMin", "holdMax", "ms")}</span><span>间歇时间 ${range("intervalMin", "intervalMax", "ms", Math.max(Number(config.intervalMin) || 0, 150))}</span><span>时间步进 10 ms</span></div>
       </div>`;
+    }
+
+    function waveformMarkup(values) {
+      const total = Math.max(Number(values.total) || 1, 1);
+      const pressure = Math.max(Number(values.pressure) || 0, 0);
+      const hold = Math.max(Number(values.hold) || 0, 0);
+      const relief = Math.max(Number(values.relief) || 0, 0);
+      const suction = Math.max(Number(values.suction) || 0, 0);
+      const left = 46;
+      const width = 474;
+      const x = value => left + Math.min(Math.max(value / total, 0), 1) * width;
+      const pressureEnd = pressure;
+      const holdEnd = pressure + hold;
+      const reliefEnd = pressure + hold + relief;
+      const y = 205 - Math.min(suction / 40, 1) * 145;
+      return `<div class="waveform-meta">当前选中：${escapeHtml(values.gear)} 档 · ${suction} kPa · 总时长 ${total} ms</div><svg viewBox="0 0 550 270" role="img" aria-label="建压、保压、泄压、间歇完整波形"><g class="chart-grid"><line x1="${left}" y1="30" x2="${left}" y2="205"></line><line x1="${left}" y1="205" x2="520" y2="205"></line><line x1="${left}" y1="132" x2="520" y2="132"></line><line x1="${left}" y1="60" x2="520" y2="60"></line></g><text x="4" y="25">吸力 kPa</text><text x="24" y="208">0</text><text x="17" y="135">20</text><text x="17" y="63">40</text><polyline points="${left},205 ${x(pressureEnd)},${y} ${x(holdEnd)},${y} ${x(reliefEnd)},205 ${x(total)},205"></polyline><g class="waveform-points"><circle cx="${left}" cy="205" r="3"></circle><circle cx="${x(pressureEnd)}" cy="${y}" r="3"></circle><circle cx="${x(holdEnd)}" cy="${y}" r="3"></circle><circle cx="${x(reliefEnd)}" cy="205" r="3"></circle><circle cx="${x(total)}" cy="205" r="3"></circle></g><g class="waveform-axis-labels"><text x="${left}" y="226" text-anchor="middle">起点</text><text x="${x(pressureEnd)}" y="226" text-anchor="middle">A 建压</text><text x="${x(holdEnd)}" y="244" text-anchor="middle">B 保压</text><text x="${x(reliefEnd)}" y="226" text-anchor="middle">D 泄压</text><text x="${x(total)}" y="244" text-anchor="end">C 间歇</text></g></svg><div class="waveform-stage-times"><span>A ${pressure} ms</span><span>B ${hold} ms</span><span>D ${relief} ms</span><span>C ${Math.max(total - reliefEnd, 0)} ms</span></div>`;
+    }
+
+    function renderWaveformForRow(row) {
+      const panel = document.querySelector('[data-waveform-panel]');
+      if (!panel || !row?.dataset.waveform) return;
+      document.querySelectorAll('tr[data-result-row]').forEach(item => item.classList.toggle('is-waveform-selected', item === row));
+      panel.innerHTML = waveformMarkup(JSON.parse(row.dataset.waveform));
+    }
+
+    function allGearCurves(rows) {
+      const colors = ['#409eff', '#53c3f0', '#7c8ff5', '#b37feb', '#ffc069', '#ff85c0'];
+      const maxTime = Math.max(1, ...rows.map(row => row.total));
+      const maxSuction = Math.max(30, Math.ceil(Math.max(...rows.map(row => row.suction)) / 10) * 10);
+      const x = time => 60 + time / maxTime * 880;
+      const y = suction => 300 - suction / maxSuction * 250;
+      return `<div class="baseline-overview-chart"><svg viewBox="0 0 1000 360" role="img" aria-label="全档位吸力曲线总览"><text x="12" y="24">吸力 kPa</text>${Array.from({length: 6}, (_, i) => `<line x1="60" y1="${50 + i * 50}" x2="940" y2="${50 + i * 50}" stroke="#e2e8f0"/><text x="50" y="${54 + i * 50}" text-anchor="end">${Math.round(maxSuction * (5-i) / 5)}</text><text x="${60 + i * 176}" y="322" text-anchor="middle">${Math.round(maxTime * i / 5)}</text>`).join('')}${rows.map((r,i)=>`<polyline data-curve="${i}" fill="none" stroke="${colors[i%colors.length]}" stroke-width="2" points="60,300 ${x(r.pressure)},${y(r.suction)} ${x(r.pressure+r.hold)},${y(r.suction)} ${x(r.pressure+r.hold+r.relief)},300 ${x(r.total)},300"/>`).join('')}<text x="500" y="348" text-anchor="middle">时间 ms</text></svg><div class="baseline-curve-legend">${rows.map((r,i)=>`<button type="button" data-curve-toggle="${i}" aria-pressed="true"><i style="background:${colors[i%colors.length]}"></i>${r.suction} kPa</button>`).join('')}</div></div>`;
     }
 
     function detailResults(editable = false) {
@@ -1199,6 +1262,7 @@
       const reliefParameterHeader = isLinearMotor ? "泄压时间数组 ms" : "泄压时间 ms";
       const targetWorkPercent = Math.min(Math.max(Number.parseFloat(state.form.workDurationPercent) || 60, 1), 99);
       const rowOutcomes = [];
+      const waveformRows = [];
       const detailRows = Array.from({ length: rowCount }, (_, rowIndex) => {
         const key = resultRowKey(activeSpeed, rowIndex);
         const saved = state.resultAdjustments[key] || {};
@@ -1223,20 +1287,21 @@
         state.resultValidation[key] = invalidReason;
         state.resultWarnings[key] = warningReason;
         rowOutcomes.push(invalidReason ? "invalid" : warningReason ? "warning" : "passed");
-        const suctionOptions = selectableSuctions.map(value => `<option${Math.abs(value - suction) < 0.01 ? " selected" : ""}>${value}</option>`).join("");
-        const pressureOptions = [30, 40, 50, 60, 70, 80].map(value => `<option${value === pressure ? " selected" : ""}>${value}</option>`).join("");
+        waveformRows.push({ gear: rowIndex + 1, suction, frequency, pressure, hold, relief, interval, total });
+        const suctionOptions = [...new Set([...selectableSuctions, suction])].sort((a,b)=>a-b).map(value => `<option${Math.abs(value - suction) < 0.01 ? " selected" : ""}>${value}</option>`).join("");
+        const pressureOptions = [...new Set([30, 40, 50, 60, 70, 80, pressure])].sort((a,b)=>a-b).map(value => `<option${value === pressure ? " selected" : ""}>${value}</option>`).join("");
         const disabled = editable ? "" : "disabled";
         const arrayClass = isLinearMotor ? " mapped-array-value" : "";
         const rowClass = invalidReason ? "result-row-invalid" : warningReason ? "result-row-warning" : "";
         const feedback = invalidReason
           ? `<strong>需调整</strong><small>${escapeHtml(invalidReason)}</small>`
           : warningReason ? `<strong>接近边界</strong><small>${escapeHtml(warningReason)}</small>` : `<strong>通过</strong><small>参数符合要求</small>`;
-        return `<tr data-result-row="${rowIndex}" data-result-key="${key}" class="${rowClass}"><td>${rowIndex + 1}</td><td><select ${disabled} data-result-field="suction">${suctionOptions}</select></td><td><select ${disabled} data-result-field="pressure">${pressureOptions}</select></td><td><input disabled class="${arrayClass}" data-result-mapped-pressure value="${escapeHtml(pressureParameter)}"></td><td><input ${disabled} data-result-field="hold" type="number" min="${powerSource.config.holdMin}" max="${powerSource.config.holdMax}" step="10" value="${hold}"></td><td><input disabled class="${arrayClass}" data-result-relief value="${escapeHtml(reliefParameter)}"></td><td><input ${disabled} data-result-field="interval" type="number" min="${Math.max(Number(powerSource.config.intervalMin) || 0, 150)}" max="${powerSource.config.intervalMax}" step="10" value="${interval}"></td><td class="${resultTabCount ? "new-feature-column" : ""}"><input ${disabled} data-result-field="frequency" type="number" min="${powerSource.config.frequencyMin}" max="${powerSource.config.frequencyMax}" value="${frequency}"></td><td><input disabled data-result-total value="${total}"></td><td class="result-ratio-cell ${invalidReason ? "is-invalid" : ""}" data-result-ratio title="${escapeHtml(invalidReason)}"><strong>${actualWorkPercent} / ${100 - actualWorkPercent}</strong><small>目标 ${targetWorkPercent} / ${100 - targetWorkPercent}</small></td><td class="result-feedback-cell new-feature-column ${invalidReason ? "is-invalid" : warningReason ? "is-warning" : "is-passed"}" data-result-feedback>${feedback}</td></tr>`;
+        return `<tr data-result-row="${rowIndex}" data-result-key="${key}" data-waveform='${escapeHtml(JSON.stringify(waveformRows[waveformRows.length - 1]))}' class="${rowClass}${rowIndex === 0 ? ' is-waveform-selected' : ''}"><td>${rowIndex + 1}</td><td><select ${disabled} data-result-field="suction">${suctionOptions}</select></td><td><select ${disabled} data-result-field="pressure">${pressureOptions}</select></td><td><input disabled class="${arrayClass}" data-result-mapped-pressure value="${escapeHtml(pressureParameter)}"></td><td><input ${disabled} data-result-field="hold" type="number" min="${powerSource.config.holdMin}" max="${powerSource.config.holdMax}" step="10" value="${hold}"></td><td><input disabled class="${arrayClass}" data-result-relief value="${escapeHtml(reliefParameter)}"></td><td><input ${disabled} data-result-field="interval" type="number" min="${Math.max(Number(powerSource.config.intervalMin) || 0, 150)}" max="${powerSource.config.intervalMax}" step="10" value="${interval}"></td><td class="${resultTabCount ? "new-feature-column" : ""}"><input ${disabled} data-result-field="frequency" type="number" min="${powerSource.config.frequencyMin}" max="${powerSource.config.frequencyMax}" value="${frequency}"></td><td><input disabled data-result-total value="${total}"></td><td class="result-ratio-cell ${invalidReason ? "is-invalid" : ""}" data-result-ratio title="${escapeHtml(invalidReason)}"><strong>${actualWorkPercent}%</strong><small>目标 ${targetWorkPercent}%</small></td><td class="result-feedback-cell new-feature-column ${invalidReason ? "is-invalid" : warningReason ? "is-warning" : "is-passed"}" data-result-feedback>${feedback}</td></tr>`;
       }).join("");
       const invalidCount = rowOutcomes.filter(item => item === "invalid").length;
       const warningCount = rowOutcomes.filter(item => item === "warning").length;
       const passedCount = rowCount - invalidCount - warningCount;
-      return `<section class="form-card"><h2>生成结果表格，在表格中进行微调</h2>${speedBar}${tuningOverview(powerSource, strategyLabel, rowCount)}<div class="result-feedback-summary new-feature ${invalidCount ? "is-invalid" : ""}"><span>校验结果：<strong data-result-passed>${passedCount}</strong> 档通过</span><span data-result-warning-wrap>${warningCount} 档接近边界</span><span data-result-invalid-wrap>${invalidCount} 档需调整</span></div><div class="detail-table table-shell"><table class="data-table" style="min-width:${isLinearMotor ? 1510 : 1350}px"><thead><tr><th>档位</th><th>吸力 kPa</th><th>建压时间 ms</th><th>${pressureParameterHeader}</th><th>保压时间 ms</th><th>${reliefParameterHeader}</th><th>间歇时间 ms</th>${frequencyHeader}<th>总时长 ms</th><th>实际比例<span class="column-unit">(A+B)/(C+D)</span></th><th class="new-feature-column">校验</th></tr></thead><tbody>${detailRows}</tbody></table></div></section>`;
+      return `<section class="form-card"><h2>生成结果表格，在表格中进行微调</h2>${speedBar}${tuningOverview(powerSource, strategyLabel, rowCount)}<div class="result-feedback-summary new-feature ${invalidCount ? "is-invalid" : ""}"><span>校验结果：<strong data-result-passed>${passedCount}</strong> 档通过</span><span data-result-warning-wrap>${warningCount} 档接近边界</span><span data-result-invalid-wrap>${invalidCount} 档需调整</span></div><div class="mode-result-layout"><div class="detail-table table-shell"><table class="data-table" style="min-width:${isLinearMotor ? 1510 : 1350}px"><thead><tr><th>档位</th><th>吸力 kPa</th><th class="new-feature-column">A 建压时间 ms</th><th>${pressureParameterHeader}</th><th class="new-feature-column">B 保压时间 ms</th><th class="new-feature-column">D ${reliefParameterHeader}</th><th class="new-feature-column">C 间歇时间 ms</th>${frequencyHeader}<th>总时长 ms</th><th class="new-feature-column">工作时长占比<span class="column-unit">(A+B)/(A+B+C+D)</span></th><th class="new-feature-column">校验</th></tr></thead><tbody>${detailRows}</tbody></table></div><aside class="result-waveform-panel"><h3>选中行曲线</h3><div data-waveform-panel>${waveformMarkup(waveformRows[0])}</div></aside></div></section><section class="form-card"><h2>全档位吸力曲线总览</h2><div data-all-gear-curves>${allGearCurves(waveformRows)}</div></section>`;
     }
 
     function updateResultRow(control) {
@@ -1295,7 +1360,11 @@
       const ratio = row.querySelector("[data-result-ratio]");
       ratio.classList.toggle("is-invalid", Boolean(invalidReason));
       ratio.title = invalidReason;
-      ratio.innerHTML = `<strong>${actualWorkPercent} / ${100 - actualWorkPercent}</strong><small>目标 ${targetWorkPercent} / ${100 - targetWorkPercent}</small>`;
+      ratio.innerHTML = `<strong>${actualWorkPercent}%</strong><small>目标 ${targetWorkPercent}%</small>`;
+      row.dataset.waveform = JSON.stringify({ gear: rowIndex + 1, suction: adjustment.suction, frequency: adjustment.frequency, pressure: adjustment.pressure, hold, relief, interval, total });
+      const overview = document.querySelector('[data-all-gear-curves]');
+      if (overview) overview.innerHTML = allGearCurves(Array.from(document.querySelectorAll('tr[data-result-row]')).map(item => JSON.parse(item.dataset.waveform)));
+      if (row.classList.contains('is-waveform-selected')) renderWaveformForRow(row);
       row.classList.toggle("result-row-invalid", Boolean(invalidReason));
       row.classList.toggle("result-row-warning", Boolean(warningReason));
       const feedback = row.querySelector("[data-result-feedback]");
@@ -1335,8 +1404,18 @@
         <div class="form-page">${formBody}</div></section>`;
     }
 
+    function gearManualEntryModal() {
+      if (!state.gearManualEntry) return '';
+      const previewRows = state.gearImportRows.length ? state.gearImportRows.map(row => `<tr><td>${escapeHtml(row.model)}</td><td>${escapeHtml(row.mode)}</td><td>${escapeHtml(row.gear)}</td><td>${escapeHtml(row.suction)}</td><td>${escapeHtml(row.frequency)}</td><td>${escapeHtml(row.source)}</td></tr>`).join('') : '<tr class="empty-row"><td colspan="6">上传表格后预览数据</td></tr>';
+      return `<div class="form-modal-overlay gear-entry-backdrop"><section class="form-modal gear-entry-dialog" role="dialog" aria-modal="true" aria-label="手动导入型号档位参数"><header><h2>手动导入型号档位参数</h2><button class="dialog-close" id="gear-entry-close" type="button" aria-label="关闭">×</button></header><div class="form-modal__body gear-import-body">
+        <div class="gear-import-intro new-feature"><strong>导入说明</strong><span>表格需包含：型号、模式名称、模式类型、档位、吸力、频率、关联动力源、动力源类型。</span><button class="btn btn--outline" id="gear-template-download" type="button">下载导入模板</button></div>
+        <label class="gear-import-drop"><input id="gear-import-file" type="file" accept=".xlsx,.xls,.csv" hidden><strong>${state.gearImportFileName ? escapeHtml(state.gearImportFileName) : '点击上传 Excel / CSV 表格'}</strong><span>系统将校验必填列、数值格式和重复档位</span></label>
+        <div class="gear-import-preview"><div class="gear-import-preview__title"><strong>数据预览</strong><span>${state.gearImportRows.length ? `共 ${state.gearImportRows.length} 条` : '暂无数据'}</span></div><div class="table-shell"><table class="data-table"><thead><tr><th>型号</th><th>模式名称</th><th>档位</th><th>吸力 kPa</th><th>频率 CPM</th><th>关联动力源</th></tr></thead><tbody>${previewRows}</tbody></table></div></div>
+      </div><footer><button class="btn btn--outline" id="gear-entry-cancel" type="button">取消</button><button class="btn btn--primary" id="gear-entry-save" type="button" ${state.gearImportRows.length ? '' : 'disabled'}>确认导入</button></footer></section></div>`;
+    }
+
     function render() {
-      app.innerHTML = `<div class="admin-shell${state.collapsed ? ' is-collapsed' : ''}">${sidebar()}<main class="content-shell">${state.view === 'list' ? listView() : formView()}</main></div>${combinationModal()}${exportTemplateModal()}${versionModal()}${languagePublishModal()}`;
+      app.innerHTML = `<div class="admin-shell${state.collapsed ? ' is-collapsed' : ''}">${sidebar()}<main class="content-shell">${state.view === 'list' ? listView() : formView()}</main></div>${combinationModal()}${exportTemplateModal()}${versionModal()}${languagePublishModal()}${gearManualEntryModal()}`;
       bindEvents();
     }
 
@@ -1427,10 +1506,66 @@
     }
 
     function bindEvents() {
+      document.querySelector('[data-all-gear-curves]')?.addEventListener('click', event => {
+        const button = event.target.closest('[data-curve-toggle]');
+        if (!button) return;
+        const hidden = button.getAttribute('aria-pressed') === 'true';
+        button.setAttribute('aria-pressed', String(!hidden));
+        button.classList.toggle('muted', hidden);
+        document.querySelector(`[data-curve="${button.dataset.curveToggle}"]`).style.display = hidden ? 'none' : '';
+      });
       document.querySelector('#sidebar-toggle').addEventListener('click', () => { state.collapsed = !state.collapsed; render(); });
       document.querySelector('#menu-parent').addEventListener('click', () => { state.menuExpanded = !state.menuExpanded; render(); });
       document.querySelector('#language-menu-parent').addEventListener('click', () => { state.languageMenuExpanded = !state.languageMenuExpanded; render(); });
       bindLanguagePublishModal();
+      const closeGearEntry = () => { state.gearManualEntry = false; state.gearImportFileName = ''; state.gearImportRows = []; render(); };
+      document.querySelector('#gear-entry-close')?.addEventListener('click', closeGearEntry);
+      document.querySelector('#gear-entry-cancel')?.addEventListener('click', closeGearEntry);
+      document.querySelector('.gear-entry-backdrop')?.addEventListener('click', event => { if (event.target.classList.contains('gear-entry-backdrop')) closeGearEntry(); });
+      document.querySelector('#gear-template-download')?.addEventListener('click', () => {
+        const csv = '型号,模式名称,模式类型,档位,吸力(kPa),频率(CPM),关联动力源,动力源类型\nAir 2,吸乳模式,吸乳,L1,10,60,Air2直线电机,直线电机类';
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8' }));
+        link.download = '型号档位参数导入模板.csv';
+        link.click();
+        URL.revokeObjectURL(link.href);
+      });
+      document.querySelector('#gear-import-file')?.addEventListener('change', event => {
+        const file = event.currentTarget.files?.[0];
+        if (!file) return;
+        state.gearImportFileName = file.name;
+        const sampleRows = [
+          { model: 'Air 2', mode: '吸乳模式', modeType: '吸乳', gear: 'L1', suction: '10', frequency: '60', source: 'Air2直线电机', sourceType: '直线电机类' },
+          { model: 'Air 2', mode: '吸乳模式', modeType: '吸乳', gear: 'L2', suction: '12', frequency: '58', source: 'Air2直线电机', sourceType: '直线电机类' },
+          { model: 'Air 2', mode: '吸乳模式', modeType: '吸乳', gear: 'L3', suction: '14', frequency: '56', source: 'Air2直线电机', sourceType: '直线电机类' }
+        ];
+        if (!file.name.toLowerCase().endsWith('.csv')) { state.gearImportRows = sampleRows; render(); return; }
+        const reader = new FileReader();
+        reader.onload = () => {
+          const lines = String(reader.result || '').replace(/^\uFEFF/, '').split(/\r?\n/).filter(Boolean);
+          const headers = (lines.shift() || '').split(',').map(item => item.trim());
+          const header = name => headers.indexOf(name);
+          const required = ['型号', '模式名称', '模式类型', '档位', '吸力(kPa)', '频率(CPM)', '关联动力源', '动力源类型'];
+          if (required.some(name => header(name) < 0)) { state.gearImportRows = []; render(); showToast('表格缺少必填列'); return; }
+          state.gearImportRows = lines.map(line => {
+            const cells = line.split(',').map(item => item.trim().replace(/^"|"$/g, ''));
+            return { model: cells[header('型号')], mode: cells[header('模式名称')], modeType: cells[header('模式类型')], gear: cells[header('档位')], suction: cells[header('吸力(kPa)')], frequency: cells[header('频率(CPM)')], source: cells[header('关联动力源')], sourceType: cells[header('动力源类型')] };
+          }).filter(row => row.model && row.mode && row.gear && row.suction && row.frequency);
+          render();
+        };
+        reader.readAsText(file);
+      });
+      document.querySelector('#gear-entry-save')?.addEventListener('click', () => {
+        if (!state.gearImportRows.length) { showToast('请先上传并校验表格'); return; }
+        state.gearImportRows.forEach(row => gearArchiveRows.push({ id: ++gearArchiveId, ...row, speed: '-', origin: '手动导入', status: '发布', time: currentTimestamp() }));
+        const model = state.gearImportRows[0].model;
+        state.gearManualEntry = false;
+        state.gearImportFileName = '';
+        state.gearImportRows = [];
+        state.sourceFilter = model;
+        render();
+        showToast('表格导入成功');
+      });
       document.querySelectorAll('.sidebar-menu__child').forEach(link => link.addEventListener('click', event => {
         event.preventDefault();
         const section = event.currentTarget.dataset.section;
@@ -1457,6 +1592,17 @@
         document.querySelectorAll('[data-model-filter]').forEach(button => button.addEventListener('click', () => { state.sourceFilter = button.dataset.modelFilter; render(); }));
         document.querySelector('#search')?.addEventListener('keydown', event => { if (event.key === 'Enter') { state.query = event.target.value.trim(); render(); } });
         document.querySelector('#reset')?.addEventListener('click', () => { state.query = ''; state.sourceFilter = 'all'; state.status = 'all'; render(); });
+        document.querySelector('#gear-manual-entry')?.addEventListener('click', () => { state.gearManualEntry = true; state.gearImportFileName = ''; state.gearImportRows = []; render(); });
+        document.querySelector('#gear-export')?.addEventListener('click', () => {
+          const exportRows = gearArchiveRows.filter(row => state.sourceFilter === 'all' || row.model === state.sourceFilter);
+          const csv = [['型号', '模式', '档位', '吸力(kPa)', '频率(CPM)', '来源'], ...exportRows.map(row => [row.model, row.mode, row.gear, row.suction, row.frequency, row.origin || '系统生成'])].map(items => items.map(item => `"${String(item).replaceAll('"', '""')}"`).join(',')).join('\n');
+          const link = document.createElement('a');
+          link.href = URL.createObjectURL(new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8' }));
+          link.download = `型号档位参数档案-${state.sourceFilter === 'all' ? '全部型号' : state.sourceFilter}.csv`;
+          link.click();
+          URL.revokeObjectURL(link.href);
+          showToast('档案已导出');
+        });
         document.querySelector('#add-unit')?.addEventListener('click', () => openForm('new'));
         document.querySelectorAll('tbody tr[data-id]').forEach(tr => tr.addEventListener('click', event => {
           const action = event.target.closest('button')?.dataset.action;
@@ -1497,6 +1643,9 @@
           });
         }));
       } else {
+        document.querySelectorAll('[data-multi-model]').forEach(checkbox => checkbox.addEventListener('change', () => {
+          state.form.project = Array.from(document.querySelectorAll('[data-multi-model]:checked')).map(item => item.dataset.multiModel).join('、');
+        }));
         document.querySelectorAll('[data-view-version]').forEach(button => button.addEventListener('click', () => {
           const version = versionsFor(state.selected).find(item => item.version === button.dataset.viewVersion);
           if (!version) return;
@@ -1562,7 +1711,12 @@
           const label = event.currentTarget.closest('.language-file-drop');
           label.querySelector('strong').textContent = `${file.name} · ${Math.ceil(file.size / 1024)} KB`;
         });
-        document.querySelectorAll('.step-button').forEach(button => button.addEventListener('click', () => { state.ruleStep = Number(button.dataset.step); render(); }));
+        document.querySelectorAll('.step-button').forEach(button => button.addEventListener('click', () => {
+          const next = Number(button.dataset.step);
+          if (next > 1 && (!state.form.extra || !state.form.suction || !state.form.suctionStep || !(Number(state.form.gearCount) > 0))) { showToast('请先完成步骤1必填项'); return; }
+          if (next > 2 && !state.form.frequencyStrategy) { showToast('请先完成步骤2必填项'); return; }
+          state.ruleStep = next; render();
+        }));
         document.querySelectorAll('[data-result-speed-tab]').forEach(button => button.addEventListener('click', () => {
           state.resultSpeedTab = Number(button.dataset.resultSpeedTab);
           render();
@@ -1570,6 +1724,7 @@
         document.querySelectorAll("[data-result-field]").forEach(control => {
           const applyChange = event => {
             const field = event.currentTarget.dataset.resultField;
+            renderWaveformForRow(event.currentTarget.closest('tr[data-result-row]'));
             updateResultRow(event.currentTarget);
             if (field === "frequency" && (isFixedFrequency() || variableTypesEnabled())) {
               document.querySelectorAll("[data-result-field=frequency]").forEach(input => {
@@ -1578,11 +1733,15 @@
                 updateResultRow(input);
               });
               const strategySummary = document.querySelector(".tuning-overview__strategy");
-              if (strategySummary) strategySummary.textContent = `频率策略：${isFixedFrequency() ? `定频 ${event.currentTarget.value} CPM` : `${variableTypes[state.resultSpeedTab - 1].label}：${event.currentTarget.value} CPM`}`;
+              if (strategySummary) strategySummary.textContent = `频率策略：${isFixedFrequency() ? '定频' : '变频'}`;
             }
           };
           control.addEventListener(control.tagName === "SELECT" ? "change" : "input", applyChange);
         });
+        document.querySelectorAll('tr[data-result-row]').forEach(row => row.addEventListener('click', event => {
+          if (event.target.closest('input, select')) return;
+          renderWaveformForRow(row);
+        }));
         document.querySelector('.step-next')?.addEventListener('click', () => { state.ruleStep = Math.min(3, state.ruleStep + 1); render(); });
         document.querySelector('#generate')?.addEventListener('click', () => { state.generated = true; state.resultSpeedTab = variableTypesEnabled() ? 2 : 1; state.resultAdjustments = {}; state.resultValidation = {}; state.resultWarnings = {}; render(); showToast('生成成功'); });
         document.querySelectorAll('[data-export]').forEach(button => button.addEventListener('click', () => {
@@ -1766,6 +1925,23 @@
 
     function saveCurrentForm() {
       if (state.section === 'power-sources' && !state.form.powerSourceType) { showToast('请选择动力源类型'); return; }
+      if (state.section === 'power-sources' && !state.form.project) { showToast('请至少选择一个关联型号'); return; }
+      if (state.section === 'power-sources') {
+        const values = {
+          name: state.form.name || '未命名动力源',
+          code: state.form.code || `POWER-${Math.max(...powerSourceRows.map(row => row.id)) + 1}`,
+          project: state.form.project,
+          description: state.form.description,
+          config: { powerSourceType: state.form.powerSourceType, motorType: state.form.motorType, pumpType: state.form.pumpType, valveType: state.form.valveType, pulseCount: state.form.pulseCount, frequencyMin: state.form.frequencyMin, frequencyMax: state.form.frequencyMax, holdMin: state.form.holdMin, holdMax: state.form.holdMax, intervalMin: state.form.intervalMin, intervalMax: state.form.intervalMax },
+          pressureRows: state.selected?.pressureRows || percentagePressureRows,
+          reliefRows: state.selected?.reliefRows || standardReliefRows,
+          powerImports: { ...state.powerImports },
+          updater: '刘媛媛',
+          time: currentTimestamp()
+        };
+        if (state.selected) Object.assign(state.selected, values);
+        else powerSourceRows.unshift({ id: Math.max(...powerSourceRows.map(row => row.id)) + 1, status: '草稿', ...values });
+      }
       if (state.section === 'mode-units') {
         const invalidResult = Object.values(state.resultValidation).find(Boolean);
         if (invalidResult) { showToast(invalidResult); return; }
