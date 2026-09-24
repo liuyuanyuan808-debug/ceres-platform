@@ -111,7 +111,7 @@
     .icon-button:hover { color: var(--sidebar-text-active); background: var(--sidebar-hover); }
     .hamburger { width: 16px; height: 16px; }
     .sidebar-menu { flex: 1; min-height: 0; overflow: auto hidden; padding: 6px 0; }
-    .sidebar-menu__parent, .sidebar-menu__child {
+    .sidebar-menu__parent, .sidebar-menu__group, .sidebar-menu__child {
       width: 100%;
       border: 0;
       display: flex;
@@ -129,13 +129,15 @@
     .sidebar-menu__children { background: var(--sidebar-submenu-bg); }
     .sidebar-menu__children.is-hidden { display: none; }
     .sidebar-menu__child { height: 42px; padding: 0 16px 0 28px; gap: 8px; cursor: pointer; }
-    .sidebar-menu__child.is-subitem { height: 38px; padding-left: 52px; font-size: 12px; }
-    .sidebar-menu__child.is-subitem .sidebar-menu__icon { position: relative; width: 10px; flex-basis: 10px; }
-    .sidebar-menu__child.is-subitem .sidebar-menu__icon::before { content: ""; position: absolute; left: 0; top: -18px; width: 8px; height: 24px; border-left: 1px solid #9aa7b5; border-bottom: 1px solid #9aa7b5; }
+    .sidebar-menu__group { position: relative; height: 42px; padding: 0 18px 0 28px; gap: 8px; font-weight: 500; }
+    .sidebar-menu__group:hover { color: var(--sidebar-text-active); background: var(--sidebar-hover); }
+    .sidebar-menu__arrow { width: 7px; height: 7px; flex: 0 0 7px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: rotate(-45deg); transition: transform .15s ease; }
+    .sidebar-menu__arrow.is-expanded { transform: rotate(45deg); }
+    .sidebar-menu__subchildren { background: rgba(0, 0, 0, .12); }
+    .sidebar-menu__subchildren.is-hidden { display: none; }
+    .sidebar-menu__child.is-nested { height: 38px; padding-left: 52px; font-size: 13px; }
     .sidebar-menu__child:hover { color: var(--sidebar-text-active); background: var(--sidebar-hover); }
     .sidebar-menu__child.is-active { color: var(--sidebar-text-active); background: var(--sidebar-active); font-weight: 500; }
-    .sidebar-menu__child.is-new-feature { color: #7a5a00; background: #fff6bf; }
-    .sidebar-menu__child.is-new-feature:hover, .sidebar-menu__child.is-new-feature.is-active { color: #664d03; background: #ffef9e; }
     .sidebar-menu__icon { width: 18px; height: 18px; flex: 0 0 18px; }
     .sidebar-menu__icon--child { width: 16px; height: 16px; flex-basis: 16px; }
     .sidebar-menu__label { min-width: 0; flex: 1; white-space: nowrap; }
@@ -150,8 +152,8 @@
 
     .is-collapsed .brand, .is-collapsed .brand-logo, .is-collapsed .sidebar-menu__label, .is-collapsed .user-card__info { display: none; }
     .is-collapsed .brand-row { justify-content: center; padding: 0; gap: 0; }
-    .is-collapsed .sidebar-menu__parent, .is-collapsed .sidebar-menu__child { justify-content: center; padding: 0; gap: 0; }
-    .is-collapsed .sidebar-menu__children { display: none; }
+    .is-collapsed .sidebar-menu__parent, .is-collapsed .sidebar-menu__group, .is-collapsed .sidebar-menu__child { justify-content: center; padding: 0; gap: 0; }
+    .is-collapsed .sidebar-menu__children, .is-collapsed .sidebar-menu__subchildren { display: none; }
     .is-collapsed .user-card { flex-direction: column; justify-content: center; gap: 8px; padding: 12px 0; }
     .is-collapsed .logout-button { width: 28px; height: 28px; flex-basis: 28px; }
 
@@ -725,8 +727,8 @@
   </div>
   <div class="toast" id="toast">操作成功</div>
 
-  <script src="./assets/vendor/xlsx.full.min.js?v=20260925-0000" defer></script>
-  <script src="./gear-archive-io.js?v=20260925-0000" defer></script>
-  <script src="./mode-units-prototype.js?v=20260925-0000" defer></script>
+  <script src="./assets/vendor/xlsx.full.min.js?v=20260925-0015" defer></script>
+  <script src="./gear-archive-io.js?v=20260925-0015" defer></script>
+  <script src="./mode-units-prototype.js?v=20260925-0015" defer></script>
 </body>
 </html>
