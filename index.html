@@ -129,6 +129,9 @@
     .sidebar-menu__children { background: var(--sidebar-submenu-bg); }
     .sidebar-menu__children.is-hidden { display: none; }
     .sidebar-menu__child { height: 42px; padding: 0 16px 0 28px; gap: 8px; cursor: pointer; }
+    .sidebar-menu__child.is-subitem { height: 38px; padding-left: 52px; font-size: 12px; }
+    .sidebar-menu__child.is-subitem .sidebar-menu__icon { position: relative; width: 10px; flex-basis: 10px; }
+    .sidebar-menu__child.is-subitem .sidebar-menu__icon::before { content: ""; position: absolute; left: 0; top: -18px; width: 8px; height: 24px; border-left: 1px solid #9aa7b5; border-bottom: 1px solid #9aa7b5; }
     .sidebar-menu__child:hover { color: var(--sidebar-text-active); background: var(--sidebar-hover); }
     .sidebar-menu__child.is-active { color: var(--sidebar-text-active); background: var(--sidebar-active); font-weight: 500; }
     .sidebar-menu__child.is-new-feature { color: #7a5a00; background: #fff6bf; }
@@ -330,6 +333,10 @@
     .data-table { width: 100%; min-width: 830px; border-collapse: collapse; table-layout: fixed; background: #fff; }
     .data-table th, .data-table td { padding: 10px 12px; border-bottom: 1px solid var(--line); text-align: left; }
     .data-table th { color: var(--muted); background: #f8fafc; font-size: 12px; font-weight: 600; }
+    .data-table .table-filter-row th { padding: 7px 8px; background: #fffbea; }
+    .table-filter-control { width: 100%; height: 30px; padding: 0 8px; border: 1px solid #d9af2f; border-radius: 4px; color: #606266; background: #fff; font-size: 12px; outline: 0; }
+    .table-filter-control:focus { border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary) inset; }
+    .table-filter-reset { padding: 0; border: 0; color: var(--primary); background: transparent; font-size: 12px; cursor: pointer; }
     .data-table td { height: 45px; font-size: 13px; vertical-align: middle; }
     .data-table tbody tr:hover td { background: #fafbfc; }
     .cell-text { display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -502,6 +509,7 @@
     .result-feedback-cell.is-warning strong { color: #9a6700; }
     .result-feedback-cell.is-invalid strong, .result-feedback-cell.is-invalid small { color: #d33c3c; }
     .result-row-warning td:not(.new-feature-column) { background: #fffdf5; }
+    .curve-sync-note { color: #8a6d1d; font-size: 12px; font-weight: 400; }
     .new-feature { padding: 10px; border: 1px solid #e6bd39; border-radius: 6px; background: #fff6bf; }
     .new-feature .control { border-color: #d9af2f; background: #fffbea; }
     .new-feature-step:not(.is-active) { color: #7a5a00; background: #fff6bf; }
@@ -717,8 +725,8 @@
   </div>
   <div class="toast" id="toast">操作成功</div>
 
-  <script src="./assets/vendor/xlsx.full.min.js?v=20260924-1623" defer></script>
-  <script src="./gear-archive-io.js?v=20260924-1623" defer></script>
-  <script src="./mode-units-prototype.js?v=20260924-1623" defer></script>
+  <script src="./assets/vendor/xlsx.full.min.js?v=20260925-0000" defer></script>
+  <script src="./gear-archive-io.js?v=20260925-0000" defer></script>
+  <script src="./mode-units-prototype.js?v=20260925-0000" defer></script>
 </body>
 </html>

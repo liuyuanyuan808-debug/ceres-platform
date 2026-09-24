@@ -104,7 +104,7 @@
       ...createGearArchiveMode('M9', 'M9动力源', '隔膜泵类', '刺激模式', '刺激', [9, 11, 13, 15, 17], [70, 68, 66, 64, 62], [], '2026-09-22 16:10:00'),
       ...createGearArchiveMode('M9', 'M9动力源', '隔膜泵类', '吸乳模式', '吸乳', [14, 18, 22, 26, 30, 34], [60, 58, 56, 54, 52, 50], [], '2026-09-22 16:10:00'),
       ...createGearArchiveMode('Air 1', 'Air1动力源', '隔膜泵类', '刺激模式', '刺激', [8, 10, 12, 14, 16], [72, 70, 68, 66, 64], [], '2026-09-22 16:12:00'),
-      ...createGearArchiveMode('Air 1', 'Air1动力源', '隔膜泵类', '吸乳模式', '吸乳', [13, 17, 21, 25, 29, 33], [62, 60, 58, 56, 54, 52], [], '2026-09-22 16:12:00', '手动导入')
+      ...createGearArchiveMode('Air 1', 'Air1动力源', '隔膜泵类', '吸乳模式', '吸乳', [13, 17, 21, 25, 29, 33], [62, 60, 58, 56, 54, 52], [], '2026-09-22 16:12:00', '历史数据（脚本导入）')
     ];
 
     const gearModelProfiles = {
@@ -114,14 +114,6 @@
       'V3': { frequencyStrategy: '定频' },
       'V3 Pro': { frequencyStrategy: '定频' }
     };
-    const gearStorageKey = 'ceres-gear-archive-imports-v1';
-    try {
-      const saved = JSON.parse(localStorage.getItem(gearStorageKey) || '[]');
-      if (Array.isArray(saved) && saved.every(row => row && typeof row.model === 'string' && /^L\d+$/.test(row.gear))) {
-        saved.forEach(row => gearArchiveRows.push({ ...row, id: ++gearArchiveId }));
-      }
-    } catch (_) { /* A storage failure must not prevent the rest of the prototype from opening. */ }
-
     const modeLibraryRows = [
       {
         id: 201, name: 'Air2直线电机模式库', code: '154848', source: 'Air2直线电机', modeType: '吸乳模式', status: '停用', updater: '陈剑泽', time: '2026-08-19 10:40:46', description: '',
@@ -221,7 +213,7 @@
     };
 
     const initialSection = sections[window.location.hash.slice(1)] ? window.location.hash.slice(1) : 'mode-units';
-    const state = { view: 'list', section: initialSection, collapsed: false, menuExpanded: true, languageMenuExpanded: true, query: '', sourceFilter: 'all', status: 'all', selected: null, viewVersion: null, ruleStep: 1, resultSpeedTab: 1, generated: false, form: {}, modal: null, versionModal: null, languagePublish: null, gearManualEntry: false, gearImportFileName: '', gearImportRows: [], exportConfig: null, exportError: '', modeUnits: [], rhythmModes: [], powerImports: { pressure: '', relief: '' }, resultAdjustments: {}, resultValidation: {}, resultWarnings: {} };
+    const state = { view: 'list', section: initialSection, collapsed: false, menuExpanded: true, languageMenuExpanded: true, query: '', sourceFilter: 'all', status: 'all', tableFilters: { name: '', source: 'all', status: 'all', updater: 'all' }, selected: null, viewVersion: null, ruleStep: 1, resultSpeedTab: 1, generated: false, form: {}, modal: null, versionModal: null, languagePublish: null, gearManualEntry: false, gearImportFileName: '', gearImportRows: [], exportConfig: null, exportError: '', modeUnits: [], rhythmModes: [], powerImports: { pressure: '', relief: '' }, resultAdjustments: {}, resultValidation: {}, resultWarnings: {} };
     const app = document.querySelector('#app');
     const overlay = document.querySelector('#overlay');
     const dialogMessage = document.querySelector('#dialog-message');
@@ -231,8 +223,9 @@
     const chevron = direction => `<svg viewBox="0 0 1024 1024" aria-hidden="true"><path fill="currentColor" d="${direction === 'left' ? 'M609.408 149.376 277.76 489.6a32 32 0 0 0 0 44.672l331.648 340.352a29.12 29.12 0 0 0 41.728 0 30.59 30.59 0 0 0 0-42.752L339.264 511.936l311.872-319.872a30.59 30.59 0 0 0 0-42.688 29.12 29.12 0 0 0-41.728 0' : 'M340.864 149.312a30.59 30.59 0 0 0 0 42.752L652.736 512 340.864 831.872a30.59 30.59 0 0 0 0 42.752 29.12 29.12 0 0 0 41.728 0L714.24 534.336a32 32 0 0 0 0-44.672L382.592 149.376a29.12 29.12 0 0 0-41.728 0z'}"></path></svg>`;
 
     function sidebar() {
-      const navItems = Object.entries(sections).filter(([key]) => key !== 'language-packs').map(([key, section]) =>
-        `<a class="sidebar-menu__child${key === 'model-gear-archives' ? ' is-new-feature' : ''}${state.section === key ? ' is-active' : ''}" href="#${key}" data-section="${key}"><span class="sidebar-menu__icon sidebar-menu__icon--child"></span><span class="sidebar-menu__label">${section.label}</span></a>`
+      const navOrder = ['power-sources', 'mode-units', 'model-gear-archives', 'mode-libraries', 'rhythm-libraries'];
+      const navItems = navOrder.map(key =>
+        `<a class="sidebar-menu__child${key === 'model-gear-archives' ? ' is-new-feature is-subitem' : ''}${state.section === key ? ' is-active' : ''}" href="#${key}" data-section="${key}"><span class="sidebar-menu__icon sidebar-menu__icon--child"></span><span class="sidebar-menu__label">${sections[key].label}</span></a>`
       ).join('');
       const languageItem = `<a class="sidebar-menu__child${state.section === 'language-packs' ? ' is-active' : ''}" href="#language-packs" data-section="language-packs"><span class="sidebar-menu__icon sidebar-menu__icon--child"></span><span class="sidebar-menu__label">语言包管理</span></a>`;
       return `<aside class="sidebar">
@@ -259,7 +252,7 @@
 
     function statusTag(status, small = true) {
       const type = ['发布', '更新成功'].includes(status) ? 'success'
-        : ['草稿'].includes(status) ? 'warning'
+        : ['草稿', '待重发布'].includes(status) ? 'warning'
           : ['发布中', '验证中'].includes(status) ? 'primary'
             : ['写入失败', '下载失败'].includes(status) ? 'danger' : 'info';
       return `<span class="tag tag--${type}${small ? ' tag--small' : ''}">${status}</span>`;
@@ -358,9 +351,9 @@
         <div class="list-page-body gear-archive-body">
           <section class="gear-archive-toolbar new-feature">
             <label class="gear-filter-field"><span>型号</span><div class="select-wrap"><select class="control" id="source-filter"><option value="all">全部型号</option>${modelOptions}</select><svg class="select-caret" viewBox="0 0 1024 1024" aria-hidden="true"><path fill="currentColor" d="M831.872 340.864 512 652.672 192.128 340.864a30.59 30.59 0 0 0-42.752 0 29.12 29.12 0 0 0 0 41.6L489.664 714.24a32 32 0 0 0 44.672 0l340.288-331.712a29.12 29.12 0 0 0 0-41.728 30.59 30.59 0 0 0-42.752 0z"></path></svg></div></label>
-            <label class="gear-filter-field"><span>模式名称</span><input class="control" id="search" maxlength="50" placeholder="请输入模式名称，回车搜索" value="${escapeHtml(state.query)}"></label>
+            <label class="gear-filter-field"><span>模式单元</span><input class="control" id="search" maxlength="50" placeholder="请输入模式单元名称，回车搜索" value="${escapeHtml(state.query)}"></label>
             <button class="btn btn--outline" id="reset">重置</button>
-            <div class="gear-archive-actions"><button class="btn btn--primary" id="gear-manual-entry" type="button">手动导入</button><button class="btn btn--outline" id="gear-export" type="button">导出</button></div>
+            <div class="gear-archive-actions"><button class="btn btn--outline" id="gear-export" type="button">导出</button></div>
           </section>
           ${state.gearExportFeedback ? `<div class="gear-transfer-feedback new-feature" role="status">${escapeHtml(state.gearExportFeedback)}${state.gearExportFailed ? '<button class="btn btn--outline" id="gear-export-retry">重试导出</button>' : ''}</div>` : ''}
           ${modelSections || '<div class="gear-archive-empty">暂无符合条件的档位参数</div>'}
@@ -375,6 +368,13 @@
       const isGearArchive = state.section === 'model-gear-archives';
       const hasSourceFilters = isModeLibrary || state.section === 'mode-units' || isGearArchive;
       const visible = activeRows.filter(row => {
+        if (state.section === 'mode-units') {
+          const filters = state.tableFilters;
+          return (!filters.name || row.name.toLowerCase().includes(filters.name.toLowerCase()))
+            && (filters.source === 'all' || row.source === filters.source)
+            && (filters.status === 'all' || row.status === filters.status)
+            && (filters.updater === 'all' || row.updater === filters.updater);
+        }
         const searchable = state.section === 'language-packs'
           ? [row.name, row.code, row.language, row.locale, row.models, row.version].join(' ')
           : hasSourceFilters ? (isGearArchive ? row.mode : row.name) : [row.name, row.code].join(' ');
@@ -406,7 +406,7 @@
         return `<button data-action="view">查看</button>${row.status !== '发布' ? '<button data-action="edit">编辑</button><button data-action="publish">发布</button><button class="danger" data-action="delete">删除</button>' : '<button data-action="disable">停用</button>'}`;
       };
       const tableRows = visible.length ? visible.map(row => `<tr data-id="${row.id}">
-        ${section.columns.map(([key]) => `<td${(versionedSection && key === 'currentVersion') || isNewFeatureColumn(key) ? ' class="version-feature-cell"' : ''}>${key === 'status' ? statusTag(row.status) : key === 'currentVersion' ? versionCell(row) : `<span class="cell-text">${cellValue(row, key)}</span>`}</td>`).join('')}
+        ${section.columns.map(([key]) => `<td${(versionedSection && key === 'currentVersion') || isNewFeatureColumn(key) ? ' class="version-feature-cell"' : ''}>${key === 'status' ? statusTag(row.needsRepublish ? '待重发布' : row.status) : key === 'currentVersion' ? versionCell(row) : `<span class="cell-text">${cellValue(row, key)}</span>`}</td>`).join('')}
         <td class="actions">${rowActions(row)}</td>
       </tr>`).join('') : `<tr class="empty-row"><td colspan="${section.columns.length + 1}">暂无数据</td></tr>`;
       const actionWidth = isGearArchive ? 80 : versionedSection || isLanguagePack ? 240 : 190;
@@ -416,17 +416,30 @@
       const searchControl = hasSourceFilters
         ? `<label class="filter-field-new"><span>${searchNameLabel}</span><input class="control" id="search" maxlength="50" placeholder="请输入${searchNameLabel}" value="${escapeHtml(state.query)}"></label><label class="filter-field-new"><span>${isGearArchive ? '型号' : '关联动力源'}</span><div class="select-wrap"><select class="control" id="source-filter"><option value="all">${isGearArchive ? '全部型号' : '全部动力源'}</option>${section.options.map(option => `<option value="${escapeHtml(option)}"${state.sourceFilter === option ? ' selected' : ''}>${escapeHtml(option)}</option>`).join('')}</select><svg class="select-caret" viewBox="0 0 1024 1024" aria-hidden="true"><path fill="currentColor" d="M831.872 340.864 512 652.672 192.128 340.864a30.59 30.59 0 0 0-42.752 0 29.12 29.12 0 0 0 0 41.6L489.664 714.24a32 32 0 0 0 44.672 0l340.288-331.712a29.12 29.12 0 0 0 0-41.728 30.59 30.59 0 0 0-42.752 0z"></path></svg></div></label>`
         : `<input class="control" id="search" maxlength="50" placeholder="${isLanguagePack ? '请输入语言包名称、编码、语种或版本' : '请输入名称或编码，回车键确认搜索'}" value="${escapeHtml(state.query)}">`;
+      const modeUnitFilterRow = state.section === 'mode-units' ? `<tr class="table-filter-row">
+        ${section.columns.map(([key]) => {
+          if (key === 'name') return `<th><input class="table-filter-control" data-table-filter="name" value="${escapeHtml(state.tableFilters.name)}" placeholder="筛选名称"></th>`;
+          if (key === 'source') return `<th><select class="table-filter-control" data-table-filter="source"><option value="all">全部动力源</option>${section.options.map(option => `<option value="${escapeHtml(option)}"${state.tableFilters.source === option ? ' selected' : ''}>${escapeHtml(option)}</option>`).join('')}</select></th>`;
+          if (key === 'status') return `<th><select class="table-filter-control" data-table-filter="status"><option value="all">全部状态</option><option value="草稿"${state.tableFilters.status === '草稿' ? ' selected' : ''}>草稿</option><option value="发布"${state.tableFilters.status === '发布' ? ' selected' : ''}>发布</option><option value="停用"${state.tableFilters.status === '停用' ? ' selected' : ''}>停用</option></select></th>`;
+          if (key === 'updater') {
+            const updaters = [...new Set(activeRows.map(item => item.updater))];
+            return `<th><select class="table-filter-control" data-table-filter="updater"><option value="all">全部更新人</option>${updaters.map(updater => `<option value="${escapeHtml(updater)}"${state.tableFilters.updater === updater ? ' selected' : ''}>${escapeHtml(updater)}</option>`).join('')}</select></th>`;
+          }
+          return '<th></th>';
+        }).join('')}
+        <th><button class="table-filter-reset" id="table-filter-reset" type="button">重置</button></th>
+      </tr>` : '';
       return `<section class="page-stack">
         <header class="page-header-bar"><h1>${section.title}${isGearArchive ? '<span class="new-requirement-tag">新增档案</span>' : ''}</h1><div class="page-header-actions">${section.addLabel ? `<button class="btn btn--primary" id="add-unit">${section.addLabel}</button>` : ''}</div></header>
         <div class="list-page-body">
-          <section class="filter-toolbar${hasSourceFilters ? ' filter-toolbar--source-filters' : ''}${isGearArchive ? ' filter-toolbar--gear-archive' : ''}">
+          ${state.section === 'mode-units' ? '' : `<section class="filter-toolbar${hasSourceFilters ? ' filter-toolbar--source-filters' : ''}${isGearArchive ? ' filter-toolbar--gear-archive' : ''}">
             ${searchControl}
             <div class="select-wrap"><select class="control" id="status-filter"><option value="all">全部状态</option><option value="草稿">草稿</option><option value="发布">发布</option><option value="停用">停用</option></select><svg class="select-caret" viewBox="0 0 1024 1024"><path fill="currentColor" d="M831.872 340.864 512 652.672 192.128 340.864a30.59 30.59 0 0 0-42.752 0 29.12 29.12 0 0 0 0 41.6L489.664 714.24a32 32 0 0 0 44.672 0l340.288-331.712a29.12 29.12 0 0 0 0-41.728 30.59 30.59 0 0 0-42.752 0z"></path></svg></div>
             <button class="btn btn--outline" id="reset">重置</button>
             <div class="filter-toolbar__counts"><span class="tag tag--success">发布 ${counts.发布}</span><span class="tag tag--warning">草稿 ${counts.草稿}</span><span class="tag tag--info">停用 ${counts.停用}</span></div>
-          </section>
+          </section>`}
           <section class="list-table-card"><div class="table-panel"><div class="table-shell"><div class="data-table-scroll-region">
-            <table class="data-table${state.section === 'rhythm-libraries' ? ' rhythm-list-table' : ''}" style="min-width:${tableMinWidth}px"><colgroup>${columnWidths.map(width => `<col style="width:${width}px">`).join('')}<col style="width:${actionWidth}px"></colgroup><thead><tr>${section.columns.map(([key, label]) => `<th${(versionedSection && key === 'currentVersion') || isNewFeatureColumn(key) ? ' class="version-feature-cell"' : ''}>${label}</th>`).join('')}<th>操作</th></tr></thead><tbody>${tableRows}</tbody></table>
+            <table class="data-table${state.section === 'rhythm-libraries' ? ' rhythm-list-table' : ''}" style="min-width:${tableMinWidth}px"><colgroup>${columnWidths.map(width => `<col style="width:${width}px">`).join('')}<col style="width:${actionWidth}px"></colgroup><thead><tr>${section.columns.map(([key, label]) => `<th${(versionedSection && key === 'currentVersion') || isNewFeatureColumn(key) ? ' class="version-feature-cell"' : ''}>${label}</th>`).join('')}<th>操作</th></tr>${modeUnitFilterRow}</thead><tbody>${tableRows}</tbody></table>
           </div></div></div><footer class="pagination-bar"><span>共 ${visible.length} 条记录 · 每页 10 条</span><div class="pagination"><button class="page-button" disabled>${chevron('left')}</button><button class="page-button is-active">1</button><button class="page-button" disabled>${chevron('right')}</button></div></footer></section>
         </div>
       </section>`;
@@ -880,9 +893,9 @@
       const modeUnitOption = row => `${row.name} / ${row.code}`;
       const options = isModeUnit ? rows.map(modeUnitOption) : ['818模式2 / 8182', 'Air2直线电机模式库 / 154848'];
       const selectedModeUnit = isModeUnit ? rows.find(row => modeUnitOption(row) === state.form.modalSelection && !modeUnitBlockReason(row)) : null;
-      const selectableVersions = selectedModeUnit ? versionsFor(selectedModeUnit).filter(item => item.status !== '草稿') : [];
+      const selectableVersions = selectedModeUnit ? versionsFor(selectedModeUnit).filter(item => item.current || item.version === selectedModeUnit.currentVersion) : [];
       const selectedVersion = state.form.modalVersion || selectedModeUnit?.currentVersion || selectableVersions[0]?.version || '';
-      const versionField = isModeUnit ? `<label class="form-field form-field--wide new-feature"><span>引用模式单元版本<em class="required"> *</em></span><div class="select-wrap"><select class="control" data-field="modalVersion">${selectableVersions.map(version => `<option value="${escapeHtml(version.version)}"${version.version === selectedVersion ? ' selected' : ''}>${escapeHtml(version.version)}${version.current ? '（当前版本）' : '（历史版本）'}</option>`).join('')}</select><svg class="select-caret" viewBox="0 0 1024 1024" aria-hidden="true"><path fill="currentColor" d="M831.872 340.864 512 652.672 192.128 340.864a30.59 30.59 0 0 0-42.752 0 29.12 29.12 0 0 0 0 41.6L489.664 714.24a32 32 0 0 0 44.672 0l340.288-331.712a29.12 29.12 0 0 0 0-41.728 30.59 30.59 0 0 0-42.752 0z"></path></svg></div><small>保存后锁定该版本；模式单元发布新版本时，本模式库不会自动升级。</small></label>` : '';
+      const versionField = isModeUnit ? `<label class="form-field form-field--wide new-feature"><span>引用模式单元版本<em class="required"> *</em></span><div class="select-wrap"><select class="control" data-field="modalVersion">${selectableVersions.map(version => `<option value="${escapeHtml(version.version)}"${version.version === selectedVersion ? ' selected' : ''}>${escapeHtml(version.version)}（最新版本）</option>`).join('')}</select><svg class="select-caret" viewBox="0 0 1024 1024" aria-hidden="true"><path fill="currentColor" d="M831.872 340.864 512 652.672 192.128 340.864a30.59 30.59 0 0 0-42.752 0 29.12 29.12 0 0 0 0 41.6L489.664 714.24a32 32 0 0 0 44.672 0l340.288-331.712a29.12 29.12 0 0 0 0-41.728 30.59 30.59 0 0 0-42.752 0z"></path></svg></div><small>编辑仅可选择最新版本；查看页仍保留历史引用版本。</small></label>` : '';
       return `<div class="form-modal-overlay"><section class="form-modal" role="dialog" aria-modal="true" aria-label="${isModeUnit ? '添加模式单元' : '添加模式'}"><header><div><h2>${isModeUnit ? '添加模式单元' : '添加模式'}</h2><p>${isModeUnit ? '选择模式单元并设置本次组合中的循环次数。' : '选择模式库配置并设置循环时间。'}</p></div><button class="dialog-close" id="modal-close" type="button" aria-label="关闭">×</button></header><div class="form-modal__body">
         ${isModeUnit ? `<label class="form-field form-field--wide new-feature"><span>选择模式单元<em class="required"> *</em></span><small>当前动力源：${escapeHtml(state.form.source || '未选择')}。仅可添加同动力源的已发布模式单元。</small><select class="control" style="height:auto" size="5" data-field="modalSelection" aria-label="选择模式单元">${rows.map(row => { const reason = modeUnitBlockReason(row); return `<option style="padding:8px;${reason ? 'color:#909399;background:#f5f5f5' : ''}" value="${escapeHtml(modeUnitOption(row))}" ${reason ? 'disabled' : ''} ${row === selectedModeUnit ? 'selected' : ''}>${escapeHtml(modeUnitOption(row))} · ${escapeHtml(row.source)}${reason ? `（${reason}）` : ''}</option>`; }).join('')}</select>${selectedModeUnit ? '' : '<small role="status">暂无可选项，请调整关联动力源或先发布对应模式单元。</small>'}</label>` : selectField('选择模式', 'modalSelection', options, state.form.modalSelection, true)}
         ${versionField}
@@ -1203,11 +1216,11 @@
       if (holdMax !== null && values.hold > holdMax) reasons.push(`保压时间不得高于 ${holdMax} ms`);
       if (values.interval < intervalMin) reasons.push(`间歇时间不得低于 ${intervalMin} ms`);
       if (intervalMax !== null && values.interval > intervalMax) reasons.push(`间歇时间不得高于 ${intervalMax} ms`);
-      if (values.actualWorkPercent < 60) reasons.push("工作时长占比不得低于 60%");
       return reasons.join("；");
     }
 
     function resultWarningReason(powerSource, values) {
+      if (values.actualWorkPercent < 60) return "工作时长占比偏低；合理阈值待明确，本提示不影响保存";
       const config = powerSource.config || {};
       const checks = [
         ["频率", values.frequency, numericBoundary(config, "frequencyMin"), numericBoundary(config, "frequencyMax"), 2, "CPM"],
@@ -1343,7 +1356,7 @@
       const invalidCount = rowOutcomes.filter(item => item === "invalid").length;
       const warningCount = rowOutcomes.filter(item => item === "warning").length;
       const passedCount = rowCount - invalidCount - warningCount;
-      return `<section class="form-card"><h2>生成结果表格，在表格中进行微调</h2>${speedCount ? speedBar : ""}${tuningOverview(powerSource, strategyLabel, rowCount)}<div class="result-feedback-summary new-feature ${invalidCount ? "is-invalid" : ""}"><span>校验结果：<strong data-result-passed>${passedCount}</strong> 档通过</span><span data-result-warning-wrap>${warningCount} 档接近边界</span><span data-result-invalid-wrap>${invalidCount} 档需调整</span></div>${typeCount ? speedBar : ""}<div class="mode-result-layout"><div class="detail-table table-shell"><table class="data-table" style="min-width:${isLinearMotor ? 1510 : 1350}px"><thead><tr><th>档位</th><th>吸力 kPa</th><th class="new-feature-column">A 建压时间 ms</th><th>${pressureParameterHeader}</th><th class="new-feature-column">B 保压时间 ms</th><th class="new-feature-column">D ${reliefParameterHeader}</th><th class="new-feature-column">C 间歇时间 ms</th>${frequencyHeader}<th>总时长 ms</th><th class="new-feature-column">工作时长占比<span class="column-unit">(A+B)/(A+B+C+D)</span></th><th class="new-feature-column">校验</th></tr></thead><tbody>${detailRows}</tbody></table></div><aside class="result-waveform-panel"><h3>选中行曲线</h3><div data-waveform-panel>${waveformMarkup(waveformRows[0])}</div></aside></div></section><section class="form-card"><h2>全档位吸力曲线总览</h2><div data-all-gear-curves>${allGearCurves(waveformRows)}</div></section>`;
+      return `<section class="form-card"><h2>生成结果表格，在表格中进行微调</h2>${speedCount ? speedBar : ""}${tuningOverview(powerSource, strategyLabel, rowCount)}<div class="result-feedback-summary new-feature ${invalidCount ? "is-invalid" : ""}"><span>校验结果：<strong data-result-passed>${passedCount}</strong> 档通过</span><span data-result-warning-wrap>${warningCount} 档提醒</span><span data-result-invalid-wrap>${invalidCount} 档需调整</span></div>${typeCount ? speedBar : ""}<div class="mode-result-layout"><div class="detail-table table-shell"><table class="data-table" style="min-width:${isLinearMotor ? 1510 : 1350}px"><thead><tr><th>档位</th><th>吸力 kPa</th><th class="new-feature-column">A 建压时间 ms</th><th>${pressureParameterHeader}</th><th class="new-feature-column">B 保压时间 ms</th><th class="new-feature-column">D ${reliefParameterHeader}</th><th class="new-feature-column">C 间歇时间 ms</th>${frequencyHeader}<th>总时长 ms</th><th class="new-feature-column">工作时长占比<span class="column-unit">(A+B)/(A+B+C+D)</span></th><th class="new-feature-column">校验</th></tr></thead><tbody>${detailRows}</tbody></table></div><aside class="result-waveform-panel"><h3>选中行曲线</h3><div data-waveform-panel>${waveformMarkup(waveformRows[0])}</div></aside></div></section><section class="form-card"><div class="form-card__header"><h2>全档位吸力曲线总览</h2><span class="curve-sync-note">与上方配置同步</span></div>${speedCount || typeCount ? speedBar : ""}<div data-all-gear-curves>${allGearCurves(waveformRows)}</div></section>`;
     }
 
     function updateResultRow(control) {
@@ -1422,7 +1435,7 @@
       if (summary) {
         summary.classList.toggle("is-invalid", invalidCount > 0);
         summary.querySelector("[data-result-passed]").textContent = visibleRows.length - invalidCount - warningCount;
-        summary.querySelector("[data-result-warning-wrap]").textContent = `${warningCount} 档接近边界`;
+        summary.querySelector("[data-result-warning-wrap]").textContent = `${warningCount} 档提醒`;
         summary.querySelector("[data-result-invalid-wrap]").textContent = `${invalidCount} 档需调整`;
       }
       const save = document.querySelector("#save");
@@ -1647,6 +1660,7 @@
           state.query = '';
           state.sourceFilter = 'all';
           state.status = 'all';
+          state.tableFilters = { name: '', source: 'all', status: 'all', updater: 'all' };
           state.selected = null;
           window.history.replaceState(null, '', `#${section}`);
           render();
@@ -1654,6 +1668,24 @@
         });
       }));
       if (state.view === 'list') {
+        document.querySelectorAll('[data-table-filter]').forEach(control => {
+          if (control.tagName === 'INPUT') {
+            control.addEventListener('keydown', event => {
+              if (event.key !== 'Enter') return;
+              state.tableFilters[event.currentTarget.dataset.tableFilter] = event.currentTarget.value.trim();
+              render();
+            });
+          } else {
+            control.addEventListener('change', event => {
+              state.tableFilters[event.currentTarget.dataset.tableFilter] = event.currentTarget.value;
+              render();
+            });
+          }
+        });
+        document.querySelector('#table-filter-reset')?.addEventListener('click', () => {
+          state.tableFilters = { name: '', source: 'all', status: 'all', updater: 'all' };
+          render();
+        });
         const status = document.querySelector('#status-filter');
         if (status) {
           status.value = state.status;
@@ -1680,6 +1712,22 @@
           if (action === 'publish' && (state.section === 'rhythm-libraries' || state.section === 'mode-units') && !versionsFor(row).some(item => item.status === '草稿')) {
             showToast('请先编辑并保存新版本');
             return;
+          }
+          if (action === 'publish' && state.section === 'mode-libraries') {
+            const updates = staleReferenceUpdates(row);
+            if (updates.length) {
+              const detail = updates.map(item => `${item.name}：${item.from} → ${item.to}`).join('；');
+              showDialog(`发布后将更新引用版本：${detail}。确认更新并重新发布吗？`, () => {
+                updates.forEach(update => { update.reference.version = update.to; });
+                row.status = '发布';
+                row.needsRepublish = false;
+                row.updater = '刘媛媛';
+                row.time = currentTimestamp();
+                showToast('引用版本已更新，模式库已重新发布');
+                render();
+              }, '取消', '确认发布');
+              return;
+            }
           }
           const messages = { publish: '确认执行此操作并切换状态吗？', disable: '确认执行此操作并切换状态吗？', delete: '确认删除吗？' };
           showDialog(messages[action], () => {
@@ -1986,7 +2034,21 @@
       row.status = '发布';
       row.updater = '刘媛媛';
       row.time = draft.publishTime;
+      modeLibraryRows.forEach(library => {
+        if (library.modeUnits.some(item => item.modeUnitId === row.id && item.version !== row.currentVersion)) {
+          library.status = '草稿';
+          library.needsRepublish = true;
+        }
+      });
       return true;
+    }
+
+    function staleReferenceUpdates(row) {
+      return (row.modeUnits || []).map(reference => {
+        const modeUnit = rows.find(item => item.id === reference.modeUnitId || item.code === reference.code);
+        if (!modeUnit || reference.version === modeUnit.currentVersion) return null;
+        return { reference, name: reference.name, from: reference.version, to: modeUnit.currentVersion };
+      }).filter(Boolean);
     }
 
     function saveCurrentForm() {
