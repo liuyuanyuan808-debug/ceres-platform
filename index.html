@@ -416,7 +416,8 @@
     .detail-table tr[data-result-row] { cursor: pointer; }
     .detail-table tr.is-waveform-selected td { box-shadow: inset 0 1px #409eff, inset 0 -1px #409eff; }
     .detail-table tr.is-waveform-selected td:first-child { box-shadow: inset 2px 0 #409eff, inset 0 1px #409eff, inset 0 -1px #409eff; }
-    .gear-entry-dialog { width: min(860px, calc(100vw - 40px)); }
+    .form-modal.gear-entry-dialog { width: min(1240px, calc(100vw - 40px)); }
+    .gear-import-body > * { min-width: 0; }
     .gear-entry-note { margin: 12px 0 0; color: #7a5a00; font-size: 12px; }
     .gear-import-body { max-height: min(650px, calc(100vh - 180px)); overflow: auto; }
     .gear-import-intro { padding: 12px 14px; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; border: 1px solid #e6bd39; border-radius: 6px; background: #fffbea; }
@@ -431,8 +432,16 @@
     .gear-import-preview__title strong { color: #374151; font-size: 14px; }
     .gear-import-preview__title span { color: #909399; font-size: 12px; }
     .gear-import-preview .table-shell { max-height: 240px; overflow: auto; }
-    .gear-import-preview .data-table { min-width: 720px; }
+    .gear-import-preview .data-table { min-width: 1100px; table-layout: auto; }
     .gear-import-preview .empty-row td { height: 92px; color: #909399; text-align: center; }
+    .gear-transfer-feedback { padding: 12px 14px; font-size: 13px; line-height: 1.7; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+    .gear-import-errors { padding: 12px; border: 1px solid #e6bd39; background: #fffbea; border-radius: 6px; font-size: 13px; }
+    .gear-import-errors .table-shell { max-height: 170px; overflow: auto; margin-top: 8px; }
+    .gear-import-errors .data-table { min-width: 620px; table-layout: auto; }
+    .gear-import-errors td:first-child { width: 120px; }
+    .gear-import-errors td:nth-child(2) { width: 70px; }
+    .gear-import-invalid td { color: #b42318; background: #fff1ee; }
+    .gear-import-preview td { white-space: nowrap; }
     .blank-panel { min-height: 220px; border: 1px solid var(--line); border-radius: 8px; background: #fff; display: grid; place-items: center; color: #909399; }
     .chart-panel { padding: 14px; border: 1px solid var(--line); border-radius: 8px; background: #f8fafc; }
     .overview-empty { margin-top: 18px; }
@@ -708,6 +717,8 @@
   </div>
   <div class="toast" id="toast">操作成功</div>
 
-  <script src="./mode-units-prototype.js?v=20260923-1450" defer></script>
+  <script src="./assets/vendor/xlsx.full.min.js?v=20260924-1619" defer></script>
+  <script src="./gear-archive-io.js?v=20260924-1619" defer></script>
+  <script src="./mode-units-prototype.js?v=20260924-1619" defer></script>
 </body>
 </html>
