@@ -218,7 +218,7 @@
 
     const sections = {
       'power-sources': {
-        label: '动力源方案管理', title: '动力源列表管理', addLabel: '新增动力源', formTitle: '项目动力源配置', extraLabel: '关联型号', extraKey: 'project', rows: powerSourceRows,
+        label: '动力源方案管理（2.1更新）', title: '动力源列表管理', addLabel: '新增动力源', formTitle: '项目动力源配置', extraLabel: '关联型号', extraKey: 'project', rows: powerSourceRows,
         options: ['M5 Smart', 'M9', 'M10', 'Air 1', 'M8', 'V3', 'V3 Pro', 'M10 Lite', 'Air 2', 'L2'],
         columns: [['name', '名称'], ['code', '编码'], ['project', '关联型号'], ['status', '状态'], ['updater', '更新人'], ['time', '更新时间'], ['currentVersion', '版本信息']],
         columnWidths: [180, 130, 160, 90, 100, 180, 170], newFeatureKeys: ['currentVersion']
@@ -272,7 +272,7 @@
     const chevron = direction => `<svg viewBox="0 0 1024 1024" aria-hidden="true"><path fill="currentColor" d="${direction === 'left' ? 'M609.408 149.376 277.76 489.6a32 32 0 0 0 0 44.672l331.648 340.352a29.12 29.12 0 0 0 41.728 0 30.59 30.59 0 0 0 0-42.752L339.264 511.936l311.872-319.872a30.59 30.59 0 0 0 0-42.688 29.12 29.12 0 0 0-41.728 0' : 'M340.864 149.312a30.59 30.59 0 0 0 0 42.752L652.736 512 340.864 831.872a30.59 30.59 0 0 0 0 42.752 29.12 29.12 0 0 0 41.728 0L714.24 534.336a32 32 0 0 0 0-44.672L382.592 149.376a29.12 29.12 0 0 0-41.728 0z'}"></path></svg>`;
 
     function sidebar() {
-      const navLink = (key, nested = false) => `<a class="sidebar-menu__child${nested ? ' is-nested' : ''}${state.section === key ? ' is-active' : ''}" href="#${key}" data-section="${key}"><span class="sidebar-menu__icon sidebar-menu__icon--child"></span><span class="sidebar-menu__label">${sections[key].label}${key === 'power-sources' ? '<small class="power-nav-update">2.1更新</small>' : ''}</span></a>`;
+      const navLink = (key, nested = false) => `<a class="sidebar-menu__child${nested ? ' is-nested' : ''}${state.section === key ? ' is-active' : ''}" href="#${key}" data-section="${key}"><span class="sidebar-menu__icon sidebar-menu__icon--child"></span><span class="sidebar-menu__label">${sections[key].label}</span></a>`;
       const modeUnitGroup = `<button class="sidebar-menu__group" id="mode-unit-menu-parent" type="button" aria-expanded="${state.modeUnitMenuExpanded}"><span class="sidebar-menu__icon sidebar-menu__icon--child"></span><span class="sidebar-menu__label">模式单元</span><span class="sidebar-menu__arrow${state.modeUnitMenuExpanded ? ' is-expanded' : ''}" aria-hidden="true"></span></button><div class="sidebar-menu__subchildren${state.modeUnitMenuExpanded ? '' : ' is-hidden'}">${navLink('mode-units', true)}${navLink('model-gear-archives', true)}</div>`;
       const navItems = `${navLink('power-sources')}${modeUnitGroup}${navLink('mode-libraries')}${navLink('rhythm-libraries')}${navLink('legacy-rhythms')}`;
       const languageItem = `<a class="sidebar-menu__child${state.section === 'language-packs' ? ' is-active' : ''}" href="#language-packs" data-section="language-packs"><span class="sidebar-menu__icon sidebar-menu__icon--child"></span><span class="sidebar-menu__label">语言包管理</span></a>`;

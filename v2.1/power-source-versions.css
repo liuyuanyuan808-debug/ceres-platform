@@ -1,6 +1,5 @@
 /* 2.1 additions are marked locally; the existing power source pages retain their standard layout. */
 .power-version-badge { display:inline-flex; align-items:center; margin-left:7px; padding:1px 6px; border:1px solid #e8c763; border-radius:4px; color:#82601a; background:#fff8dd; font-size:11px; font-weight:500; line-height:1.6; white-space:nowrap; vertical-align:middle; }
-.power-nav-update { display:inline-block; margin-left:6px; color:#e4c477; font-size:10px; font-weight:400; }
 .power-version-page .power-version-region { padding:12px; border:1px solid #edcf7e; border-radius:6px; background:#fffcf3; }
 .power-version-page .version-feature-cell { background:#fffcf0; }
 .power-version-page .power-version-link { padding:0; color:#80601a; background:none; border:0; text-decoration:underline; cursor:pointer; font:inherit; font-weight:600; }
