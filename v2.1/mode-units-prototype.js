@@ -71,6 +71,51 @@
       }
     ];
 
+    const powerVersionStorageKey = 'ceres.v2.1.power-source-versions';
+    const powerConfigKeys = ['powerSourceType', 'motorType', 'pumpType', 'valveType', 'pulseCount', 'frequencyMin', 'frequencyMax', 'holdMin', 'holdMax', 'intervalMin', 'intervalMax'];
+    const powerClone = value => JSON.parse(JSON.stringify(value));
+    const powerVersionBadge = '<span class="power-version-badge">2.1新增</span>';
+    function powerSourceSnapshot(row) {
+      return powerClone({ name: row.name || '', code: row.code || '', project: row.project || '', description: row.description || '', config: row.config || {}, pressureRows: row.pressureRows || [], reliefRows: row.reliefRows || [], powerImports: row.powerImports || { pressure: '', relief: '' } });
+    }
+    function ensurePowerVersions(row) {
+      row.currentVersion ||= 'V1';
+      if (!row.versions?.length) row.versions = [{ version: row.currentVersion, status: row.status === '草稿' ? '草稿' : '发布', current: row.status !== '草稿', changeSummary: '初始动力源方案配置', publisher: row.updater || '刘媛媛', publishTime: row.status === '草稿' ? '未发布' : row.time, snapshot: powerSourceSnapshot(row) }];
+      row.versions.forEach(item => { if (!item.snapshot) item.snapshot = powerSourceSnapshot(row); });
+      return row.versions;
+    }
+    // Demonstration versions retain the complete historical mapping and capability configuration.
+    powerSourceRows.forEach(ensurePowerVersions);
+    const powerDemo = powerSourceRows[0];
+    powerDemo.currentVersion = 'V2';
+    powerDemo.versions[0].version = 'V2';
+    powerDemo.versions[0].changeSummary = '优化频率边界与建压映射参数';
+    const previousPower = powerSourceSnapshot(powerDemo);
+    previousPower.config.frequencyMax = '70';
+    previousPower.pressureRows[0][1] = '40%';
+    powerDemo.versions.push({ version: 'V1', status: '历史版本', current: false, changeSummary: '首版动力源方案与映射表', publisher: '陈剑泽', publishTime: '2026-06-18 16:20:00', snapshot: previousPower });
+    try {
+      const savedPower = JSON.parse(localStorage.getItem(powerVersionStorageKey));
+      if (Array.isArray(savedPower) && savedPower.every(row => row && Number.isFinite(row.id) && row.config && Array.isArray(row.pressureRows) && Array.isArray(row.reliefRows))) {
+        savedPower.forEach(ensurePowerVersions);
+        powerSourceRows.splice(0, powerSourceRows.length, ...savedPower);
+      }
+    } catch (_) { /* Keep the demonstration data when browser storage is unavailable. */ }
+    function persistPowerRows() {
+      try { localStorage.setItem(powerVersionStorageKey, JSON.stringify(powerSourceRows)); return true; }
+      catch (_) { showToast('保存失败，请检查浏览器存储空间或权限后重试'); return false; }
+    }
+    function resolvePowerSource(name) {
+      const current = powerSourceRows.find(row => row.name === name);
+      if (current) return current;
+      // A renamed source remains resolvable for previously saved references without rewriting them.
+      for (const row of powerSourceRows) {
+        const historical = ensurePowerVersions(row).find(item => item.status !== '草稿' && item.snapshot.name === name);
+        if (historical) return { ...powerClone(historical.snapshot), id: row.id };
+      }
+      return null;
+    }
+
     let gearArchiveId = 400;
     const createGearArchiveMode = (model, source, sourceType, mode, modeType, suctions, frequencies, speeds, time, origin = '系统生成') => suctions.map((suction, index) => ({
       id: ++gearArchiveId,
@@ -175,7 +220,8 @@
       'power-sources': {
         label: '动力源方案管理', title: '动力源列表管理', addLabel: '新增动力源', formTitle: '项目动力源配置', extraLabel: '关联型号', extraKey: 'project', rows: powerSourceRows,
         options: ['M5 Smart', 'M9', 'M10', 'Air 1', 'M8', 'V3', 'V3 Pro', 'M10 Lite', 'Air 2', 'L2'],
-        columns: [['name', '名称'], ['code', '编码'], ['project', '关联型号'], ['status', '状态'], ['updater', '更新人'], ['time', '更新时间']]
+        columns: [['name', '名称'], ['code', '编码'], ['project', '关联型号'], ['status', '状态'], ['updater', '更新人'], ['time', '更新时间'], ['currentVersion', '版本信息']],
+        columnWidths: [180, 130, 160, 90, 100, 180, 170], newFeatureKeys: ['currentVersion']
       },
       'mode-units': {
         label: '模式单元库', title: '模式单元列表管理', addLabel: '新增模式单元', formTitle: '模式单元配置', extraLabel: '关联动力源', extraKey: 'source', rows,
@@ -226,7 +272,7 @@
     const chevron = direction => `<svg viewBox="0 0 1024 1024" aria-hidden="true"><path fill="currentColor" d="${direction === 'left' ? 'M609.408 149.376 277.76 489.6a32 32 0 0 0 0 44.672l331.648 340.352a29.12 29.12 0 0 0 41.728 0 30.59 30.59 0 0 0 0-42.752L339.264 511.936l311.872-319.872a30.59 30.59 0 0 0 0-42.688 29.12 29.12 0 0 0-41.728 0' : 'M340.864 149.312a30.59 30.59 0 0 0 0 42.752L652.736 512 340.864 831.872a30.59 30.59 0 0 0 0 42.752 29.12 29.12 0 0 0 41.728 0L714.24 534.336a32 32 0 0 0 0-44.672L382.592 149.376a29.12 29.12 0 0 0-41.728 0z'}"></path></svg>`;
 
     function sidebar() {
-      const navLink = (key, nested = false) => `<a class="sidebar-menu__child${nested ? ' is-nested' : ''}${state.section === key ? ' is-active' : ''}" href="#${key}" data-section="${key}"><span class="sidebar-menu__icon sidebar-menu__icon--child"></span><span class="sidebar-menu__label">${sections[key].label}</span></a>`;
+      const navLink = (key, nested = false) => `<a class="sidebar-menu__child${nested ? ' is-nested' : ''}${state.section === key ? ' is-active' : ''}" href="#${key}" data-section="${key}"><span class="sidebar-menu__icon sidebar-menu__icon--child"></span><span class="sidebar-menu__label">${sections[key].label}${key === 'power-sources' ? '<small class="power-nav-update">2.1更新</small>' : ''}</span></a>`;
       const modeUnitGroup = `<button class="sidebar-menu__group" id="mode-unit-menu-parent" type="button" aria-expanded="${state.modeUnitMenuExpanded}"><span class="sidebar-menu__icon sidebar-menu__icon--child"></span><span class="sidebar-menu__label">模式单元</span><span class="sidebar-menu__arrow${state.modeUnitMenuExpanded ? ' is-expanded' : ''}" aria-hidden="true"></span></button><div class="sidebar-menu__subchildren${state.modeUnitMenuExpanded ? '' : ' is-hidden'}">${navLink('mode-units', true)}${navLink('model-gear-archives', true)}</div>`;
       const navItems = `${navLink('power-sources')}${modeUnitGroup}${navLink('mode-libraries')}${navLink('rhythm-libraries')}${navLink('legacy-rhythms')}`;
       const languageItem = `<a class="sidebar-menu__child${state.section === 'language-packs' ? ' is-active' : ''}" href="#language-packs" data-section="language-packs"><span class="sidebar-menu__icon sidebar-menu__icon--child"></span><span class="sidebar-menu__label">语言包管理</span></a>`;
@@ -261,6 +307,7 @@
     }
 
     function versionsFor(row) {
+      if (powerSourceRows.includes(row)) return ensurePowerVersions(row);
       if (!row.versions) {
         const version = row.currentVersion || 'V1';
         row.currentVersion = version;
@@ -308,7 +355,7 @@
     function versionCell(row) {
       const versions = versionsFor(row);
       const draft = versions.find(item => item.status === '草稿');
-      return `<div class="version-cell"><strong>${row.currentVersion || 'V1'}</strong>${draft && draft.version !== row.currentVersion ? `<em>${draft.version} 草稿</em>` : ''}</div>`;
+      return `<div class="version-cell">${state.section === 'power-sources' ? `<button type="button" class="power-version-link" data-action="version-history">${escapeHtml(row.currentVersion || 'V1')}</button>` : `<strong>${row.currentVersion || 'V1'}</strong>`}${draft && draft.version !== row.currentVersion ? `<em>${draft.version} 草稿</em>` : ''}</div>`;
     }
 
     function gearArchiveView(section, visibleRows) {
@@ -387,7 +434,7 @@
       });
       if (isGearArchive) return gearArchiveView(section, visible);
       const counts = activeRows.reduce((acc, row) => (acc[row.status]++, acc), { 发布: 0, 草稿: 0, 停用: 0 });
-      const versionedSection = state.section === 'mode-units' || state.section === 'rhythm-libraries';
+      const versionedSection = ['mode-units', 'rhythm-libraries', 'power-sources'].includes(state.section);
       const isLanguagePack = state.section === 'language-packs';
       const isNewFeatureColumn = key => section.newFeatureKeys?.includes(key);
       const cellValue = (row, key) => {
@@ -431,8 +478,8 @@
         }).join('')}
         <th><button class="table-filter-reset" id="table-filter-reset" type="button">重置</button></th>
       </tr>` : '';
-      return `<section class="page-stack">
-        <header class="page-header-bar"><h1>${section.title}${isGearArchive ? '<span class="new-requirement-tag">新增档案</span>' : ''}</h1><div class="page-header-actions">${section.addLabel ? `<button class="btn btn--primary" id="add-unit">${section.addLabel}</button>` : ''}</div></header>
+      return `<section class="page-stack${state.section === 'power-sources' ? ' power-version-page' : ''}">
+        <header class="page-header-bar"><h1>${section.title}${state.section === 'power-sources' ? '<span class="power-version-badge">2.1新增版本管理</span>' : ''}${isGearArchive ? '<span class="new-requirement-tag">新增档案</span>' : ''}</h1><div class="page-header-actions">${section.addLabel ? `<button class="btn btn--primary" id="add-unit">${section.addLabel}</button>` : ''}</div></header>
         <div class="list-page-body">
           ${state.section === 'mode-units' ? '' : `<section class="filter-toolbar${hasSourceFilters ? ' filter-toolbar--source-filters' : ''}${isGearArchive ? ' filter-toolbar--gear-archive' : ''}">
             ${searchControl}
@@ -441,7 +488,7 @@
             <div class="filter-toolbar__counts"><span class="tag tag--success">发布 ${counts.发布}</span><span class="tag tag--warning">草稿 ${counts.草稿}</span><span class="tag tag--info">停用 ${counts.停用}</span></div>
           </section>`}
           <section class="list-table-card"><div class="table-panel"><div class="table-shell"><div class="data-table-scroll-region">
-            <table class="data-table${state.section === 'rhythm-libraries' ? ' rhythm-list-table' : ''}" style="min-width:${tableMinWidth}px"><colgroup>${columnWidths.map(width => `<col style="width:${width}px">`).join('')}<col style="width:${actionWidth}px"></colgroup><thead><tr>${section.columns.map(([key, label]) => `<th${(versionedSection && key === 'currentVersion') || isNewFeatureColumn(key) ? ' class="version-feature-cell"' : ''}>${label}</th>`).join('')}<th>操作</th></tr>${modeUnitFilterRow}</thead><tbody>${tableRows}</tbody></table>
+            <table class="data-table${state.section === 'rhythm-libraries' ? ' rhythm-list-table' : ''}" style="min-width:${tableMinWidth}px"><colgroup>${columnWidths.map(width => `<col style="width:${width}px">`).join('')}<col style="width:${actionWidth}px"></colgroup><thead><tr>${section.columns.map(([key, label]) => `<th${(versionedSection && key === 'currentVersion') || isNewFeatureColumn(key) ? ' class="version-feature-cell"' : ''}>${label}${state.section === 'power-sources' && key === 'currentVersion' ? powerVersionBadge : ''}</th>`).join('')}<th>操作</th></tr>${modeUnitFilterRow}</thead><tbody>${tableRows}</tbody></table>
           </div></div></div><footer class="pagination-bar"><span>共 ${visible.length} 条记录 · 每页 10 条</span><div class="pagination"><button class="page-button" disabled>${chevron('left')}</button><button class="page-button is-active">1</button><button class="page-button" disabled>${chevron('right')}</button></div></footer></section>
         </div>
       </section>`;
@@ -476,6 +523,7 @@
     function initializeForm(row = null) {
       const section = sections[state.section];
       const savedConfig = row?.config || {};
+      state.powerMapping = null; state.powerBaseConfig = {}; state.powerOriginal = ''; 
       let viewSnapshot = null;
       state.form = {
         suction: '', suctionStep: '', gearCount: '', speedStrategy: '按 Speed 档位配置', speedLevels: '', frequencyStrategy: '', variablePreset: '', fixedFrequency: '', variableFastFrequency: '70', variableMediumFrequency: '60', variableSlowFrequency: '50',
@@ -514,6 +562,14 @@
           state.form.versionUpdateSummary = draftVersion?.changeSummary || '';
         }
       }
+      if (state.section === 'power-sources') {
+        const draft = row && state.view === 'edit' ? ensurePowerVersions(row).find(item => item.status === '草稿') : null;
+        const active = row ? draft || ensurePowerVersions(row).find(item => item.version === row.currentVersion) || ensurePowerVersions(row)[0] : null;
+        if (active) applyPowerSnapshot(active.snapshot);
+        state.viewVersion = active?.version || null;
+        state.form.editingVersion = draft?.version || (state.view === 'edit' && row?.status === '停用' ? nextMajorRhythmVersion(row) : active?.version || 'V1');
+        state.form.versionUpdateSummary = state.view === 'edit' && row?.status === '停用' ? draft?.changeSummary || '' : active?.changeSummary || '';
+      }
       if (state.section === 'language-packs' && state.view === 'new-version') {
         state.form.version = nextLanguageVersion(row);
         state.form.note = '';
@@ -534,13 +590,14 @@
       state.resultWarnings = {};
       state.modeUnits = (row?.modeUnits || []).map(item => ({ ...item }));
       state.rhythmModes = (viewSnapshot?.rhythmModes || row?.rhythmModes || []).map(item => ({ ...item }));
-      state.powerImports = { pressure: '', relief: '', ...(row?.powerImports || {}) };
+      state.powerImports = { pressure: '', relief: '', ...(state.section === 'power-sources' && state.powerMapping ? state.powerMapping.powerImports : row?.powerImports || {}) };
+      if (state.section === 'power-sources') state.powerOriginal = powerFormFingerprint();
     }
 
     function modeUnitPowerSourceField() {
       const disabled = state.view === "view" ? "disabled" : "";
       const options = sections["mode-units"].options.map(option => {
-        const source = powerSourceRows.find(item => item.name === option);
+        const source = resolvePowerSource(option);
         const type = source && source.config ? source.config.powerSourceType : "未分类";
         return "<option value=\"" + escapeHtml(option) + "\"" + (option === state.form.extra ? " selected" : "") + ">" + escapeHtml(option) + "（" + escapeHtml(type) + "）</option>";
       }).join("");
@@ -548,6 +605,7 @@
     }
 
     function openForm(view, row = null) {
+      if (view === 'edit' && state.section === 'power-sources' && row?.status === '发布') { showToast('请先停用已发布动力源后再编辑'); return; }
       state.view = view;
       state.selected = row;
       initializeForm(row);
@@ -613,7 +671,24 @@
       </div></section>`;
     }
 
+    function applyPowerSnapshot(snapshot) {
+      const data = powerClone(snapshot);
+      powerConfigKeys.forEach(key => { state.form[key] = ''; });
+      Object.assign(state.form, data.config, { name: data.name, code: data.code, project: data.project, description: data.description });
+      state.powerBaseConfig = powerClone(data.config || {});
+      state.powerMapping = data;
+      state.powerImports = { pressure: '', relief: '', ...data.powerImports };
+    }
+    function powerFormSnapshot() {
+      const config = { ...state.powerBaseConfig };
+      powerConfigKeys.forEach(key => { config[key] = state.form[key] || ''; });
+      return powerClone({ name: state.form.name.trim(), code: state.form.code.trim(), project: state.form.project, description: state.form.description, config, ...currentPowerMappingRows(), powerImports: { ...state.powerImports } });
+    }
+    function powerFormFingerprint() {
+      return JSON.stringify({ snapshot: powerFormSnapshot(), summary: state.form.versionUpdateSummary });
+    }
     function currentPowerMappingRows() {
+      if (state.section === 'power-sources' && state.view === 'view' && state.powerMapping) return powerClone({ pressureRows: state.powerMapping.pressureRows, reliefRows: state.powerMapping.reliefRows });
       const isLinearMotorPressure = state.form.powerSourceType === '直线电机类';
       const pulseCount = Math.min(5, Math.max(1, Number.parseInt(state.form.pulseCount, 10) || 4));
       const fitPulseArray = value => {
@@ -625,9 +700,9 @@
         }
         return `[${numbers.slice(0, pulseCount).join(', ')}]`;
       };
-      const sourcePressureRows = (state.selected?.config?.powerSourceType === state.form.powerSourceType && state.selected?.pressureRows) || (isLinearMotorPressure ? linearMotorPressureRows : percentagePressureRows);
+      const sourcePressureRows = (state.powerMapping?.config?.powerSourceType === state.form.powerSourceType && state.powerMapping.pressureRows) || (state.selected?.config?.powerSourceType === state.form.powerSourceType && state.selected?.pressureRows) || (isLinearMotorPressure ? linearMotorPressureRows : percentagePressureRows);
       const pressureRows = isLinearMotorPressure ? sourcePressureRows.map(row => [row[0], ...row.slice(1).map(fitPulseArray)]) : sourcePressureRows;
-      const reliefRows = state.selected?.reliefRows || standardReliefRows;
+      const reliefRows = state.powerMapping?.reliefRows || state.selected?.reliefRows || standardReliefRows;
       return { pressureRows: pressureRows.map(row => [...row]), reliefRows: reliefRows.map(row => [...row]) };
     }
 
@@ -660,6 +735,39 @@
       </section>`;
     }
 
+    function powerVersionFields(isView) {
+      const versions = state.selected ? ensurePowerVersions(state.selected) : [];
+      const active = versions.find(item => item.version === state.viewVersion) || versions[0] || {};
+      const version = isView ? active.version || 'V1' : state.form.editingVersion || 'V1';
+      const summary = isView ? active.changeSummary || '' : state.form.versionUpdateSummary;
+      const switcher = isView && state.selected ? `<div class="form-field form-field--wide power-version-region"><span>版本切换 ${powerVersionBadge}</span><div class="version-switch-row"><div class="power-version-tabs" role="tablist" aria-label="动力源版本">${versions.map(item => `<button type="button" class="power-version-tab${item.version === active.version ? ' is-active' : ''}" role="tab" aria-selected="${item.version === active.version}" data-view-version="${escapeHtml(item.version)}"><strong>${escapeHtml(item.version)}</strong><span>${escapeHtml(item.status)}</span></button>`).join('')}</div><button class="btn btn--outline" id="view-version-log" type="button">版本记录</button></div><div class="power-version-meta"><span>版本状态：${escapeHtml(active.status || '—')}</span><span>更新时间：${escapeHtml(active.publishTime || '未发布')}</span><span>更新人：${escapeHtml(active.publisher || '—')}</span></div></div>` : '';
+      return `${switcher}<label class="form-field power-version-region"><span>版本号<em class="required"> *</em> ${powerVersionBadge}</span><input class="control" data-power-version value="${escapeHtml(version)}" disabled>${isView ? '' : '<small>首版 V1；停用已发布方案后编辑自动升版，不支持修改</small>'}</label><label class="form-field form-field--wide power-version-region"><span>版本说明<em class="required"> *</em> ${powerVersionBadge}</span><textarea class="control" maxlength="1000" ${isView ? 'disabled' : 'data-field="versionUpdateSummary"'} placeholder="说明本版本的参数、映射表或关联型号变化">${escapeHtml(summary)}</textarea></label>`;
+    }
+    function powerVersionModal(type, row) {
+      const versions = ensurePowerVersions(row);
+      const close = '<button class="dialog-close" id="version-modal-close" type="button" aria-label="关闭">×</button>';
+      if (type === 'compare') {
+        const target = versions.find(item => item.version === state.versionModal.version) || versions[0];
+        const current = versions.find(item => item.version === row.currentVersion) || versions[0];
+        const labels = { powerSourceType: '动力源类型', motorType: '电机类型', pumpType: '泵类型', valveType: '阀类型', pulseCount: '脉冲数组组数', frequencyMin: '频率下限 CPM', frequencyMax: '频率上限 CPM', holdMin: '保压下限 ms', holdMax: '保压上限 ms', intervalMin: '间歇下限 ms', intervalMax: '间歇上限 ms' };
+        const values = version => { const snapshot = version.snapshot; return [snapshot.name, snapshot.code, snapshot.project, snapshot.description, ...powerConfigKeys.map(key => snapshot.config[key] || ''), snapshot.pressureRows.map(r => r.join(' | ')).join('\n'), snapshot.reliefRows.map(r => r.join(' | ')).join('\n'), snapshot.powerImports.pressure || '', snapshot.powerImports.relief || '', version.changeSummary]; };
+        const left = values(current), right = values(target);
+        const fields = ['名称', '编码', '关联型号', '描述', ...powerConfigKeys.map(key => labels[key]), '建压映射表', '泄压映射表', '建压导入文件', '泄压导入文件', '版本说明'];
+        const rows = fields.map((field, index) => `<tr${left[index] !== right[index] ? ' class="power-compare-difference"' : ''}><th>${field}</th><td>${escapeHtml(left[index] || '—')}</td><td>${escapeHtml(right[index] || '—')}</td></tr>`).join('');
+        return `<div class="form-modal-overlay version-modal-overlay"><section class="form-modal power-version-dialog power-version-dialog--wide" role="dialog" aria-modal="true" aria-label="动力源版本对比"><header><div><h2>动力源版本对比 ${powerVersionBadge}</h2><p>${escapeHtml(row.name)} · 当前 ${escapeHtml(current.version)} 与所选 ${escapeHtml(target.version)}</p></div>${close}</header><div class="form-modal__body"><div class="table-shell"><table class="data-table power-version-compare"><thead><tr><th>字段</th><th>当前 ${escapeHtml(current.version)}</th><th>对比 ${escapeHtml(target.version)}</th></tr></thead><tbody>${rows}</tbody></table></div></div><footer><button class="btn btn--outline" id="version-modal-cancel" type="button">返回版本记录</button></footer></section></div>`;
+      }
+      const rows = versions.map(item => `<tr><td><strong>${escapeHtml(item.version)}</strong>${item.version === row.currentVersion ? '<small>当前版本</small>' : ''}</td><td>${statusTag(item.status)}</td><td>${escapeHtml(item.snapshot.project)}</td><td>${escapeHtml(item.changeSummary)}</td><td>${escapeHtml(item.publisher || '—')}<small>${escapeHtml(item.publishTime || '未发布')}</small></td><td class="actions"><button data-version-action="compare" data-version="${escapeHtml(item.version)}">对比</button></td></tr>`).join('');
+      return `<div class="form-modal-overlay version-modal-overlay"><section class="form-modal power-version-dialog power-version-dialog--wide" role="dialog" aria-modal="true" aria-label="动力源版本记录"><header><div><h2>${escapeHtml(row.name)} · 版本记录 ${powerVersionBadge}</h2><p>停用已发布方案后，编辑并保存生成下一版本；草稿发布前保留当前配置。</p></div>${close}</header><div class="form-modal__body"><div class="table-shell"><table class="data-table power-version-history"><thead><tr><th>版本</th><th>状态</th><th>关联型号</th><th>版本说明</th><th>发布信息</th><th>操作</th></tr></thead><tbody>${rows}</tbody></table></div></div><footer><button class="btn btn--outline" id="version-modal-cancel" type="button">关闭</button></footer></section></div>`;
+    }
+    function publishPowerDraft(row) {
+      const draft = ensurePowerVersions(row).find(item => item.status === '草稿');
+      if (!draft) return false;
+      row.versions.forEach(item => { if (item.current) { item.current = false; item.status = '历史版本'; } });
+      Object.assign(draft, { status: '发布', current: true, publisher: '刘媛媛', publishTime: currentTimestamp() });
+      Object.assign(row, powerClone(draft.snapshot), { currentVersion: draft.version, status: '发布', updater: draft.publisher, time: draft.publishTime });
+      return true;
+    }
+
     function powerSourceForm(isView) {
       return `${`<section class="form-card"><h2>基础信息配置</h2><div class="form-grid">
         ${textField('动力源名称', 'name', state.form.name, false, false, isView)}
@@ -669,6 +777,7 @@
         ${selectField('泵类型', 'pumpType', ['隔膜泵', '压电泵'], state.form.pumpType, false, false, 'new-feature optional-source-field')}
         ${selectField('阀类型', 'valveType', ['电磁阀'], state.form.valveType, false, false, 'new-feature optional-source-field')}
         ${modelMultiSelectField(state.form.project)}
+        ${powerVersionFields(isView)}
         ${textField('描述', 'description', state.form.description, true, true, isView)}
       </div></section>`}${mappingPanel('pressure')}${mappingPanel('relief')}<section class="form-card"><h2>边界配置</h2><div class="boundary-grid">
         <section class="boundary-group"><h3>频率</h3><div class="boundary-fields">${textField('最小值 CPM', 'frequencyMin', state.form.frequencyMin, false, false, isView, 'text', false)}${textField('最大值 CPM', 'frequencyMax', state.form.frequencyMax, false, false, isView, 'text', false)}</div></section>
@@ -908,6 +1017,7 @@
     function versionModal() {
       if (!state.versionModal) return '';
       const { type, row } = state.versionModal;
+      if (state.section === 'power-sources') return powerVersionModal(type, row);
       const versions = versionsFor(row);
       const versionEntityLabel = state.section === 'rhythm-libraries' ? '韵律库' : '模式单元';
       const versionInputLabel = state.section === 'rhythm-libraries' ? '韵律设计输入/依据' : '医学输入/依据';
@@ -1167,7 +1277,7 @@
 
     function modeUnitPowerSource() {
       const sourceName = state.form.extra || state.form.source;
-      return powerSourceRows.find(item => item.name === sourceName) || powerSourceRows[0];
+      return resolvePowerSource(sourceName) || powerSourceRows[0];
     }
 
     function nearestMappingRow(mappingRows, suction) {
@@ -1456,7 +1566,7 @@
       if (state.section === 'language-packs') formBody = languagePackageForm(isView);
       const hasInvalidResults = state.section === 'mode-units' && state.generated && Object.values(state.resultValidation).some(Boolean);
       const formTitle = state.section === 'language-packs' && state.view === 'new-version' ? '新建语言包版本' : section.formTitle;
-      return `<section class="page-stack"><header class="page-header-bar"><div class="page-header-title"><button class="back-button" id="back">${chevron('left')}</button><h1>${formTitle}</h1></div><div class="page-header-actions">${isView ? '<button class="btn btn--outline" id="cancel">返回</button>' : `<button class="btn btn--outline" id="cancel">取消</button><button class="btn btn--primary" id="save" ${hasInvalidResults ? 'disabled' : ''}>保存</button>`}</div></header>
+      return `<section class="page-stack${state.section === 'power-sources' ? ' power-version-page' : ''}"><header class="page-header-bar"><div class="page-header-title"><button class="back-button" id="back">${chevron('left')}</button><h1>${formTitle}</h1></div><div class="page-header-actions">${isView ? '<button class="btn btn--outline" id="cancel">返回</button>' : `<button class="btn btn--outline" id="cancel">取消</button><button class="btn btn--primary" id="save" ${hasInvalidResults ? 'disabled' : ''}>保存</button>`}</div></header>
         <div class="form-page">${formBody}</div></section>`;
     }
 
@@ -1715,7 +1825,7 @@
           if (action === 'publish' && state.section === 'language-packs') { state.languagePublish = row; render(); return; }
           if (action === 'version-history') { state.versionModal = { type: 'history', row }; render(); return; }
           if (action === 'new-version') { state.versionModal = { type: 'create', row }; render(); return; }
-          if (action === 'publish' && (state.section === 'rhythm-libraries' || state.section === 'mode-units') && !versionsFor(row).some(item => item.status === '草稿')) {
+          if (action === 'publish' && ['rhythm-libraries', 'mode-units', 'power-sources'].includes(state.section) && !versionsFor(row).some(item => item.status === '草稿')) {
             showToast('请先编辑并保存新版本');
             return;
           }
@@ -1737,9 +1847,11 @@
           }
           const messages = { publish: '确认执行此操作并切换状态吗？', disable: '确认执行此操作并切换状态吗？', delete: '确认删除吗？' };
           showDialog(messages[action], () => {
+            const powerBackup = state.section === 'power-sources' ? powerClone(powerSourceRows) : null;
             if (action === 'delete') activeRows.splice(activeRows.indexOf(row), 1);
             if (action === 'publish') {
-              if (state.section === 'rhythm-libraries') publishRhythmDraft(row);
+              if (state.section === 'power-sources') publishPowerDraft(row);
+              else if (state.section === 'rhythm-libraries') publishRhythmDraft(row);
               else if (state.section === 'mode-units') publishModeUnitDraft(row);
               else if (state.section === 'language-packs') {
                 row.status = '发布';
@@ -1756,6 +1868,7 @@
               } else row.status = '发布';
             }
             if (action === 'disable') row.status = '停用';
+            if (state.section === 'power-sources' && !persistPowerRows()) { powerSourceRows.splice(0, powerSourceRows.length, ...powerBackup); render(); return; }
             showToast('操作成功'); render();
           });
         }));
@@ -1768,7 +1881,8 @@
           if (!version) return;
           state.viewVersion = version.version;
           if (version.snapshot) {
-            Object.assign(state.form, version.snapshot);
+            if (state.section === 'power-sources') applyPowerSnapshot(version.snapshot);
+            else Object.assign(state.form, version.snapshot);
             if (state.section === 'rhythm-libraries') state.rhythmModes = (version.snapshot.rhythmModes || []).map(item => ({ ...item }));
             if (state.section === 'mode-units') state.resultSpeedTab = variableTypesEnabled() ? 2 : 1;
           }
@@ -2062,19 +2176,24 @@
       if (state.section === 'power-sources' && !state.form.powerSourceType) { showToast('请选择动力源类型'); return; }
       if (state.section === 'power-sources' && !state.form.project) { showToast('请至少选择一个关联型号'); return; }
       if (state.section === 'power-sources') {
-        const values = {
-          name: state.form.name || '未命名动力源',
-          code: state.form.code || `POWER-${Math.max(...powerSourceRows.map(row => row.id)) + 1}`,
-          project: state.form.project,
-          description: state.form.description,
-          config: { powerSourceType: state.form.powerSourceType, motorType: state.form.motorType, pumpType: state.form.pumpType, valveType: state.form.valveType, pulseCount: state.form.pulseCount, frequencyMin: state.form.frequencyMin, frequencyMax: state.form.frequencyMax, holdMin: state.form.holdMin, holdMax: state.form.holdMax, intervalMin: state.form.intervalMin, intervalMax: state.form.intervalMax },
-          ...currentPowerMappingRows(),
-          powerImports: { ...state.powerImports },
-          updater: '刘媛媛',
-          time: currentTimestamp()
-        };
-        if (state.selected) Object.assign(state.selected, values);
-        else powerSourceRows.unshift({ id: Math.max(...powerSourceRows.map(row => row.id)) + 1, status: '草稿', ...values });
+        if (!state.form.name.trim() || !state.form.code.trim()) { showToast('请填写动力源名称和编码'); return; }
+        if (!state.form.versionUpdateSummary.trim()) { showToast('请填写版本说明'); return; }
+        if (state.selected?.status === '发布') { showToast('请先停用已发布动力源后再编辑'); return; }
+        const snapshot = powerFormSnapshot();
+        const powerBackup = powerClone(powerSourceRows);
+        const now = currentTimestamp();
+        const record = { version: state.form.editingVersion || 'V1', status: '草稿', current: false, changeSummary: state.form.versionUpdateSummary.trim(), publisher: '刘媛媛', publishTime: '未发布', snapshot };
+        if (state.selected) {
+          const row = state.selected;
+          row.versions = [record, ...ensurePowerVersions(row).filter(item => item.version !== record.version)];
+          if (row.status === '草稿') Object.assign(row, powerClone(snapshot), { currentVersion: record.version, updater: '刘媛媛', time: now });
+        } else {
+          powerSourceRows.unshift({ id: Math.max(100, ...powerSourceRows.map(row => row.id)) + 1, ...powerClone(snapshot), status: '草稿', currentVersion: 'V1', versions: [record], updater: '刘媛媛', time: now });
+        }
+        if (!persistPowerRows()) { powerSourceRows.splice(0, powerSourceRows.length, ...powerBackup); state.selected = powerSourceRows.find(row => row.id === state.selected?.id) || null; return; }
+        showToast(`${record.version} 草稿已保存`);
+        returnToList();
+        return;
       }
       if (state.section === 'mode-units') {
         const invalidResult = Object.values(state.resultValidation).find(Boolean);
@@ -2260,6 +2379,7 @@
     function confirmFormExit(action) {
       if (state.section === 'legacy-rhythms') { LegacyRhythms.confirmExit(action, showDialog); return; }
       if (state.view === 'list' || state.view === 'view') { action(); return; }
+      if (state.section === 'power-sources' && state.powerOriginal === powerFormFingerprint()) { action(); return; }
       showDialog('当前有未保存的修改，离开页面后数据将清空，确定要离开吗？', action, '留在此页', '离开');
     }
     function showDialog(message, action, cancelLabel = '取消', confirmLabel = '确定') {

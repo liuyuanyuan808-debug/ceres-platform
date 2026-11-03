@@ -1,0 +1,29 @@
+/* 2.1 additions are marked locally; the existing power source pages retain their standard layout. */
+.power-version-badge { display:inline-flex; align-items:center; margin-left:7px; padding:1px 6px; border:1px solid #e8c763; border-radius:4px; color:#82601a; background:#fff8dd; font-size:11px; font-weight:500; line-height:1.6; white-space:nowrap; vertical-align:middle; }
+.power-nav-update { display:inline-block; margin-left:6px; color:#e4c477; font-size:10px; font-weight:400; }
+.power-version-page .power-version-region { padding:12px; border:1px solid #edcf7e; border-radius:6px; background:#fffcf3; }
+.power-version-page .version-feature-cell { background:#fffcf0; }
+.power-version-page .power-version-link { padding:0; color:#80601a; background:none; border:0; text-decoration:underline; cursor:pointer; font:inherit; font-weight:600; }
+.power-version-page .version-cell em { color:#886626; }
+.power-version-page th .power-version-badge { display:block; width:max-content; margin:3px 0 0; }
+.power-version-tabs { display:flex; gap:8px; flex:1; overflow-x:auto; padding:2px 0; }
+.power-version-tab { display:grid; grid-template-columns:auto auto; align-items:center; gap:8px; min-width:105px; padding:8px 12px; border:1px solid #d7dce4; border-radius:5px; color:#5b6574; background:#fff; cursor:pointer; }
+.power-version-tab span { font-size:11px; white-space:nowrap; }
+.power-version-tab.is-active { color:#6d5011; background:#fff3c6; border-color:#d7b354; }
+.power-version-meta { display:flex; flex-wrap:wrap; gap:8px 24px; margin-top:12px; padding-top:10px; border-top:1px solid #e6dcc1; color:#677387; font-size:12px; }
+.power-version-dialog { width:min(800px,calc(100vw - 32px)); }
+.power-version-dialog--wide { width:min(1120px,calc(100vw - 32px)); }
+.power-version-dialog .form-modal__body { max-height:min(660px,calc(100vh - 180px)); overflow:auto; }
+.power-version-dialog .data-table { min-width:850px; table-layout:fixed; }
+.power-version-history th:nth-child(1) { width:90px; }
+.power-version-history th:nth-child(2) { width:100px; }
+.power-version-history th:nth-child(3) { width:150px; }
+.power-version-history th:nth-child(4) { width:290px; }
+.power-version-history th:nth-child(5) { width:180px; }
+.power-version-history th:nth-child(6) { width:85px; }
+.power-version-history td { white-space:normal; word-break:break-word; }
+.power-version-history td small { display:block; margin-top:5px; color:#8490a0; font-size:11px; }
+.power-version-compare th:first-child { width:170px; }
+.power-version-compare td { white-space:pre-wrap; overflow-wrap:anywhere; vertical-align:top; }
+.power-version-compare .power-compare-difference > * { background:#fff8dc; }
+@media(max-width:900px) { .power-version-page .version-switch-row { align-items:flex-start; flex-wrap:wrap; } }
