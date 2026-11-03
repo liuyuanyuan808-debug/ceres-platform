@@ -199,7 +199,7 @@
         newFeatureKeys: ['source', 'currentVersion']
       },
       'legacy-rhythms': {
-        label: '旧韵律', title: '旧韵律', rows: []
+        label: '旧韵律（2.1新增）', title: '旧韵律', rows: []
       },
       'model-gear-archives': {
         label: '型号档位参数档案', title: '型号档位参数档案', rows: gearArchiveRows,

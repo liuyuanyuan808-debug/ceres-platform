@@ -27,8 +27,6 @@
 .legacy-name { color: var(--ink); font-weight: 400; overflow-wrap: anywhere; }
 .legacy-danger { color: var(--danger) !important; }
 .legacy-danger:hover { color: var(--danger-hover) !important; }
-.legacy-stage-summary { display: block; width: 100%; color: #606266; overflow: hidden; text-overflow: ellipsis; }
-.legacy-stage-summary small { display: block; margin-top: 3px; color: var(--primary); font-size: 12px; }
 .legacy-table .legacy-empty { height: 120px; text-align: center; color: #909399; }
 .legacy-list-footer { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 14px 20px; border-top: 1px solid var(--line); color: var(--muted); font-size: 13px; }
 .legacy-page-current { display: grid; place-items: center; width: 32px; height: 32px; color: #fff; background: var(--primary); }
