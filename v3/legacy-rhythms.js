@@ -4,7 +4,8 @@
   const STORE_KEY = 'ceres.v2.1.legacy-rhythms';
   const V3_SAMPLES_KEY = 'ceres.v3.legacy-rhythms.v3-samples-20261109';
   const MODEL_SAMPLES_KEY = 'ceres.v3.legacy-rhythms.air1-m5ultra-samples-20261109';
-  const MODELS = ['M5 Ultra', 'M5 Smart', 'M9', 'Air 1', 'V3', 'V3 Pro'];
+  const WELLNESS_SAMPLES_KEY = 'ceres.v3.legacy-rhythms.wellness-warm-samples-20261109';
+  const MODELS = ['M5 Ultra', 'M5 Smart', 'M9', 'Air 1', 'V3', 'V3 Pro', 'Wellness Warm'];
   const MODES = ['刺激', '吸乳', '混合1', '混合2', '休息'];
   const FREQUENCIES = ['低', '中', '高'];
   const clone = value => JSON.parse(JSON.stringify(value));
@@ -26,7 +27,9 @@
     { id: 'legacy-air1-milk-boost', name: 'Milk Boost', model: 'Air 1', changeSummary: '参考已有 Milk Boost 阶段组合，首阶段及 30 分钟总时长按截图调整（原型演示）', stages: [stage('刺激', '中', 3, 120), stage('吸乳', '中', 7, 1680)] },
     { id: 'legacy-air1-milk-relief', name: 'Milk Relief', model: 'Air 1', changeSummary: '参考已有 Quick Relief 阶段组合，首阶段及 15 分钟总时长按截图调整（原型演示）', stages: [stage('刺激', '中', 7, 30), stage('休息', '', '', 30), stage('吸乳', '中', 5, 840)] },
     { id: 'legacy-m5-ultra-power-pumping', name: 'Power Pumping', model: 'M5 Ultra', stages: [stage('刺激', '中', 3, 300), stage('吸乳', '中', 5, 900), stage('休息', '', '', 300), stage('混合2', '低', 7, 900), stage('休息', '', '', 300)] },
-    { id: 'legacy-m5-ultra-quick-relief', name: 'Quick Relief', model: 'M5 Ultra', stages: [stage('刺激', '中', 7, 30), stage('休息', '', '', 30), stage('吸乳', '中', 5, 480)] }
+    { id: 'legacy-m5-ultra-quick-relief', name: 'Quick Relief', model: 'M5 Ultra', stages: [stage('刺激', '中', 7, 30), stage('休息', '', '', 30), stage('吸乳', '中', 5, 480)] },
+    { id: 'legacy-wellness-warm-milk-boost', name: 'Milk Boost', model: 'Wellness Warm', changeSummary: '沿用 Air 1 同类阶段示例，总时长按截图为 30 分钟（原型演示）', stages: [stage('刺激', '中', 3, 120), stage('吸乳', '中', 7, 1680)] },
+    { id: 'legacy-wellness-warm-milk-relief', name: 'Milk Relief', model: 'Wellness Warm', changeSummary: '沿用 Air 1 同类阶段示例，总时长按截图为 15 分钟（原型演示）', stages: [stage('刺激', '中', 7, 30), stage('休息', '', '', 30), stage('吸乳', '中', 5, 840)] }
   ];
   function normalizeRow(item) {
     const base = snapshot(item);
@@ -48,7 +51,8 @@
   rows[0].versions.push({ version: 'V1', status: '历史版本', current: false, changeSummary: '首版官方旧韵律', publisher: '陈剑泽', publishTime: '2026-09-22 14:00:00', snapshot: { name: rows[0].name, model: rows[0].model, stages: [stage('刺激', '低', 3, 120), stage('吸乳', '中', 6, 960)] } });
   const sampleImports = [
     { key: V3_SAMPLES_KEY, records: rows.filter(row => row.model === 'V3') },
-    { key: MODEL_SAMPLES_KEY, records: rows.filter(row => row.id.startsWith('legacy-air1-') || row.id.startsWith('legacy-m5-ultra-')) }
+    { key: MODEL_SAMPLES_KEY, records: rows.filter(row => row.id.startsWith('legacy-air1-') || row.id.startsWith('legacy-m5-ultra-')) },
+    { key: WELLNESS_SAMPLES_KEY, records: rows.filter(row => row.model === 'Wellness Warm') }
   ];
   try {
     const saved = JSON.parse(localStorage.getItem(STORE_KEY));
