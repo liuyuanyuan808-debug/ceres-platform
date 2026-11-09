@@ -3,6 +3,7 @@
   'use strict';
   const STORE_KEY = 'ceres.v2.1.legacy-rhythms';
   const V3_SAMPLES_KEY = 'ceres.v3.legacy-rhythms.v3-samples-20261109';
+  const MODEL_SAMPLES_KEY = 'ceres.v3.legacy-rhythms.air1-m5ultra-samples-20261109';
   const MODELS = ['M5 Ultra', 'M5 Smart', 'M9', 'Air 1', 'V3', 'V3 Pro'];
   const MODES = ['刺激', '吸乳', '混合1', '混合2', '休息'];
   const FREQUENCIES = ['低', '中', '高'];
@@ -21,7 +22,11 @@
     { id: 'legacy-power-pumping', name: 'Power Pumping', model: 'M5 Smart', stages: [stage('刺激', '低', 3, 300), stage('吸乳', '中', 5, 900), stage('休息', '', '', 300), stage('混合2', '低', 7, 900), stage('休息', '', '', 300)] },
     { id: 'legacy-quick-relief', name: 'Quick Relief', model: 'M9', stages: [stage('混合2', '低', 7, 30), stage('休息', '', '', 30), stage('吸乳', '中', 5, 480)] },
     { id: 'legacy-v3-cozy-flow', name: 'Cozy Flow', model: 'V3', stages: [stage('刺激', '中', 1, 90), stage('吸乳', '中', 1, 1200)] },
-    { id: 'legacy-v3-milk-boost', name: 'Milk Boost', model: 'V3', stages: [stage('刺激', '中', 1, 120), stage('吸乳', '中', 1, 480), stage('刺激', '中', 1, 120), stage('吸乳', '中', 1, 480)] }
+    { id: 'legacy-v3-milk-boost', name: 'Milk Boost', model: 'V3', stages: [stage('刺激', '中', 1, 120), stage('吸乳', '中', 1, 480), stage('刺激', '中', 1, 120), stage('吸乳', '中', 1, 480)] },
+    { id: 'legacy-air1-milk-boost', name: 'Milk Boost', model: 'Air 1', changeSummary: '参考已有 Milk Boost 阶段组合，首阶段及 30 分钟总时长按截图调整（原型演示）', stages: [stage('刺激', '中', 3, 120), stage('吸乳', '中', 7, 1680)] },
+    { id: 'legacy-air1-milk-relief', name: 'Milk Relief', model: 'Air 1', changeSummary: '参考已有 Quick Relief 阶段组合，首阶段及 15 分钟总时长按截图调整（原型演示）', stages: [stage('刺激', '中', 7, 30), stage('休息', '', '', 30), stage('吸乳', '中', 5, 840)] },
+    { id: 'legacy-m5-ultra-power-pumping', name: 'Power Pumping', model: 'M5 Ultra', stages: [stage('刺激', '中', 3, 300), stage('吸乳', '中', 5, 900), stage('休息', '', '', 300), stage('混合2', '低', 7, 900), stage('休息', '', '', 300)] },
+    { id: 'legacy-m5-ultra-quick-relief', name: 'Quick Relief', model: 'M5 Ultra', stages: [stage('刺激', '中', 7, 30), stage('休息', '', '', 30), stage('吸乳', '中', 5, 480)] }
   ];
   function normalizeRow(item) {
     const base = snapshot(item);
@@ -32,7 +37,7 @@
       changeSummary: String(v.changeSummary || '初始旧韵律配置'), publisher: String(v.publisher || '刘媛媛'), publishTime: String(v.publishTime || '未发布'),
       snapshot: snapshot(v.snapshot && Array.isArray(v.snapshot.stages) ? v.snapshot : base)
     })) : [];
-    if (!versions.length) versions = [{ version: 'V1', status: status === '草稿' ? '草稿' : '发布', current: status !== '草稿', changeSummary: '初始旧韵律配置', publisher: '刘媛媛', publishTime: status === '草稿' ? '未发布' : time, snapshot: clone(base) }];
+    if (!versions.length) versions = [{ version: 'V1', status: status === '草稿' ? '草稿' : '发布', current: status !== '草稿', changeSummary: String(item.changeSummary || '初始旧韵律配置'), publisher: '刘媛媛', publishTime: status === '草稿' ? '未发布' : time, snapshot: clone(base) }];
     const currentVersion = versions.some(v => v.version === item.currentVersion) ? item.currentVersion : (versions.find(v => v.current) || versions[0]).version;
     return { id: item.id, ...base, status, currentVersion, updater: String(item.updater || '刘媛媛'), time, versions };
   }
@@ -41,15 +46,19 @@
   rows[0].versions[0].version = 'V2';
   rows[0].versions[0].changeSummary = '优化日常泌乳的阶段时长';
   rows[0].versions.push({ version: 'V1', status: '历史版本', current: false, changeSummary: '首版官方旧韵律', publisher: '陈剑泽', publishTime: '2026-09-22 14:00:00', snapshot: { name: rows[0].name, model: rows[0].model, stages: [stage('刺激', '低', 3, 120), stage('吸乳', '中', 6, 960)] } });
-  const v3Samples = rows.filter(row => row.model === 'V3');
+  const sampleImports = [
+    { key: V3_SAMPLES_KEY, records: rows.filter(row => row.model === 'V3') },
+    { key: MODEL_SAMPLES_KEY, records: rows.filter(row => row.id.startsWith('legacy-air1-') || row.id.startsWith('legacy-m5-ultra-')) }
+  ];
   try {
     const saved = JSON.parse(localStorage.getItem(STORE_KEY));
     if (Array.isArray(saved)) rows = saved.filter(item => item && typeof item.id === 'string' && Array.isArray(item.stages)).map(normalizeRow);
     // Add these examples once for returning visitors, preserving edits and later deletions.
-    if (localStorage.getItem(V3_SAMPLES_KEY) !== '1') {
-      rows.push(...v3Samples.filter(sample => !rows.some(row => row.id === sample.id || (row.model === sample.model && row.name.trim() === sample.name))));
+    for (const batch of sampleImports) {
+      if (localStorage.getItem(batch.key) === '1') continue;
+      rows.push(...batch.records.filter(sample => !rows.some(row => row.id === sample.id || (row.model === sample.model && row.name.trim() === sample.name))));
       localStorage.setItem(STORE_KEY, JSON.stringify(rows));
-      localStorage.setItem(V3_SAMPLES_KEY, '1');
+      localStorage.setItem(batch.key, '1');
     }
   } catch (_) { /* Keep demonstration records when local storage is unavailable. */ }
   const state = { view: 'list', query: '', modelFilter: '', statusFilter: '', selectedId: null, draft: null, original: '', viewVersion: '', history: null, dragIndex: null, formError: '' };
