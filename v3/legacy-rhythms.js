@@ -160,7 +160,7 @@
   }
   function versionSwitcher(row) {
     const active = row.versions.find(v => v.version === state.viewVersion) || row.versions[0];
-    return `<div class="form-field form-field--wide"><span>版本切换</span><div class="legacy-version-switch"><div class="legacy-version-tabs" role="tablist" aria-label="旧韵律版本">${row.versions.map(v => `<button class="legacy-version-tab${v.version === active.version ? ' is-active' : ''}" type="button" role="tab" aria-selected="${v.version === active.version}" data-legacy-view-version="${esc(v.version)}"><strong>${esc(v.version)}</strong><span>${esc(v.status)}</span></button>`).join('')}</div><button class="btn btn--outline" id="legacy-version-log" type="button">版本记录</button></div><div class="legacy-version-meta"><span>版本状态：${esc(active.status)}</span><span>更新时间：${esc(active.publishTime)}</span><span>更新人：${esc(active.publisher)}</span></div></div>`;
+    return `<div class="form-field form-field--wide"><span>版本切换</span><div class="legacy-version-switch"><div class="legacy-version-tabs" role="tablist" aria-label="旧韵律版本">${row.versions.map(v => `<button class="legacy-version-tab${v.version === active.version ? ' is-active' : ''}" type="button" role="tab" aria-selected="${v.version === active.version}" data-legacy-view-version="${esc(v.version)}"><strong>${esc(v.version)}</strong><span>${esc(v.status)}</span></button>`).join('')}</div><button class="btn btn--outline" id="legacy-version-log" type="button">版本记录</button></div><div class="legacy-version-meta"><span>版本状态：${esc(active.status)}</span><span>发布时间：${esc(active.publishTime)}</span><span>发布人：${esc(active.publisher)}</span></div></div>`;
   }
   function formView() {
     const isView = state.view === 'detail'; const draft = state.draft; const row = selected(); const disabled = isView ? ' disabled' : '';
@@ -185,20 +185,30 @@
   function clearError() { state.formError = ''; const error = document.querySelector('#legacy-form-error'); if (error) { error.textContent = ''; error.classList.add('is-hidden'); } }
   function fail(message, selector) { state.formError = message; const error = document.querySelector('#legacy-form-error'); if (error) { error.textContent = message; error.classList.remove('is-hidden'); } document.querySelector(selector)?.focus(); error?.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
   function conflict(data, id) { return rows.some(row => row.id !== id && [snapshot(row), ...row.versions.filter(v => v.status === '草稿').map(v => v.snapshot)].some(other => other.model === data.model && other.name.trim() === data.name.trim())); }
-  function save() {
-    const data = state.draft; const row = selected();
-    if (!data.name.trim()) { fail('请输入名称。', '#legacy-field-name'); return; }
-    if (!models().includes(data.model)) { fail('请选择型号。', '#legacy-field-model'); return; }
-    if (!data.changeSummary.trim()) { fail('请填写版本说明。', '#legacy-field-summary'); return; }
-    if (conflict(data, row?.id)) { fail('该型号下已存在同名旧韵律。', '#legacy-field-name'); return; }
-    if (!data.stages.length) { fail('请至少新增一个阶段。', '#legacy-add-stage'); return; }
+  function validateConfiguration(data, id) {
+    const error = (message, selector) => ({ message, selector });
+    const name = String(data?.name || '').trim();
+    const summary = String(data?.changeSummary || '').trim();
+    if (!name) return error('请输入名称。', '#legacy-field-name');
+    if (name.length > 100) return error('名称不能超过 100 字符。', '#legacy-field-name');
+    if (!MODELS.includes(data.model)) return error('请选择型号。', '#legacy-field-model');
+    if (!summary) return error('请填写版本说明。', '#legacy-field-summary');
+    if (summary.length > 1000) return error('版本说明不能超过 1000 字符。', '#legacy-field-summary');
+    if (conflict({ name, model: data.model }, id)) return error('该型号下已存在同名旧韵律。', '#legacy-field-name');
+    if (!Array.isArray(data.stages) || !data.stages.length) return error('请至少新增一个阶段。', '#legacy-add-stage');
     for (let index = 0; index < data.stages.length; index++) {
       const item = data.stages[index]; const selector = field => `[data-legacy-stage="${index}"][data-legacy-stage-field="${field}"]`;
-      if (!MODES.includes(item.mode)) { fail(`请选择第 ${index + 1} 阶段的吮吸方式。`, selector('mode')); return; }
-      if (item.mode !== '休息' && (!FREQUENCIES.includes(item.frequency) || !/^[1-9]$/.test(String(item.gear)))) { fail(`请完整配置第 ${index + 1} 阶段的频率和档位。`, selector(!item.frequency ? 'frequency' : 'gear')); return; }
-      if (!/^\d+$/.test(String(item.duration)) || Number(item.duration) < 1 || Number(item.duration) > 7200) { fail(`第 ${index + 1} 阶段时长请输入 1～7200 的整数秒。`, selector('duration')); return; }
+      if (!item || !MODES.includes(item.mode)) return error(`请选择第 ${index + 1} 阶段的吮吸方式。`, selector('mode'));
+      if (item.mode !== '休息' && (!FREQUENCIES.includes(item.frequency) || !/^[1-9]$/.test(String(item.gear)))) return error(`请完整配置第 ${index + 1} 阶段的频率和档位。`, selector(!item.frequency ? 'frequency' : 'gear'));
+      if (!/^\d+$/.test(String(item.duration)) || Number(item.duration) < 1 || Number(item.duration) > 7200) return error(`第 ${index + 1} 阶段时长请输入 1～7200 的整数秒。`, selector('duration'));
     }
-    if (duration(data.stages) > 7200) { fail('总执行时长不能超过 120 分钟。', '#legacy-total-duration'); return; }
+    if (duration(data.stages) > 7200) return error('总执行时长不能超过 120 分钟。', '#legacy-total-duration');
+    return null;
+  }
+  function save() {
+    const data = state.draft; const row = selected();
+    const error = validateConfiguration(data, row?.id);
+    if (error) { fail(error.message, error.selector); return; }
     const now = timestamp(); const saved = snapshot({ ...data, name: data.name.trim() }); saved.stages = saved.stages.map(item => item.mode === '休息' ? { ...item, frequency: '', gear: '' } : item);
     const record = { version: data.version, status: '草稿', current: false, changeSummary: data.changeSummary.trim(), publisher: '刘媛媛', publishTime: '未发布', snapshot: saved };
     const next = clone(rows);
@@ -218,13 +228,32 @@
     if (action === 'disable' && row.status !== '发布') return;
     const draft = row.versions.find(v => v.status === '草稿');
     if (action === 'publish' && !draft) { host.showToast('请先编辑并保存新版本'); return; }
-    if (action === 'publish' && conflict(draft.snapshot, row.id)) { host.showToast('该型号下已存在同名旧韵律，请先编辑草稿'); return; }
+    if (action === 'publish') {
+      const error = validateConfiguration({ ...draft.snapshot, changeSummary: draft.changeSummary }, row.id);
+      if (error) { host.showToast(`${error.message}请先编辑并保存草稿。`); return; }
+    }
     host.showDialog(`确认${ACTION_LABELS[action]}“${row.model} · ${row.name}”吗？`, () => {
+      if (action === 'publish') {
+        // Another tab may have changed the saved draft while confirmation was open.
+        try {
+          const saved = JSON.parse(localStorage.getItem(STORE_KEY));
+          if (!Array.isArray(saved)) { host.showToast('配置已变化，请刷新后重新检查草稿。'); return; }
+          const latest = saved.filter(item => item && typeof item.id === 'string' && Array.isArray(item.stages)).map(normalizeRow);
+          const current = latest.find(item => item.id === id);
+          if (!current || JSON.stringify(current) !== JSON.stringify(normalizeRow(row))) {
+            rows = latest; host.render(); host.showToast('配置已更新，请重新检查草稿后发布。'); return;
+          }
+          rows = latest;
+        } catch (_) { host.showToast('读取配置失败，请刷新后重试。'); return; }
+      }
       const next = clone(rows); const target = next.find(item => item.id === id); if (!target) return;
       if (action === 'delete') next.splice(next.indexOf(target), 1);
       if (action === 'disable') target.status = '停用';
       if (action === 'publish') {
         const release = target.versions.find(v => v.status === '草稿'); if (!release) return;
+        if (target.status === '发布') { host.showToast('配置已发布，请刷新后重试。'); return; }
+        const error = validateConfiguration({ ...release.snapshot, changeSummary: release.changeSummary }, target.id);
+        if (error) { host.showToast(`${error.message}请先编辑并保存草稿。`); return; }
         target.versions.forEach(v => { if (v.current) { v.current = false; if (v.status === '发布') v.status = '历史版本'; } });
         Object.assign(release, { status: '发布', current: true, publisher: '刘媛媛', publishTime: timestamp() });
         Object.assign(target, clone(release.snapshot), { status: '发布', currentVersion: release.version, updater: release.publisher, time: release.publishTime });
