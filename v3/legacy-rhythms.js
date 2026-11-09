@@ -5,7 +5,8 @@
   const V3_SAMPLES_KEY = 'ceres.v3.legacy-rhythms.v3-samples-20261109';
   const MODEL_SAMPLES_KEY = 'ceres.v3.legacy-rhythms.air1-m5ultra-samples-20261109';
   const WELLNESS_SAMPLES_KEY = 'ceres.v3.legacy-rhythms.wellness-warm-samples-20261109';
-  const MODELS = ['M5 Ultra', 'M5 Smart', 'M9', 'Air 1', 'V3', 'V3 Pro', 'Wellness Warm'];
+  const W1_SAMPLES_KEY = 'ceres.v3.legacy-rhythms.w1-samples-20261109';
+  const MODELS = ['M5 Ultra', 'M5 Smart', 'M9', 'Air 1', 'V3', 'V3 Pro', 'Wellness Warm', 'W1'];
   const MODES = ['刺激', '吸乳', '混合1', '混合2', '休息'];
   const FREQUENCIES = ['低', '中', '高'];
   const clone = value => JSON.parse(JSON.stringify(value));
@@ -29,7 +30,9 @@
     { id: 'legacy-m5-ultra-power-pumping', name: 'Power Pumping', model: 'M5 Ultra', stages: [stage('刺激', '中', 3, 300), stage('吸乳', '中', 5, 900), stage('休息', '', '', 300), stage('混合2', '低', 7, 900), stage('休息', '', '', 300)] },
     { id: 'legacy-m5-ultra-quick-relief', name: 'Quick Relief', model: 'M5 Ultra', stages: [stage('刺激', '中', 7, 30), stage('休息', '', '', 30), stage('吸乳', '中', 5, 480)] },
     { id: 'legacy-wellness-warm-milk-boost', name: 'Milk Boost', model: 'Wellness Warm', changeSummary: '沿用 Air 1 同类阶段示例，总时长按截图为 30 分钟（原型演示）', stages: [stage('刺激', '中', 3, 120), stage('吸乳', '中', 7, 1680)] },
-    { id: 'legacy-wellness-warm-milk-relief', name: 'Milk Relief', model: 'Wellness Warm', changeSummary: '沿用 Air 1 同类阶段示例，总时长按截图为 15 分钟（原型演示）', stages: [stage('刺激', '中', 7, 30), stage('休息', '', '', 30), stage('吸乳', '中', 5, 840)] }
+    { id: 'legacy-wellness-warm-milk-relief', name: 'Milk Relief', model: 'Wellness Warm', changeSummary: '沿用 Air 1 同类阶段示例，总时长按截图为 15 分钟（原型演示）', stages: [stage('刺激', '中', 7, 30), stage('休息', '', '', 30), stage('吸乳', '中', 5, 840)] },
+    { id: 'legacy-w1-milk-boost', name: 'Milk Boost', model: 'W1', changeSummary: '沿用 Air 1 同类阶段示例，总时长按 W1 截图为 30 分钟（原型演示）', stages: [stage('刺激', '中', 3, 120), stage('吸乳', '中', 7, 1680)] },
+    { id: 'legacy-w1-milk-relief', name: 'Milk Relief', model: 'W1', changeSummary: '沿用 Air 1 同类阶段示例，总时长按 W1 截图为 15 分钟（原型演示）', stages: [stage('刺激', '中', 7, 30), stage('休息', '', '', 30), stage('吸乳', '中', 5, 840)] }
   ];
   function normalizeRow(item) {
     const base = snapshot(item);
@@ -52,7 +55,8 @@
   const sampleImports = [
     { key: V3_SAMPLES_KEY, records: rows.filter(row => row.model === 'V3') },
     { key: MODEL_SAMPLES_KEY, records: rows.filter(row => row.id.startsWith('legacy-air1-') || row.id.startsWith('legacy-m5-ultra-')) },
-    { key: WELLNESS_SAMPLES_KEY, records: rows.filter(row => row.model === 'Wellness Warm') }
+    { key: WELLNESS_SAMPLES_KEY, records: rows.filter(row => row.model === 'Wellness Warm') },
+    { key: W1_SAMPLES_KEY, records: rows.filter(row => row.model === 'W1') }
   ];
   try {
     const saved = JSON.parse(localStorage.getItem(STORE_KEY));
@@ -65,12 +69,12 @@
       localStorage.setItem(batch.key, '1');
     }
   } catch (_) { /* Keep demonstration records when local storage is unavailable. */ }
-  const state = { view: 'list', query: '', modelFilter: '', statusFilter: '', selectedId: null, draft: null, original: '', viewVersion: '', history: null, dragIndex: null, formError: '' };
+  const state = { view: 'list', query: '', modelFilter: '', statusFilter: '', selectedId: null, draft: null, original: '', viewVersion: '', history: null, modelPicker: null, dragIndex: null, formError: '' };
   let host = { render: () => {}, showToast: () => {}, showDialog: (_, action) => action() };
   const selected = () => rows.find(row => row.id === state.selectedId);
   const models = () => [...new Set([...MODELS, ...rows.flatMap(row => [row.model, ...row.versions.map(v => v.snapshot.model)]).filter(Boolean)])];
   const isDirty = () => state.draft && state.view !== 'detail' && JSON.stringify(state.draft) !== state.original;
-  const resetView = () => { state.view = 'list'; state.selectedId = null; state.draft = null; state.original = ''; state.viewVersion = ''; state.history = null; state.formError = ''; state.dragIndex = null; };
+  const resetView = () => { state.view = 'list'; state.selectedId = null; state.draft = null; state.original = ''; state.viewVersion = ''; state.history = null; state.modelPicker = null; state.formError = ''; state.dragIndex = null; };
   const confirmExit = (action, showDialog = host.showDialog) => { if (isDirty()) showDialog('当前有未保存的修改，离开页面后数据将清空，确定要离开吗？', action, '留在此页', '离开'); else action(); };
   function persist(nextRows) {
     try { localStorage.setItem(STORE_KEY, JSON.stringify(nextRows)); rows = nextRows; return true; }
@@ -83,23 +87,69 @@
     const active = row ? (view === 'edit' && draftVersion) || row.versions.find(v => v.version === (versionName || row.currentVersion)) || row.versions[0] : null;
     const version = view === 'edit' && row.status === '停用' ? draftVersion?.version || nextVersion(row) : active?.version || 'V1';
     state.draft = { ...(active ? clone(active.snapshot) : { name: '', model: '', stages: [] }), version, changeSummary: view === 'edit' && row.status === '停用' && !draftVersion ? '' : active?.changeSummary || '' };
-    state.selectedId = row?.id || null; state.viewVersion = active?.version || ''; state.original = JSON.stringify(state.draft); state.view = view; state.formError = ''; state.history = null;
+    state.selectedId = row?.id || null; state.viewVersion = active?.version || ''; state.original = JSON.stringify(state.draft); state.view = view; state.formError = ''; state.history = null; state.modelPicker = null;
     host.render(); window.scrollTo(0, 0);
   }
-  function rowActions(row) {
-    return `<button data-legacy-action="detail" data-legacy-id="${esc(row.id)}" type="button">查看</button>${row.status === '发布' ? `<button data-legacy-action="disable" data-legacy-id="${esc(row.id)}" type="button">停用</button>` : `<button data-legacy-action="edit" data-legacy-id="${esc(row.id)}" type="button">编辑</button><button data-legacy-action="publish" data-legacy-id="${esc(row.id)}" type="button">发布</button><button class="danger" data-legacy-action="delete" data-legacy-id="${esc(row.id)}" type="button">删除</button>`}`;
+  const ACTION_LABELS = { detail: '查看', history: '查看版本记录', disable: '停用', edit: '编辑', publish: '发布', delete: '删除' };
+  const canAct = (row, action) => action === 'detail' || action === 'history' || (action === 'disable' ? row.status === '发布' : row.status !== '发布');
+  function groupRows(items) {
+    const groups = new Map();
+    for (const item of items) {
+      // Exact name and seconds group the list; each model keeps its own parameters and lifecycle.
+      const key = JSON.stringify([item.name, duration(item.stages)]);
+      if (!groups.has(key)) groups.set(key, { name: item.name, seconds: duration(item.stages), records: [] });
+      groups.get(key).records.push(item);
+    }
+    return [...groups.values()];
+  }
+  function groupActions(group) {
+    return ['detail', 'disable', 'edit', 'publish', 'delete'].filter(action => group.records.some(row => canAct(row, action))).map(action => {
+      const eligible = group.records.filter(row => canAct(row, action));
+      const attrs = eligible.length === 1
+        ? `data-legacy-action="${action}" data-legacy-id="${esc(eligible[0].id)}"`
+        : `data-legacy-group-action="${action}" data-legacy-group-ids="${esc(JSON.stringify(eligible.map(row => row.id)))}"`;
+      return `<button${action === 'delete' ? ' class="danger"' : ''} ${attrs} type="button">${ACTION_LABELS[action]}</button>`;
+    }).join('');
+  }
+  function groupStatus(group) {
+    const statuses = ['发布', '草稿', '停用'].filter(status => group.records.some(row => row.status === status));
+    return `<div class="legacy-group-status">${statuses.map(status => `${statusTag(status)}${statuses.length > 1 ? `<small>${group.records.filter(row => row.status === status).length} 个型号</small>` : ''}`).join('')}</div>`;
+  }
+  function groupVersions(group) {
+    return group.records.map(item => {
+      const draft = item.versions.find(v => v.status === '草稿');
+      return `<div class="legacy-model-version"><button class="legacy-link" data-legacy-action="history" data-legacy-id="${esc(item.id)}" type="button">${group.records.length > 1 ? `${esc(item.model)} · ` : ''}${esc(item.currentVersion)}</button>${draft && draft.version !== item.currentVersion ? `<em>${esc(draft.version)} 草稿</em>` : ''}</div>`;
+    }).join('');
+  }
+  function openModelPicker(action, ids) {
+    const eligible = rows.filter(row => ids.includes(row.id) && canAct(row, action));
+    if (!eligible.length) return;
+    if (eligible.length === 1) { performAction(action, eligible[0].id); return; }
+    state.history = null;
+    state.modelPicker = { action, ids: eligible.map(row => row.id) };
+    host.render();
+    document.querySelector('#legacy-model-picker-close')?.focus();
+  }
+  function modelPickerModal() {
+    const picker = state.modelPicker;
+    if (!picker) return '';
+    const eligible = rows.filter(row => picker.ids.includes(row.id) && canAct(row, picker.action));
+    if (!eligible.length) return '';
+    return `<div class="legacy-modal-overlay legacy-model-picker-overlay"><section class="legacy-version-modal legacy-model-picker" role="dialog" aria-modal="true" aria-labelledby="legacy-model-picker-title"><header><div><h2 id="legacy-model-picker-title">选择要${esc(ACTION_LABELS[picker.action])}的型号</h2><p>${esc(eligible[0].name)} · ${Number((duration(eligible[0].stages) / 60).toFixed(2))} min</p></div><button class="dialog-close" id="legacy-model-picker-close" type="button" aria-label="关闭型号选择">×</button></header><div class="legacy-version-body"><div class="legacy-model-options">${eligible.map(row => `<button class="legacy-model-option" data-legacy-pick-model="${esc(row.id)}" type="button"><span><strong>${esc(row.model)}</strong><small>${esc(row.currentVersion)}</small></span>${statusTag(row.status)}<span class="legacy-model-option__action">${esc(ACTION_LABELS[picker.action])} ›</span></button>`).join('')}</div></div><footer><button class="btn btn--outline" id="legacy-model-picker-cancel" type="button">取消</button></footer></section></div>`;
   }
   function listView() {
     const query = state.query.trim().toLowerCase();
-    const visible = rows.filter(item => (!state.modelFilter || item.model === state.modelFilter) && (!state.statusFilter || item.status === state.statusFilter) && (!query || item.name.toLowerCase().includes(query)));
+    const matching = rows.filter(item => (!state.modelFilter || item.model === state.modelFilter) && (!state.statusFilter || item.status === state.statusFilter) && (!query || item.name.toLowerCase().includes(query)));
+    const visible = groupRows(matching);
     const counts = status => rows.filter(row => row.status === status).length;
     const headers = ['名称', '型号', '总时长（min）', '状态', '更新人', '更新时间', '版本信息', '操作'];
     return `<header class="page-header-bar"><h1>旧韵律库列表管理</h1><div class="page-header-actions"><button class="btn btn--primary" id="legacy-create" type="button">新增旧韵律</button></div></header><div class="list-page-body">
-      <section class="filter-toolbar legacy-toolbar"><input class="control" id="legacy-search" type="search" maxlength="100" aria-label="名称" placeholder="请输入名称，回车键确认搜索" value="${esc(state.query)}"><select class="control" id="legacy-model-filter" aria-label="型号">${optionList(models(), state.modelFilter, '全部型号')}</select><select class="control" id="legacy-status-filter" aria-label="状态">${optionList(['草稿', '发布', '停用'], state.statusFilter, '全部状态')}</select><button class="btn btn--outline" id="legacy-reset-filters" type="button">重置</button><div class="filter-toolbar__counts"><span class="tag tag--success">发布 ${counts('发布')}</span><span class="tag tag--warning">草稿 ${counts('草稿')}</span><span class="tag tag--info">停用 ${counts('停用')}</span></div></section>
-      <section class="list-table-card"><div class="table-panel"><div class="table-shell legacy-table-scroll"><table class="data-table rhythm-list-table legacy-table"><colgroup>${[180, 120, 115, 90, 100, 190, 100, 205].map(width => `<col style="width:${width}px">`).join('')}</colgroup><thead><tr>${headers.map((label, index) => `<th${index === 7 ? ' class="legacy-action-cell"' : ''}>${label}</th>`).join('')}</tr></thead><tbody>${visible.length ? visible.map(item => {
-        const draft = item.versions.find(v => v.status === '草稿');
-        return `<tr><td><span class="cell-text">${esc(item.name)}</span></td><td>${esc(item.model)}</td><td>${Number((duration(item.stages) / 60).toFixed(2))} min</td><td>${statusTag(item.status)}</td><td>${esc(item.updater)}</td><td>${esc(item.time)}</td><td><div class="version-cell"><button class="legacy-link" data-legacy-action="history" data-legacy-id="${esc(item.id)}" type="button">${esc(item.currentVersion)}</button>${draft && draft.version !== item.currentVersion ? `<em>${esc(draft.version)} 草稿</em>` : ''}</div></td><td class="actions legacy-action-cell">${rowActions(item)}</td></tr>`;
-      }).join('') : '<tr class="empty-row"><td colspan="8">暂无数据</td></tr>'}</tbody></table></div></div><footer class="pagination-bar"><span>共 ${visible.length} 条记录</span><div class="pagination"><button class="page-button" disabled type="button">‹</button><button class="page-button is-active" type="button">1</button><button class="page-button" disabled type="button">›</button></div></footer></section></div>`;
+      <section class="filter-toolbar legacy-toolbar"><input class="control" id="legacy-search" type="search" maxlength="100" aria-label="名称" placeholder="请输入名称，回车键确认搜索" value="${esc(state.query)}"><select class="control" id="legacy-model-filter" aria-label="型号">${optionList(models(), state.modelFilter, '全部型号')}</select><select class="control" id="legacy-status-filter" aria-label="状态">${optionList(['草稿', '发布', '停用'], state.statusFilter, '全部状态')}</select><button class="btn btn--outline" id="legacy-reset-filters" type="button">重置</button><div class="filter-toolbar__counts"><span class="legacy-count-label">型号配置</span><span class="tag tag--success">发布 ${counts('发布')}</span><span class="tag tag--warning">草稿 ${counts('草稿')}</span><span class="tag tag--info">停用 ${counts('停用')}</span></div></section>
+      <section class="list-table-card"><div class="table-panel"><div class="table-shell legacy-table-scroll"><table class="data-table rhythm-list-table legacy-table"><colgroup>${[175, 170, 110, 105, 90, 175, 185, 195].map(width => `<col style="width:${width}px">`).join('')}</colgroup><thead><tr>${headers.map((label, index) => `<th${index === 7 ? ' class="legacy-action-cell"' : ''}>${label}</th>`).join('')}</tr></thead><tbody>${visible.length ? visible.map(group => {
+        const latest = group.records.reduce((a, b) => a.time > b.time ? a : b);
+        const updaters = [...new Set(group.records.map(row => row.updater))];
+        return `<tr><td><span class="cell-text">${esc(group.name)}</span></td><td><div class="legacy-group-models">${[...new Set(group.records.map(row => row.model))].map(model => `<span class="legacy-model-tag">${esc(model)}</span>`).join('')}</div></td><td>${Number((group.seconds / 60).toFixed(2))} min</td><td>${groupStatus(group)}</td><td>${updaters.map(esc).join('<br>')}</td><td>${esc(latest.time)}</td><td><div class="version-cell legacy-group-versions">${groupVersions(group)}</div></td><td class="actions legacy-action-cell">${groupActions(group)}</td></tr>`;
+      }).join('') : '<tr class="empty-row"><td colspan="8">暂无数据</td></tr>'}</tbody></table></div></div><footer class="pagination-bar"><span>共 ${visible.length} 条韵律，${matching.length} 份型号配置</span><div class="pagination"><button class="page-button" disabled type="button">‹</button><button class="page-button is-active" type="button">1</button><button class="page-button" disabled type="button">›</button></div></footer></section></div>`;
   }
   function stageCard(item, index, isView) {
     const rest = item.mode === '休息'; const disabled = isView ? ' disabled' : '';
@@ -131,7 +181,7 @@
     } else body = `<p>停用已发布韵律后，编辑并保存即可生成下一版本。</p><div class="table-shell"><table class="data-table"><thead><tr><th>版本</th><th>状态</th><th>适用型号</th><th>版本说明</th><th>发布信息</th><th>操作</th></tr></thead><tbody>${row.versions.map(v => `<tr><td><strong>${esc(v.version)}</strong></td><td>${statusTag(v.status)}</td><td>${esc(v.snapshot.model)}</td><td>${esc(v.changeSummary)}</td><td>${esc(v.publisher)}<small class="legacy-publish-time">${esc(v.publishTime)}</small></td><td class="actions"><button data-legacy-compare="${esc(v.version)}" type="button">对比</button></td></tr>`).join('')}</tbody></table></div>`;
     return `<div class="legacy-modal-overlay"><section class="legacy-version-modal" role="dialog" aria-modal="true" aria-labelledby="legacy-version-title"><header><h2 id="legacy-version-title">${esc(row.name)} · ${comparison ? '版本对比' : '版本记录'}</h2><button class="dialog-close" id="legacy-history-close" type="button" aria-label="关闭版本记录">×</button></header><div class="legacy-version-body">${body}</div><footer><button class="btn btn--outline" id="legacy-history-back" type="button">${comparison ? '返回版本记录' : '关闭'}</button></footer></section></div>`;
   }
-  function render() { return `<section class="page-stack legacy-page">${state.view === 'list' ? listView() : formView()}${historyModal()}</section>`; }
+  function render() { return `<section class="page-stack legacy-page">${state.view === 'list' ? listView() : formView()}${historyModal()}${modelPickerModal()}</section>`; }
   function clearError() { state.formError = ''; const error = document.querySelector('#legacy-form-error'); if (error) { error.textContent = ''; error.classList.add('is-hidden'); } }
   function fail(message, selector) { state.formError = message; const error = document.querySelector('#legacy-form-error'); if (error) { error.textContent = message; error.classList.remove('is-hidden'); } document.querySelector(selector)?.focus(); error?.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
   function conflict(data, id) { return rows.some(row => row.id !== id && [snapshot(row), ...row.versions.filter(v => v.status === '草稿').map(v => v.snapshot)].some(other => other.model === data.model && other.name.trim() === data.name.trim())); }
@@ -169,7 +219,7 @@
     const draft = row.versions.find(v => v.status === '草稿');
     if (action === 'publish' && !draft) { host.showToast('请先编辑并保存新版本'); return; }
     if (action === 'publish' && conflict(draft.snapshot, row.id)) { host.showToast('该型号下已存在同名旧韵律，请先编辑草稿'); return; }
-    host.showDialog(action === 'delete' ? '确认删除吗？' : '确认执行此操作并切换状态吗？', () => {
+    host.showDialog(`确认${ACTION_LABELS[action]}“${row.model} · ${row.name}”吗？`, () => {
       const next = clone(rows); const target = next.find(item => item.id === id); if (!target) return;
       if (action === 'delete') next.splice(next.indexOf(target), 1);
       if (action === 'disable') target.status = '停用';
@@ -193,6 +243,16 @@
     page.querySelector('#legacy-status-filter')?.addEventListener('change', event => { state.statusFilter = event.target.value; host.render(); });
     click('legacy-reset-filters', () => { state.query = ''; state.modelFilter = ''; state.statusFilter = ''; host.render(); });
     page.querySelectorAll('[data-legacy-action]').forEach(button => button.addEventListener('click', () => performAction(button.dataset.legacyAction, button.dataset.legacyId)));
+    page.querySelectorAll('[data-legacy-group-action]').forEach(button => button.addEventListener('click', () => openModelPicker(button.dataset.legacyGroupAction, JSON.parse(button.dataset.legacyGroupIds))));
+    const closeModelPicker = () => { state.modelPicker = null; host.render(); };
+    click('legacy-model-picker-close', closeModelPicker); click('legacy-model-picker-cancel', closeModelPicker);
+    page.querySelectorAll('[data-legacy-pick-model]').forEach(button => button.addEventListener('click', () => {
+      const action = state.modelPicker?.action;
+      state.modelPicker = null; host.render();
+      if (action) performAction(action, button.dataset.legacyPickModel);
+    }));
+    page.querySelector('.legacy-model-picker-overlay')?.addEventListener('click', event => { if (event.target.classList.contains('legacy-model-picker-overlay')) closeModelPicker(); });
+    page.addEventListener('keydown', event => { if (event.key === 'Escape' && state.modelPicker) closeModelPicker(); });
     page.querySelectorAll('[data-legacy-field]').forEach(control => control.addEventListener(control.tagName === 'SELECT' ? 'change' : 'input', event => {
       const key = control.dataset.legacyField; clearError();
       if (key === 'model') {
@@ -222,7 +282,7 @@
     click('legacy-history-close', () => { state.history = null; host.render(); });
     click('legacy-history-back', () => { if (state.history?.compare) state.history.compare = null; else state.history = null; host.render(); });
     page.querySelectorAll('[data-legacy-compare]').forEach(button => button.addEventListener('click', () => { state.history.compare = button.dataset.legacyCompare; host.render(); }));
-    page.querySelector('.legacy-modal-overlay')?.addEventListener('click', event => { if (event.target.classList.contains('legacy-modal-overlay')) { state.history = null; host.render(); } });
+    page.querySelector('.legacy-modal-overlay:not(.legacy-model-picker-overlay)')?.addEventListener('click', event => { if (event.target.classList.contains('legacy-modal-overlay')) { state.history = null; host.render(); } });
   }
   window.LegacyRhythms = { render, bind, confirmExit, resetView };
 })();

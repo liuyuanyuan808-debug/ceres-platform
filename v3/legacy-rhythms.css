@@ -6,7 +6,7 @@
 .legacy-toolbar > label { display: grid; width: 250px; gap: 8px; color: #374151; font-size: 13px; }
 .legacy-toolbar > label:nth-child(2) { width: 180px; }
 .legacy-toolbar > label:nth-child(3) { width: 140px; }
-.legacy-toolbar .filter-toolbar__counts { margin-left: auto; align-self: center; }
+.legacy-toolbar .filter-toolbar__counts { margin-left: auto; align-self: center; align-items: center; }
 .legacy-count { margin-left: auto; align-self: center; color: var(--muted); font-size: 13px; }
 .legacy-list-panel { min-width: 0; overflow: hidden; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); box-shadow: var(--shadow); }
 .legacy-panel-heading { padding: 16px 20px; display: flex; align-items: center; gap: 14px; border-bottom: 1px solid var(--line); }
@@ -19,6 +19,15 @@
 .legacy-table td { height: 54px; vertical-align: middle; background: #fff; font-size: 13px; line-height: 1.55; }
 .legacy-table tbody tr:hover td { background: #fafbfc; }
 .legacy-table tbody tr:last-child td { border-bottom: 0; }
+.legacy-table { min-width: 1305px; }
+.legacy-group-models { display: flex; flex-wrap: wrap; gap: 5px; }
+.legacy-model-tag { display: inline-block; padding: 2px 7px; border: 1px solid var(--line); border-radius: 4px; color: #606266; background: #f8fafc; font-size: 12px; white-space: nowrap; }
+.legacy-group-status { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; }
+.legacy-group-status small { color: var(--muted); font-size: 11px; }
+.legacy-count-label { color: var(--muted); font-size: 12px; white-space: nowrap; }
+.legacy-page .legacy-group-versions { display: flex; flex-direction: column; align-items: flex-start; gap: 5px; }
+.legacy-model-version { display: flex; flex-wrap: wrap; gap: 3px 6px; align-items: center; }
+.legacy-page .legacy-model-version em { color: var(--muted); font-size: 11px; font-style: normal; }
 .legacy-action-cell { position: sticky; right: 0; z-index: 2; background: #fff; border-left: 1px solid var(--line); box-shadow: -5px 0 8px -8px #64748b; }
 .legacy-table th.legacy-action-cell { z-index: 3; background: #f8fafc; }
 .legacy-row-actions { display: flex; align-items: center; gap: 10px; white-space: nowrap; }
@@ -115,6 +124,14 @@
 .legacy-version-comparison td { white-space: pre-line; overflow-wrap: anywhere; vertical-align: top; line-height: 1.7; }
 .legacy-version-comparison tr.legacy-version-difference td { background: #f1f3f5; }
 .legacy-version-comparison tbody tr.legacy-version-difference:hover td { background: #e9edf2; }
+.legacy-model-picker { width: 520px; }
+.legacy-model-options { display: grid; gap: 10px; }
+.legacy-model-option { display: flex; align-items: center; gap: 12px; width: 100%; padding: 14px 16px; border: 1px solid var(--line); border-radius: 6px; color: var(--ink); background: #fff; font-family: inherit; text-align: left; cursor: pointer; }
+.legacy-model-option:hover { border-color: var(--primary); background: #fafbfc; }
+.legacy-model-option > span:first-child { display: grid; gap: 4px; flex: 1; }
+.legacy-model-option strong { font-size: 14px; font-weight: 600; }
+.legacy-model-option small { color: var(--muted); font-size: 12px; }
+.legacy-model-option__action { color: var(--primary); font-size: 13px; white-space: nowrap; }
 @media (max-width: 1050px) {
   .legacy-stage-card { gap: 12px; padding: 16px 12px; }
   .legacy-stage-number { flex-basis: 57px; }
