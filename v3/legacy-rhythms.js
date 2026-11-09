@@ -2,7 +2,8 @@
 (() => {
   'use strict';
   const STORE_KEY = 'ceres.v2.1.legacy-rhythms';
-  const MODELS = ['M5 Ultra', 'M5 Smart', 'M9', 'Air 1', 'V3 Pro'];
+  const V3_SAMPLES_KEY = 'ceres.v3.legacy-rhythms.v3-samples-20261109';
+  const MODELS = ['M5 Ultra', 'M5 Smart', 'M9', 'Air 1', 'V3', 'V3 Pro'];
   const MODES = ['刺激', '吸乳', '混合1', '混合2', '休息'];
   const FREQUENCIES = ['低', '中', '高'];
   const clone = value => JSON.parse(JSON.stringify(value));
@@ -18,7 +19,9 @@
   const seed = [
     { id: 'legacy-milk-boost', name: 'Milk Boost', model: 'M5 Ultra', stages: [stage('刺激', '低', 3, 120), stage('吸乳', '中', 7, 1080)] },
     { id: 'legacy-power-pumping', name: 'Power Pumping', model: 'M5 Smart', stages: [stage('刺激', '低', 3, 300), stage('吸乳', '中', 5, 900), stage('休息', '', '', 300), stage('混合2', '低', 7, 900), stage('休息', '', '', 300)] },
-    { id: 'legacy-quick-relief', name: 'Quick Relief', model: 'M9', stages: [stage('混合2', '低', 7, 30), stage('休息', '', '', 30), stage('吸乳', '中', 5, 480)] }
+    { id: 'legacy-quick-relief', name: 'Quick Relief', model: 'M9', stages: [stage('混合2', '低', 7, 30), stage('休息', '', '', 30), stage('吸乳', '中', 5, 480)] },
+    { id: 'legacy-v3-cozy-flow', name: 'Cozy Flow', model: 'V3', stages: [stage('刺激', '中', 1, 90), stage('吸乳', '中', 1, 1200)] },
+    { id: 'legacy-v3-milk-boost', name: 'Milk Boost', model: 'V3', stages: [stage('刺激', '中', 1, 120), stage('吸乳', '中', 1, 480), stage('刺激', '中', 1, 120), stage('吸乳', '中', 1, 480)] }
   ];
   function normalizeRow(item) {
     const base = snapshot(item);
@@ -38,9 +41,16 @@
   rows[0].versions[0].version = 'V2';
   rows[0].versions[0].changeSummary = '优化日常泌乳的阶段时长';
   rows[0].versions.push({ version: 'V1', status: '历史版本', current: false, changeSummary: '首版官方旧韵律', publisher: '陈剑泽', publishTime: '2026-09-22 14:00:00', snapshot: { name: rows[0].name, model: rows[0].model, stages: [stage('刺激', '低', 3, 120), stage('吸乳', '中', 6, 960)] } });
+  const v3Samples = rows.filter(row => row.model === 'V3');
   try {
     const saved = JSON.parse(localStorage.getItem(STORE_KEY));
     if (Array.isArray(saved)) rows = saved.filter(item => item && typeof item.id === 'string' && Array.isArray(item.stages)).map(normalizeRow);
+    // Add these examples once for returning visitors, preserving edits and later deletions.
+    if (localStorage.getItem(V3_SAMPLES_KEY) !== '1') {
+      rows.push(...v3Samples.filter(sample => !rows.some(row => row.id === sample.id || (row.model === sample.model && row.name.trim() === sample.name))));
+      localStorage.setItem(STORE_KEY, JSON.stringify(rows));
+      localStorage.setItem(V3_SAMPLES_KEY, '1');
+    }
   } catch (_) { /* Keep demonstration records when local storage is unavailable. */ }
   const state = { view: 'list', query: '', modelFilter: '', statusFilter: '', selectedId: null, draft: null, original: '', viewVersion: '', history: null, dragIndex: null, formError: '' };
   let host = { render: () => {}, showToast: () => {}, showDialog: (_, action) => action() };
