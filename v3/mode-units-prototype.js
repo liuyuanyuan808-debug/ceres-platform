@@ -262,7 +262,7 @@
     };
 
     const initialSection = sections[window.location.hash.slice(1)] ? window.location.hash.slice(1) : 'legacy-rhythms';
-    const state = { view: 'list', section: initialSection, collapsed: false, menuExpanded: true, modeUnitMenuExpanded: true, languageMenuExpanded: true, query: '', sourceFilter: 'all', status: 'all', tableFilters: { name: '', source: 'all', status: 'all', updater: 'all' }, selected: null, viewVersion: null, ruleStep: 1, resultSpeedTab: 1, generated: false, form: {}, modal: null, versionModal: null, languagePublish: null, gearManualEntry: false, gearImportFileName: '', gearImportRows: [], exportConfig: null, exportError: '', modeUnits: [], rhythmModes: [], powerImports: { pressure: '', relief: '' }, resultAdjustments: {}, resultValidation: {}, resultWarnings: {} };
+    const state = { view: 'list', section: initialSection, collapsed: false, menuExpanded: true, modeUnitMenuExpanded: true, rhythmMenuExpanded: true, languageMenuExpanded: true, query: '', sourceFilter: 'all', status: 'all', tableFilters: { name: '', source: 'all', status: 'all', updater: 'all' }, selected: null, viewVersion: null, ruleStep: 1, resultSpeedTab: 1, generated: false, form: {}, modal: null, versionModal: null, languagePublish: null, gearManualEntry: false, gearImportFileName: '', gearImportRows: [], exportConfig: null, exportError: '', modeUnits: [], rhythmModes: [], powerImports: { pressure: '', relief: '' }, resultAdjustments: {}, resultValidation: {}, resultWarnings: {} };
     const app = document.querySelector('#app');
     const overlay = document.querySelector('#overlay');
     const dialogMessage = document.querySelector('#dialog-message');
@@ -274,7 +274,8 @@
     function sidebar() {
       const navLink = (key, nested = false) => `<a class="sidebar-menu__child${nested ? ' is-nested' : ''}${state.section === key ? ' is-active' : ''}" href="#${key}" data-section="${key}"><span class="sidebar-menu__icon sidebar-menu__icon--child"></span><span class="sidebar-menu__label">${sections[key].label}</span></a>`;
       const modeUnitGroup = `<button class="sidebar-menu__group" id="mode-unit-menu-parent" type="button" aria-expanded="${state.modeUnitMenuExpanded}"><span class="sidebar-menu__icon sidebar-menu__icon--child"></span><span class="sidebar-menu__label">模式单元</span><span class="sidebar-menu__arrow${state.modeUnitMenuExpanded ? ' is-expanded' : ''}" aria-hidden="true"></span></button><div class="sidebar-menu__subchildren${state.modeUnitMenuExpanded ? '' : ' is-hidden'}">${navLink('mode-units', true)}${navLink('model-gear-archives', true)}</div>`;
-      const navItems = `${navLink('power-sources')}${modeUnitGroup}${navLink('mode-libraries')}${navLink('rhythm-libraries')}${navLink('legacy-rhythms')}`;
+      const rhythmGroup = `<button class="sidebar-menu__group" id="rhythm-menu-parent" type="button" aria-expanded="${state.rhythmMenuExpanded}"><span class="sidebar-menu__icon sidebar-menu__icon--child"></span><span class="sidebar-menu__label">韵律管理</span><span class="sidebar-menu__arrow${state.rhythmMenuExpanded ? ' is-expanded' : ''}" aria-hidden="true"></span></button><div class="sidebar-menu__subchildren${state.rhythmMenuExpanded ? '' : ' is-hidden'}">${navLink('rhythm-libraries', true)}${navLink('legacy-rhythms', true)}</div>`;
+      const navItems = `${navLink('power-sources')}${modeUnitGroup}${navLink('mode-libraries')}${rhythmGroup}`;
       const languageItem = `<a class="sidebar-menu__child${state.section === 'language-packs' ? ' is-active' : ''}" href="#language-packs" data-section="language-packs"><span class="sidebar-menu__icon sidebar-menu__icon--child"></span><span class="sidebar-menu__label">语言包管理</span></a>`;
       return `<aside class="sidebar">
         <div class="brand-row">
@@ -1706,6 +1707,7 @@
       document.querySelector('#sidebar-toggle').addEventListener('click', () => { state.collapsed = !state.collapsed; render(); });
       document.querySelector('#menu-parent').addEventListener('click', () => { state.menuExpanded = !state.menuExpanded; render(); });
       document.querySelector('#mode-unit-menu-parent')?.addEventListener('click', () => { state.modeUnitMenuExpanded = !state.modeUnitMenuExpanded; render(); });
+      document.querySelector('#rhythm-menu-parent')?.addEventListener('click', () => { state.rhythmMenuExpanded = !state.rhythmMenuExpanded; render(); });
       document.querySelector('#language-menu-parent').addEventListener('click', () => { state.languageMenuExpanded = !state.languageMenuExpanded; render(); });
       bindLanguagePublishModal();
       const resetGearImport = () => { state.gearImportRequest = (state.gearImportRequest || 0) + 1; state.gearImportBusy = false; state.gearImportFileName = ''; state.gearImportRows = []; state.gearImportErrors = []; state.gearImportFailure = ''; };
