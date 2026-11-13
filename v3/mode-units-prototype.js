@@ -386,7 +386,7 @@
           const frequencyRows = profile.frequencyStrategy === '变频'
             ? [['频率快', 'frequencyFast'], ['频率中', 'frequencyMedium'], ['频率慢', 'frequencySlow']].map(([label, key]) => `<tr class="gear-variable-frequency"><th class="gear-row-label">${label}（CPM）</th>${orderedRows.map(row => `<td><strong>${escapeHtml(row[key] || '—')}</strong></td>`).join('')}</tr>`).join('')
             : hasSpeedLevels
-            ? speeds.map(speed => `<tr class="new-feature"><th class="gear-row-label">Speed ${speed}（CPM）</th>${orderedRows.map(row => `<td><strong>${escapeHtml(expanded.find(item => item.gear === row.gear && item.speed === speed)?.frequency || '—')}</strong></td>`).join('')}</tr>`).join('')
+            ? speeds.map(speed => `<tr><th class="gear-row-label">Speed ${speed}（CPM）</th>${orderedRows.map(row => `<td><strong>${escapeHtml(expanded.find(item => item.gear === row.gear && item.speed === speed)?.frequency || '—')}</strong></td>`).join('')}</tr>`).join('')
             : `<tr><th class="gear-row-label">频率（CPM）</th>${cells('frequency')}</tr>`;
           return `<section class="gear-mode-block">
             <header class="gear-mode-header"><h3>${escapeHtml(mode)}</h3>${hasSpeedLevels ? `<span class="gear-speed-tag">${speeds.length} 个速度档位</span>` : ''}</header>
@@ -396,18 +396,18 @@
             </tbody></table></div>
           </section>`;
         }).join('');
-        return `<section class="gear-model-section"><header class="gear-model-heading new-feature"><div><h2>${escapeHtml(model)}</h2></div><div class="gear-model-profile"><span>动力源类型：${escapeHtml(modelFirst.sourceType)}</span><span>频率策略：${escapeHtml(profile.frequencyStrategy)}</span><span>档位范围：${gearRange} 档</span><span>关联动力源：${escapeHtml(modelFirst.source)}</span>${origins.map(origin => `<b class="gear-origin-tag">${escapeHtml(origin)}</b>`).join('')}</div></header>${modeBlocks}</section>`;
+        return `<section class="gear-model-section"><header class="gear-model-heading"><div><h2>${escapeHtml(model)}</h2></div><div class="gear-model-profile"><span>动力源类型：${escapeHtml(modelFirst.sourceType)}</span><span>频率策略：${escapeHtml(profile.frequencyStrategy)}</span><span>档位范围：${gearRange} 档</span><span>关联动力源：${escapeHtml(modelFirst.source)}</span>${origins.map(origin => `<b class="gear-origin-tag">${escapeHtml(origin)}</b>`).join('')}</div></header>${modeBlocks}</section>`;
       }).join('');
       return `<section class="page-stack">
-        <header class="page-header-bar"><h1>${section.title}<span class="new-requirement-tag">新增档案</span></h1></header>
+        <header class="page-header-bar"><h1>${section.title}</h1></header>
         <div class="list-page-body gear-archive-body">
-          <section class="gear-archive-toolbar new-feature">
+          <section class="gear-archive-toolbar">
             <label class="gear-filter-field"><span>型号</span><div class="select-wrap"><select class="control" id="source-filter"><option value="all">全部型号</option>${modelOptions}</select><svg class="select-caret" viewBox="0 0 1024 1024" aria-hidden="true"><path fill="currentColor" d="M831.872 340.864 512 652.672 192.128 340.864a30.59 30.59 0 0 0-42.752 0 29.12 29.12 0 0 0 0 41.6L489.664 714.24a32 32 0 0 0 44.672 0l340.288-331.712a29.12 29.12 0 0 0 0-41.728 30.59 30.59 0 0 0-42.752 0z"></path></svg></div></label>
             <label class="gear-filter-field"><span>模式单元</span><input class="control" id="search" maxlength="50" placeholder="请输入模式单元名称，回车搜索" value="${escapeHtml(state.query)}"></label>
             <button class="btn btn--outline" id="reset">重置</button>
             <div class="gear-archive-actions"><button class="btn btn--outline" id="gear-export" type="button">导出</button></div>
           </section>
-          ${state.gearExportFeedback ? `<div class="gear-transfer-feedback new-feature" role="status">${escapeHtml(state.gearExportFeedback)}${state.gearExportFailed ? '<button class="btn btn--outline" id="gear-export-retry">重试导出</button>' : ''}</div>` : ''}
+          ${state.gearExportFeedback ? `<div class="gear-transfer-feedback" role="status">${escapeHtml(state.gearExportFeedback)}${state.gearExportFailed ? '<button class="btn btn--outline" id="gear-export-retry">重试导出</button>' : ''}</div>` : ''}
           ${modelSections || '<div class="gear-archive-empty">暂无符合条件的档位参数</div>'}
         </div>
       </section>`;
@@ -482,7 +482,7 @@
         <th><button class="table-filter-reset" id="table-filter-reset" type="button">重置</button></th>
       </tr>` : '';
       return `<section class="page-stack${state.section === 'power-sources' ? ' power-version-page' : ''}">
-        <header class="page-header-bar"><h1>${section.title}${state.section === 'power-sources' ? '<span class="power-version-badge">3期新增版本管理</span>' : ''}${isGearArchive ? '<span class="new-requirement-tag">新增档案</span>' : ''}</h1><div class="page-header-actions">${section.addLabel ? `<button class="btn btn--primary" id="add-unit">${section.addLabel}</button>` : ''}</div></header>
+        <header class="page-header-bar"><h1>${section.title}${state.section === 'power-sources' ? '<span class="power-version-badge">3期新增版本管理</span>' : ''}</h1><div class="page-header-actions">${section.addLabel ? `<button class="btn btn--primary" id="add-unit">${section.addLabel}</button>` : ''}</div></header>
         <div class="list-page-body">
           ${state.section === 'mode-units' ? '' : `<section class="filter-toolbar${hasSourceFilters ? ' filter-toolbar--source-filters' : ''}${isGearArchive ? ' filter-toolbar--gear-archive' : ''}">
             ${searchControl}
@@ -1578,11 +1578,11 @@
       const errors = state.gearImportErrors || [];
       const previewRows = state.gearImportRows.length ? state.gearImportRows.map(row => `<tr class="${row.issues.length ? 'gear-import-invalid' : ''}">${[row.sheet + ' · ' + row.line, row.model, row.mode, row.gear, row.suction, row.frequencyStrategy, row.plan || '—', row.speed ? 'Speed ' + row.speed : '—', row.frequency || '—', row.source, row.issues.length ? '需修正' : '通过'].map(value => `<td>${escapeHtml(value)}</td>`).join('')}</tr>`).join('') : '<tr class="empty-row"><td colspan="11">上传表格后预览数据</td></tr>';
       return `<div class="form-modal-overlay gear-entry-backdrop"><section class="form-modal gear-entry-dialog" role="dialog" aria-modal="true" aria-label="手动导入型号档位参数"><header><h2>手动导入型号档位参数</h2><button class="dialog-close" id="gear-entry-close" type="button" aria-label="关闭">×</button></header><div class="form-modal__body gear-import-body">
-        <div class="gear-import-intro new-feature"><strong>导入说明</strong><span>按模板填写。变频按快、中、慢分行；定频的 Speed 单独填 1～10，不支持时留空。频率缺失可留空，展示为“—”。</span><button class="btn btn--outline" id="gear-template-download" type="button">下载导入模板</button></div>
+        <div class="gear-import-intro"><strong>导入说明</strong><span>按模板填写。变频按快、中、慢分行；定频的 Speed 单独填 1～10，不支持时留空。频率缺失可留空，展示为“—”。</span><button class="btn btn--outline" id="gear-template-download" type="button">下载导入模板</button></div>
         <label class="gear-import-drop"><input id="gear-import-file" type="file" accept=".xlsx,.xls,.csv" hidden ${state.gearImportBusy ? 'disabled' : ''}><strong>${state.gearImportBusy ? '正在读取并校验…' : state.gearImportFileName ? escapeHtml(state.gearImportFileName) : '点击上传 Excel / CSV 表格'}</strong><span>支持 .xlsx / .xls / UTF-8 CSV；不超过 10 MB、10,000 行，可重新上传</span></label>
-        ${errors.length ? `<section class="gear-import-errors" role="alert"><strong>发现 ${errors.length} 个问题，请修正后重新上传；本次不会导入任何数据。</strong><div class="table-shell"><table class="data-table"><thead><tr><th>工作表</th><th>行号</th><th>原因</th></tr></thead><tbody>${errors.map(error => `<tr><td>${escapeHtml(error.sheet || '文件')}</td><td>${escapeHtml(error.line || '—')}</td><td>${escapeHtml(error.reason)}</td></tr>`).join('')}</tbody></table></div></section>` : state.gearImportRows.length ? '<div class="gear-transfer-feedback new-feature" role="status">校验通过，核对预览后点击“确认导入”。</div>' : ''}
+        ${errors.length ? `<section class="gear-import-errors" role="alert"><strong>发现 ${errors.length} 个问题，请修正后重新上传；本次不会导入任何数据。</strong><div class="table-shell"><table class="data-table"><thead><tr><th>工作表</th><th>行号</th><th>原因</th></tr></thead><tbody>${errors.map(error => `<tr><td>${escapeHtml(error.sheet || '文件')}</td><td>${escapeHtml(error.line || '—')}</td><td>${escapeHtml(error.reason)}</td></tr>`).join('')}</tbody></table></div></section>` : state.gearImportRows.length ? '<div class="gear-transfer-feedback" role="status">校验通过，核对预览后点击“确认导入”。</div>' : ''}
         ${state.gearImportFailure ? `<div class="gear-import-errors" role="alert">${escapeHtml(state.gearImportFailure)}；未写入数据，预览已保留，可重试。</div>` : ''}
-        <div class="gear-import-preview new-feature"><div class="gear-import-preview__title"><strong>数据预览</strong><span>${state.gearImportRows.length ? `共 ${state.gearImportRows.length} 条` : '暂无数据'}</span></div><div class="table-shell"><table class="data-table"><thead><tr>${['原始行', '型号', '模式', '档位', '吸力 kPa', '策略', '频率方案', 'Speed', '频率 CPM', '动力源', '校验'].map(label => `<th>${label}</th>`).join('')}</tr></thead><tbody>${previewRows}</tbody></table></div></div>
+        <div class="gear-import-preview"><div class="gear-import-preview__title"><strong>数据预览</strong><span>${state.gearImportRows.length ? `共 ${state.gearImportRows.length} 条` : '暂无数据'}</span></div><div class="table-shell"><table class="data-table"><thead><tr>${['原始行', '型号', '模式', '档位', '吸力 kPa', '策略', '频率方案', 'Speed', '频率 CPM', '动力源', '校验'].map(label => `<th>${label}</th>`).join('')}</tr></thead><tbody>${previewRows}</tbody></table></div></div>
       </div><footer><button class="btn btn--outline" id="gear-entry-cancel" type="button">取消</button><button class="btn btn--primary" id="gear-entry-save" type="button" ${state.gearImportRows.length && !errors.length && !state.gearImportBusy ? '' : 'disabled'}>${state.gearImportFailure ? '重试导入' : '确认导入'}</button></footer></section></div>`;
     }
 

@@ -231,51 +231,51 @@
     .filter-toolbar--source-filters > .select-wrap { order: 3; }
     .filter-toolbar--source-filters > #reset { order: 4; }
     .filter-toolbar--source-filters > .filter-toolbar__counts { order: 5; }
-    .filter-toolbar--gear-archive > .select-wrap .control { border-color: #d9af2f; background: #fffbea; }
+    .filter-toolbar--gear-archive > .select-wrap .control { border-color: #dcdfe6; background: #fff; }
     .filter-field-new .control { border-color: #d9af2f; background: #fffbea; }
 
     .gear-archive-body { display: grid; align-content: start; gap: 14px; }
     .gear-archive-toolbar {
       display: grid;
       grid-template-columns: 220px 280px 76px auto minmax(0, 1fr);
-      align-items: end;
+      align-items: center;
       gap: 12px;
-      padding: 12px 14px;
-      border: 1px solid #eadb96;
-      border-radius: 8px;
-      background: #fffdf2;
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fff;
     }
-    .gear-archive-toolbar .control { border-color: #d9af2f; background: #fffbea; }
+    .gear-archive-toolbar .control { border-color: #dcdfe6; background: #fff; }
     .gear-filter-field { display: grid; gap: 6px; color: #606266; font-size: 12px; }
-    .gear-filter-field > span { font-weight: 500; }
+    .gear-filter-field > span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
     .gear-archive-summary { align-self: center; justify-self: end; color: #909399; font-size: 12px; }
-    .gear-model-section { display: grid; gap: 10px; }
+    .gear-model-section { display: grid; gap: 10px; padding: 16px; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
     .gear-model-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 10px 12px; }
     .gear-model-heading > div:first-child { display: flex; align-items: baseline; gap: 10px; }
     .gear-model-heading h2 { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: 0; }
     .gear-model-heading span { color: #909399; font-size: 12px; }
     .gear-model-profile { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 7px 16px; }
-    .gear-model-profile span { color: #664d03; }
-    .gear-origin-tag { padding: 2px 6px; color: #7a5a00; border: 1px solid #e5c85c; border-radius: 3px; background: #fffbea; font-size: 11px; font-weight: 500; }
+    .gear-model-profile span { color: #606266; }
+    .gear-origin-tag { padding: 2px 6px; color: #64748b; border: 1px solid var(--line); border-radius: 3px; background: #f8fafc; font-size: 11px; font-weight: 500; }
     .gear-archive-actions { display: flex; gap: 8px; }
-    .gear-mode-block { overflow: hidden; border: 1px solid #eadb96; border-radius: 6px; background: #fff; }
-    .gear-mode-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 10px 14px; background: #fffbea; border-bottom: 1px solid #eadb96; }
+    .gear-mode-block { overflow: hidden; border: 1px solid var(--line); border-radius: 6px; background: #fff; }
+    .gear-mode-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 10px 14px; background: #f8fafc; border-bottom: 1px solid var(--line); }
     .gear-mode-header h3 { margin: 0; color: #303133; font-size: 14px; font-weight: 600; letter-spacing: 0; }
     .gear-mode-meta { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 12px; color: #909399; font-size: 11px; }
-    .gear-speed-tag { padding: 2px 6px; border: 1px solid #e5c85c; border-radius: 3px; color: #7a5a00; background: #fff6bf; }
+    .gear-speed-tag { padding: 2px 6px; border: 1px solid var(--line); border-radius: 3px; color: #64748b; background: #f5f7fa; }
     .gear-matrix-scroll { overflow-x: auto; }
     .gear-matrix { width: 100%; min-width: 760px; border-collapse: collapse; table-layout: fixed; }
-    .gear-matrix th, .gear-matrix td { min-width: 78px; height: 40px; padding: 6px 8px; border-right: 1px solid #eee4b7; border-bottom: 1px solid #eee4b7; text-align: center; font-size: 13px; }
+    .gear-matrix th, .gear-matrix td { min-width: 78px; height: 40px; padding: 6px 8px; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); text-align: center; font-size: 13px; }
     .gear-matrix tr:last-child th, .gear-matrix tr:last-child td { border-bottom: 0; }
     .gear-matrix th:last-child, .gear-matrix td:last-child { border-right: 0; }
-    .gear-matrix thead th { color: #606266; background: #fffdf5; font-weight: 500; }
-    .gear-matrix .gear-row-label { width: 108px; color: #664d03; background: #fff6bf; text-align: left; font-weight: 600; }
+    .gear-matrix thead th { color: #606266; background: #f8fafc; font-weight: 500; }
+    .gear-matrix .gear-row-label { width: 108px; color: #606266; background: #f5f7fa; text-align: left; font-weight: 600; }
     .gear-matrix td { color: #303133; background: #fff; font-variant-numeric: tabular-nums; }
     .gear-matrix td strong { font-size: 13px; font-weight: 500; }
-    .gear-matrix .gear-variable-frequency td { background: #fff6bf; }
-    .gear-matrix .gear-speed-value { color: #303133; background: #fffdf5; text-align: center; }
+    .gear-matrix .gear-variable-frequency td { background: #fff; }
+    .gear-matrix .gear-speed-value { color: #303133; background: #f8fafc; text-align: center; }
     .gear-speed-value span { margin-left: 5px; color: #909399; font-size: 11px; }
-    .gear-archive-empty { padding: 64px 20px; border: 1px dashed #d9af2f; border-radius: 6px; color: #7a5a00; background: #fffbea; text-align: center; }
+    .gear-archive-empty { padding: 64px 20px; border: 1px dashed #dcdfe6; border-radius: 6px; color: #64748b; background: #f8fafc; text-align: center; }
 
     .control {
       width: 100%;
@@ -427,15 +427,15 @@
     .detail-table tr.is-waveform-selected td:first-child { box-shadow: inset 2px 0 #409eff, inset 0 1px #409eff, inset 0 -1px #409eff; }
     .form-modal.gear-entry-dialog { width: min(1240px, calc(100vw - 40px)); }
     .gear-import-body > * { min-width: 0; }
-    .gear-entry-note { margin: 12px 0 0; color: #7a5a00; font-size: 12px; }
+    .gear-entry-note { margin: 12px 0 0; color: #64748b; font-size: 12px; }
     .gear-import-body { max-height: min(650px, calc(100vh - 180px)); overflow: auto; }
-    .gear-import-intro { padding: 12px 14px; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; border: 1px solid #e6bd39; border-radius: 6px; background: #fffbea; }
-    .gear-import-intro strong { color: #664d03; font-size: 13px; }
-    .gear-import-intro span { color: #7a5a00; font-size: 12px; line-height: 1.6; }
-    .gear-import-drop { min-height: 112px; padding: 20px; display: grid; place-items: center; align-content: center; gap: 8px; color: #664d03; border: 1px dashed #d3a20f; border-radius: 6px; background: #fffdf0; cursor: pointer; text-align: center; }
-    .gear-import-drop:hover { border-color: #b78b00; background: #fff8cf; }
+    .gear-import-intro { padding: 12px 14px; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; border: 1px solid var(--line); border-radius: 6px; background: #f8fafc; }
+    .gear-import-intro strong { color: #606266; font-size: 13px; }
+    .gear-import-intro span { color: #64748b; font-size: 12px; line-height: 1.6; }
+    .gear-import-drop { min-height: 112px; padding: 20px; display: grid; place-items: center; align-content: center; gap: 8px; color: #606266; border: 1px dashed var(--line-strong); border-radius: 6px; background: #fff; cursor: pointer; text-align: center; }
+    .gear-import-drop:hover { border-color: var(--primary); background: #f5f7fa; }
     .gear-import-drop strong { font-size: 14px; }
-    .gear-import-drop span { color: #8a6d1d; font-size: 12px; }
+    .gear-import-drop span { color: #909399; font-size: 12px; }
     .gear-import-preview { display: grid; gap: 10px; }
     .gear-import-preview__title { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
     .gear-import-preview__title strong { color: #374151; font-size: 14px; }
@@ -443,8 +443,8 @@
     .gear-import-preview .table-shell { max-height: 240px; overflow: auto; }
     .gear-import-preview .data-table { min-width: 1100px; table-layout: auto; }
     .gear-import-preview .empty-row td { height: 92px; color: #909399; text-align: center; }
-    .gear-transfer-feedback { padding: 12px 14px; font-size: 13px; line-height: 1.7; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
-    .gear-import-errors { padding: 12px; border: 1px solid #e6bd39; background: #fffbea; border-radius: 6px; font-size: 13px; }
+    .gear-transfer-feedback { padding: 12px 14px; border: 1px solid var(--line); border-radius: 6px; color: var(--muted); background: #f8fafc; font-size: 13px; line-height: 1.7; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+    .gear-import-errors { padding: 12px; border: 1px solid #fbc4c4; color: #c45656; background: #fef0f0; border-radius: 6px; font-size: 13px; }
     .gear-import-errors .table-shell { max-height: 170px; overflow: auto; margin-top: 8px; }
     .gear-import-errors .data-table { min-width: 620px; table-layout: auto; }
     .gear-import-errors td:first-child { width: 120px; }
@@ -715,8 +715,8 @@
       .gear-import-intro .btn { justify-self: start; }
     }
   </style>
-  <link rel="stylesheet" href="./rhythm-management.css?v=20261113-1451">
-  <link rel="stylesheet" href="./power-source-versions.css?v=20261113-1451">
+  <link rel="stylesheet" href="./rhythm-management.css?v=20261113-1652">
+  <link rel="stylesheet" href="./power-source-versions.css?v=20261113-1652">
 </head>
 <body>
   <div id="app"><div style="min-height:100vh;display:grid;grid-template-columns:230px 1fr;background:#f0f2f5"><aside style="padding:14px 12px;color:#fff;background:#304156;font-size:16px;font-weight:600">C　吸奶器管理系统</aside><main><header style="height:50px;padding:0 20px;display:flex;align-items:center;background:#fff;border-bottom:1px solid #e2e8f0;font-size:16px;font-weight:600">韵律库管理</header><section style="margin:16px 20px;min-height:calc(100vh - 86px);border:1px solid #e2e8f0;border-radius:10px;background:#fff"></section></main></div></div>
@@ -729,9 +729,9 @@
   </div>
   <div class="toast" id="toast">操作成功</div>
 
-  <script src="./assets/vendor/xlsx.full.min.js?v=20261113-1451" defer></script>
-  <script src="./gear-archive-io.js?v=20261113-1451" defer></script>
-  <script src="./rhythm-management.js?v=20261113-1451" defer></script>
-  <script src="./mode-units-prototype.js?v=20261113-1451" defer></script>
+  <script src="./assets/vendor/xlsx.full.min.js?v=20261113-1652" defer></script>
+  <script src="./gear-archive-io.js?v=20261113-1652" defer></script>
+  <script src="./rhythm-management.js?v=20261113-1652" defer></script>
+  <script src="./mode-units-prototype.js?v=20261113-1652" defer></script>
 </body>
 </html>
