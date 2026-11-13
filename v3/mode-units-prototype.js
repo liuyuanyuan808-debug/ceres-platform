@@ -261,6 +261,8 @@
       }
     };
 
+    RhythmManagement.configure({ powerSources: powerSourceRows, modeLibraries: modeLibraryRows, gearArchives: gearArchiveRows, originalRhythms: rhythmRows });
+    const isRhythmSection = () => ['legacy-rhythms', 'rhythm-libraries'].includes(state.section);
     const initialSection = sections[window.location.hash.slice(1)] ? window.location.hash.slice(1) : 'legacy-rhythms';
     const state = { view: 'list', section: initialSection, collapsed: false, menuExpanded: true, modeUnitMenuExpanded: true, rhythmMenuExpanded: true, languageMenuExpanded: true, query: '', sourceFilter: 'all', status: 'all', tableFilters: { name: '', source: 'all', status: 'all', updater: 'all' }, selected: null, viewVersion: null, ruleStep: 1, resultSpeedTab: 1, generated: false, form: {}, modal: null, versionModal: null, languagePublish: null, gearManualEntry: false, gearImportFileName: '', gearImportRows: [], exportConfig: null, exportError: '', modeUnits: [], rhythmModes: [], powerImports: { pressure: '', relief: '' }, resultAdjustments: {}, resultValidation: {}, resultWarnings: {} };
     const app = document.querySelector('#app');
@@ -1604,9 +1606,9 @@
     }
 
     function render() {
-      app.innerHTML = `<div class="admin-shell${state.collapsed ? ' is-collapsed' : ''}">${sidebar()}<main class="content-shell">${state.section === 'legacy-rhythms' ? LegacyRhythms.render() : state.view === 'list' ? listView() : formView()}</main></div>${combinationModal()}${exportTemplateModal()}${versionModal()}${languagePublishModal()}${gearManualEntryModal()}`;
+      app.innerHTML = `<div class="admin-shell${state.collapsed ? ' is-collapsed' : ''}">${sidebar()}<main class="content-shell">${isRhythmSection() ? RhythmManagement.render(state.section === 'legacy-rhythms' ? 'legacy' : 'new') : state.view === 'list' ? listView() : formView()}</main></div>${combinationModal()}${exportTemplateModal()}${versionModal()}${languagePublishModal()}${gearManualEntryModal()}`;
       bindEvents();
-      if (state.section === 'legacy-rhythms') LegacyRhythms.bind({ render, showToast, showDialog });
+      if (isRhythmSection()) RhythmManagement.bind({ render, showToast, showDialog });
     }
 
     function bindVersionModalEvents() {
@@ -1778,13 +1780,13 @@
           state.status = 'all';
           state.tableFilters = { name: '', source: 'all', status: 'all', updater: 'all' };
           state.selected = null;
-          LegacyRhythms.resetView();
+          RhythmManagement.resetView();
           window.history.replaceState(null, '', `#${section}`);
           render();
           window.scrollTo(0, 0);
         });
       }));
-      if (state.section === 'legacy-rhythms') return;
+      if (isRhythmSection()) return;
       if (state.view === 'list') {
         document.querySelectorAll('[data-table-filter]').forEach(control => {
           if (control.tagName === 'INPUT') {
@@ -2379,7 +2381,7 @@
 
     function returnToList() { state.view = 'list'; state.selected = null; state.modal = null; state.exportConfig = null; state.exportError = ''; render(); window.scrollTo(0, 0); }
     function confirmFormExit(action) {
-      if (state.section === 'legacy-rhythms') { LegacyRhythms.confirmExit(action, showDialog); return; }
+      if (isRhythmSection()) { RhythmManagement.confirmExit(action, showDialog); return; }
       if (state.view === 'list' || state.view === 'view') { action(); return; }
       if (state.section === 'power-sources' && state.powerOriginal === powerFormFingerprint()) { action(); return; }
       showDialog('当前有未保存的修改，离开页面后数据将清空，确定要离开吗？', action, '留在此页', '离开');
