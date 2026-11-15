@@ -12,7 +12,7 @@
   const label = kind => kind === 'legacy' ? '旧韵律' : '新韵律';
   const tag = (text, tone = 'info') => `<span class="tag tag--${tone}">${esc(text)}</span>`;
   const option = (values, value, placeholder = '') => `${placeholder ? `<option value="">${esc(placeholder)}</option>` : ''}${values.map(item => `<option value="${esc(item)}"${String(item) === String(value) ? ' selected' : ''}>${esc(item)}</option>`).join('')}`;
-  const oldModels = ['M5 Ultra', 'M5 Smart', 'M9', 'Air 1', 'V3', 'V3 Pro', 'Wellness Warm', 'W1'];
+  const oldModels = ['M5 Ultra', 'M5 Smart', 'M9', 'V3', 'V3 Pro', 'Wellness Warm', 'W1'];
   const newModels = ['Air 2', 'L2'];
   const modeNames = ['刺激', '吸乳', '混合1', '混合2', '休息'];
   // Explicit prototype mode directory. These snapshots are illustrative, never production mappings.
@@ -100,8 +100,8 @@
     const add = (parentId, model, stages, status, origin, extra = {}) => configs.push({ id: `${parentId}-${model.toLowerCase().replace(/\s/g, '-')}`, parentId, model, stages: clone(stages), baselineStages: status === '发布' ? clone(stages) : null, power: powerFor(model), status, everPublished: status === '发布', origin, time: stamp, updater: '刘媛媛', ...extra });
     add('legacy-milk-boost', 'M5 Ultra', [stage('刺激', 120, '低', 3), stage('吸乳', 1080, '中', 7)], '发布', 'AIoT 历史配置 · 已补录');
     add('legacy-milk-boost', 'V3', [stage('刺激', 120, '中', 1), stage('吸乳', 480, '中', 1), stage('刺激', 120, '中', 1), stage('吸乳', 480, '中', 1)], '发布', 'AIoT 历史配置 · 已补录');
-    for (const model of ['Air 1', 'Wellness Warm', 'W1', 'M5 Smart']) add('legacy-milk-boost', model, [stage('刺激', 120), stage('吸乳', 1680)], '发布', 'AIoT 历史导入 · 仅名称及编排');
-    for (const model of ['Air 1', 'W1']) add('legacy-milk-relief', model, [stage('混合2', 30), stage('休息', 30), stage('吸乳', 840)], '发布', 'AIoT 历史导入 · 仅名称及编排');
+    for (const model of ['Wellness Warm', 'W1', 'M5 Smart']) add('legacy-milk-boost', model, [stage('刺激', 120), stage('吸乳', 1680)], '发布', 'AIoT 历史导入 · 仅名称及编排');
+    add('legacy-milk-relief', 'W1', [stage('混合2', 30), stage('休息', 30), stage('吸乳', 840)], '发布', 'AIoT 历史导入 · 仅名称及编排');
     add('legacy-power-pumping', 'M5 Smart', [stage('刺激', 300, '低', 3), stage('吸乳', 900, '中', 5), stage('休息', 300), stage('混合2', 900, '低', 7), stage('休息', 300)], '发布', 'AIoT 历史配置 · 已补录');
     const template = [stage('刺激', 120), stage('吸乳', 480), stage('刺激', 120), stage('吸乳', 480)];
     add('new-milk-boost', 'Air 2', resolvedStages('Air 2', template), '发布', '原型模式示例目录 · 完整参数快照');
@@ -115,7 +115,7 @@
       const saved = JSON.parse(localStorage.getItem('ceres.v2.1.legacy-rhythms'));
       const map = { 'legacy-milk-boost': 'legacy-milk-boost', 'legacy-v3-milk-boost': 'legacy-milk-boost', 'legacy-air1-milk-boost': 'legacy-milk-boost', 'legacy-wellness-warm-milk-boost': 'legacy-milk-boost', 'legacy-w1-milk-boost': 'legacy-milk-boost', 'legacy-air1-milk-relief': 'legacy-milk-relief', 'legacy-wellness-warm-milk-relief': 'legacy-milk-relief', 'legacy-w1-milk-relief': 'legacy-milk-relief', 'legacy-power-pumping': 'legacy-power-pumping', 'legacy-m5-ultra-power-pumping': 'legacy-power-pumping' };
       if (Array.isArray(saved)) for (const old of saved) {
-        if (!old?.id || !old.model || !Array.isArray(old.stages)) continue;
+        if (!old?.id || !old.model || old.model === 'Air 1' || !Array.isArray(old.stages)) continue;
         const pid = map[old.id] || `migrated-${old.id}`;
         if (!parents.some(p => p.id === pid)) parents.push({ id: pid, kind: 'legacy', name: String(old.name || '历史韵律'), description: '保留原型中已保存的型号配置', outline: '按型号查看具体编排', tag: '历史导入', time: old.time || stamp });
         const existing = configs.find(c => c.parentId === pid && c.model === old.model);
@@ -151,6 +151,14 @@
       db.migrations = { ...db.migrations, removedLegacyCopies20261115: true };
       try { localStorage.setItem(STORE, JSON.stringify(db)); }
       catch (_) { /* The cleanup stays visible and is retried on the next load. */ }
+    }
+    const applicable = db.configs.filter(c => c.model !== 'Air 1' || parent(c.parentId)?.kind !== 'legacy');
+    if (applicable.length !== db.configs.length || !db.migrations?.removedLegacyAir120261115) {
+      // Air 1 is outside the legacy rhythm model range; remove all of its saved revisions.
+      db.configs = applicable;
+      db.migrations = { ...db.migrations, removedLegacyAir120261115: true };
+      try { localStorage.setItem(STORE, JSON.stringify(db)); }
+      catch (_) { /* Retry the saved-data cleanup on the next load. */ }
     }
   }
   function commit(next) {
