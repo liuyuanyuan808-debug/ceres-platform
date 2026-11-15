@@ -142,6 +142,16 @@
       if (c.supplementDraft) Object.assign(c.supplementDraft, { seriesId: c.seriesId, versionNumber: c.versionNumber, changeSummary: c.changeSummary });
     }
     db.schema = 3;
+    if (!db.migrations?.removedLegacyCopies20261115) {
+      // Remove the three obsolete demo copies once, including their model/version records.
+      const names = new Set(['Quick Relief 2.0', 'Milk Relief 2.0', 'Milk Boost 2.0']);
+      const removed = new Set(db.parents.filter(p => p.kind === 'legacy' && names.has(p.name)).map(p => p.id));
+      db.parents = db.parents.filter(p => !removed.has(p.id));
+      db.configs = db.configs.filter(c => !removed.has(c.parentId));
+      db.migrations = { ...db.migrations, removedLegacyCopies20261115: true };
+      try { localStorage.setItem(STORE, JSON.stringify(db)); }
+      catch (_) { /* The cleanup stays visible and is retried on the next load. */ }
+    }
   }
   function commit(next) {
     try { localStorage.setItem(STORE, JSON.stringify(next)); db = next; return true; }
