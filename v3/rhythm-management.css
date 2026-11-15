@@ -55,6 +55,12 @@
 .rm-pending { display: inline-flex; align-items: center; gap: 3px; color: var(--danger); font-size: 12px; white-space: nowrap; }
 .rm-empty { padding: 40px 20px !important; color: var(--muted); text-align: center; }
 .rm-title-divider { padding: 0 7px; color: #a8abb2; font-weight: 400; }
+.rm-version-toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
+.rm-version-toolbar > label { color: var(--muted); font-size: 13px; }
+.rm-version-toolbar > .control { width: 190px; }
+.rm-version-description { margin: 12px 0 0; color: var(--muted); font-size: 12px; }
+.rm-version-panel > .rm-field { margin-top: 16px; }
+.rm-version-caption button.rm-link { font-size: 12px; }
 .rm-detail .rm-card { margin: 0; }
 .rm-detail-header { min-height: 28px; margin-bottom: 16px; }
 .rm-detail-header h2 { margin: 0; }
