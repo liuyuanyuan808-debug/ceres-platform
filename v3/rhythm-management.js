@@ -15,6 +15,7 @@
   const oldModels = ['M5 Ultra', 'M5 Smart', 'M9', 'V3', 'V3 Pro', 'Wellness Warm', 'W1'];
   const newModels = ['Air 2', 'L2'];
   const modeNames = ['刺激', '吸乳', '混合1', '混合2', '休息'];
+  const milkBoostTemplate = [{ mode: '刺激', duration: '120' }, { mode: '吸乳', duration: '480' }, { mode: '刺激', duration: '120' }, { mode: '吸乳', duration: '480' }];
   // Explicit prototype mode directory. These snapshots are illustrative, never production mappings.
   const DEMO_MODES = [
     { id: 'DEMO-AIR2-STIM-001', version: 'DEMO-V1', model: 'Air 2', mode: '刺激', sourceId: 102, sourceVersion: 'V1', name: 'Air 2 刺激模式', snapshot: { frequency: '70', suction: '12', gear: '3', pressureTime: '50', intervalTime: '30' } },
@@ -37,6 +38,33 @@
   const selected = () => config(state.configId);
   const currentParent = () => parent(selected()?.parentId);
   const stage = (mode, duration, frequency = '', gear = '', suction = '', modeRef = '') => ({ mode, duration: String(duration), frequency: String(frequency), gear: String(gear), suction: String(suction), modeRef, modeVersion: 'V1' });
+  const schedule = stages => (stages || []).map(s => ({ mode: s.mode, duration: String(s.duration ?? '') }));
+  const validSchedule = stages => Array.isArray(stages) && stages.length > 0 && seconds(stages) <= 7200 && stages.every(s => modeNames.includes(s.mode) && Number.isInteger(Number(s.duration)) && Number(s.duration) > 0);
+  const scheduleKey = stages => JSON.stringify(schedule(stages));
+  function sharedStages(p) {
+    if (validSchedule(p.template)) return schedule(p.template);
+    const items = parentConfigs(p.id);
+    if (!items.length || !items.every(c => validSchedule(c.stages))) return [];
+    return items.every(c => scheduleKey(c.stages) === scheduleKey(items[0].stages)) ? schedule(items[0].stages) : [];
+  }
+  function arrangementText(p) {
+    const items = sharedStages(p);
+    if (!items.length) return parentConfigs(p.id).some(c => c.stages?.length) ? '编排待确认' : '编排待补充';
+    return items.map(stageText).join(' → ');
+  }
+  const stageText = s => `${s.mode} ${Number(s.duration) % 30 === 0 ? `${Number(s.duration) / 60} 分钟` : time(s.duration).replace(' 分', ' 分钟')}`;
+  function arrangementMarkup(p) {
+    const items = sharedStages(p);
+    return items.length ? items.map((s, i) => `<span class="rm-arrangement-step">${i ? '→ ' : ''}${esc(stageText(s))}</span>`).join(' ') : esc(arrangementText(p));
+  }
+  function applySchedule(stages, template) {
+    const counts = {};
+    return template.map(s => {
+      const candidates = (stages || []).filter(item => item.mode === s.mode), index = counts[s.mode] || 0;
+      counts[s.mode] = index + 1;
+      return { ...clone(candidates[index] || candidates[0] || stage(s.mode, s.duration)), mode: s.mode, duration: String(s.duration) };
+    });
+  }
   function powerFor(model) {
     const all = (catalog.powerSources || []).filter(item => String(item.project || '').split(/[、,，]/).map(s => s.trim()).includes(model));
     const row = all.find(item => item.status === '发布') || all[0];
@@ -88,7 +116,7 @@
   function seed() {
     const stamp = '2026-11-12 14:30:00';
     const parents = [
-      { id: 'legacy-milk-boost', kind: 'legacy', name: 'Milk Boost', description: '日常泌乳 · 历史官方韵律', outline: '刺激 → 吸乳；具体阶段与时长按型号维护', tag: '推荐', time: stamp },
+      { id: 'legacy-milk-boost', kind: 'legacy', name: 'Milk Boost', description: '日常泌乳 · 历史官方韵律', outline: '刺激 2 分钟 → 吸乳 8 分钟 → 刺激 2 分钟 → 吸乳 8 分钟', template: clone(milkBoostTemplate), tag: '推荐', time: stamp },
       { id: 'legacy-milk-relief', kind: 'legacy', name: 'Milk Relief', description: '缓解奶涨 · 历史官方韵律', outline: '混合 → 休息 → 吸乳', tag: '场景', time: stamp },
       { id: 'legacy-power-pumping', kind: 'legacy', name: 'Power Pumping', description: '密集追奶 · 历史官方韵律', outline: '刺激、吸乳与休息交替', tag: '推荐', time: stamp },
       { id: 'new-milk-boost', kind: 'new', name: 'Milk Boost', description: '日常泌乳 · 模式组合韵律', outline: '刺激 2 分 → 吸乳 8 分 → 刺激 2 分 → 吸乳 8 分', tag: '推荐', time: stamp },
@@ -98,9 +126,9 @@
     ];
     const configs = [];
     const add = (parentId, model, stages, status, origin, extra = {}) => configs.push({ id: `${parentId}-${model.toLowerCase().replace(/\s/g, '-')}`, parentId, model, stages: clone(stages), baselineStages: status === '发布' ? clone(stages) : null, power: powerFor(model), status, everPublished: status === '发布', origin, time: stamp, updater: '刘媛媛', ...extra });
-    add('legacy-milk-boost', 'M5 Ultra', [stage('刺激', 120, '低', 3), stage('吸乳', 1080, '中', 7)], '发布', 'AIoT 历史配置 · 已补录');
+    add('legacy-milk-boost', 'M5 Ultra', applySchedule([stage('刺激', 120, '低', 3), stage('吸乳', 1080, '中', 7)], milkBoostTemplate), '发布', 'AIoT 历史配置 · 已补录');
     add('legacy-milk-boost', 'V3', [stage('刺激', 120, '中', 1), stage('吸乳', 480, '中', 1), stage('刺激', 120, '中', 1), stage('吸乳', 480, '中', 1)], '发布', 'AIoT 历史配置 · 已补录');
-    for (const model of ['Wellness Warm', 'W1', 'M5 Smart']) add('legacy-milk-boost', model, [stage('刺激', 120), stage('吸乳', 1680)], '发布', 'AIoT 历史导入 · 仅名称及编排');
+    for (const model of ['Wellness Warm', 'W1', 'M5 Smart']) add('legacy-milk-boost', model, clone(milkBoostTemplate).map(s => stage(s.mode, s.duration)), '发布', 'AIoT 历史导入 · 仅名称及编排');
     add('legacy-milk-relief', 'W1', [stage('混合2', 30), stage('休息', 30), stage('吸乳', 840)], '发布', 'AIoT 历史导入 · 仅名称及编排');
     add('legacy-power-pumping', 'M5 Smart', [stage('刺激', 300, '低', 3), stage('吸乳', 900, '中', 5), stage('休息', 300), stage('混合2', 900, '低', 7), stage('休息', 300)], '发布', 'AIoT 历史配置 · 已补录');
     const template = [stage('刺激', 120), stage('吸乳', 480), stage('刺激', 120), stage('吸乳', 480)];
@@ -160,6 +188,33 @@
       try { localStorage.setItem(STORE, JSON.stringify(db)); }
       catch (_) { /* Retry the saved-data cleanup on the next load. */ }
     }
+    if (!db.migrations?.sharedRhythmArrangement20261115) {
+      for (const p of db.parents) {
+        if (p.name === 'Milk Boost') p.template = clone(milkBoostTemplate);
+        else if (!validSchedule(p.template)) p.template = sharedStages(p);
+        if (validSchedule(p.template)) {
+          for (const c of db.configs.filter(item => item.parentId === p.id && !item.supersededBy)) {
+            const snapshots = [c.stages, c.baselineStages, c.supplementDraft?.stages, c.supplementDraft?.baselineStages].filter(Boolean);
+            if (snapshots.some(items => scheduleKey(items) !== scheduleKey(p.template))) {
+              // Keep the former prototype data; published history remains untouched.
+              c.previousArrangementSnapshot ||= { stages: clone(c.stages || []), baselineStages: clone(c.baselineStages || null), supplementDraft: clone(c.supplementDraft || null) };
+            }
+            if (scheduleKey(c.stages) !== scheduleKey(p.template)) {
+              c.stages = applySchedule(c.stages, p.template);
+            }
+            if (c.baselineStages) c.baselineStages = applySchedule(c.baselineStages, p.template);
+            if (c.supplementDraft) {
+              c.supplementDraft.stages = applySchedule(c.supplementDraft.stages, p.template);
+              if (c.supplementDraft.baselineStages) c.supplementDraft.baselineStages = applySchedule(c.supplementDraft.baselineStages, p.template);
+            }
+          }
+        }
+        p.outline = arrangementText(p);
+      }
+      db.migrations = { ...db.migrations, sharedRhythmArrangement20261115: true };
+      try { localStorage.setItem(STORE, JSON.stringify(db)); }
+      catch (_) { /* Retry on the next load without losing the previous saved data. */ }
+    }
   }
   function commit(next) {
     try { localStorage.setItem(STORE, JSON.stringify(next)); db = next; return true; }
@@ -207,7 +262,7 @@
     return `<tr class="rm-expanded-row"><td colspan="6"><section class="rm-model-panel"><div class="rm-expanded-tools"><button class="btn btn--outline" data-rm-associate="${esc(item.id)}">＋ 关联型号</button></div><div class="table-shell"><table class="data-table rm-model-table"><colgroup><col style="width:135px"><col style="width:205px"><col style="width:145px"><col style="width:100px"><col style="width:155px"><col style="width:240px"></colgroup><thead><tr><th>型号</th><th>动力源方案 / 固定版本</th><th>完整参数</th><th>执行时长</th><th>发布状态 / 韵律版本</th><th>操作</th></tr></thead><tbody>${items.length ? items.map(c => `<tr><td><strong>${esc(c.model)}</strong></td>${configCells(c)}</tr>`).join('') : '<tr><td colspan="6" class="rm-empty">尚未关联型号，请先添加型号执行配置。</td></tr>'}</tbody></table></div></section></td></tr>`;
   }
   function childRowsByModel(model, items) {
-    return `<tr class="rm-expanded-row rm-expanded-row--model"><td colspan="6"><section class="rm-model-panel"><div class="table-shell"><table class="data-table rm-model-table"><colgroup><col style="width:215px"><col style="width:205px"><col style="width:145px"><col style="width:100px"><col style="width:155px"><col style="width:240px"></colgroup><thead><tr><th>韵律名称 / 编排</th><th>动力源方案 / 固定版本</th><th>完整参数</th><th>执行时长</th><th>发布状态 / 韵律版本</th><th>操作</th></tr></thead><tbody>${items.length ? items.map(c => { const p = parent(c.parentId); return `<tr><td><strong>${esc(p.name)}</strong><small>${esc(p.outline)}</small></td>${configCells(c)}</tr>`; }).join('') : '<tr><td colspan="6" class="rm-empty">该型号尚未关联韵律。</td></tr>'}</tbody></table></div></section></td></tr>`;
+    return `<tr class="rm-expanded-row rm-expanded-row--model"><td colspan="6"><section class="rm-model-panel"><div class="table-shell"><table class="data-table rm-model-table"><colgroup><col style="width:215px"><col style="width:205px"><col style="width:145px"><col style="width:100px"><col style="width:155px"><col style="width:240px"></colgroup><thead><tr><th>韵律名称 / 编排</th><th>动力源方案 / 固定版本</th><th>完整参数</th><th>执行时长</th><th>发布状态 / 韵律版本</th><th>操作</th></tr></thead><tbody>${items.length ? items.map(c => { const p = parent(c.parentId); return `<tr><td><strong>${esc(p.name)}</strong><small>${arrangementMarkup(p)}</small></td>${configCells(c)}</tr>`; }).join('') : '<tr><td colspan="6" class="rm-empty">该型号尚未关联韵律。</td></tr>'}</tbody></table></div></section></td></tr>`;
   }
   function listView() {
     const allParents = db.parents.filter(p => p.kind === kind);
@@ -232,7 +287,7 @@
       return `<tr class="rm-parent-row${expanded ? ' is-expanded' : ''}"><td><button class="rm-name-button" data-rm-toggle="model:${esc(model)}" aria-expanded="${expanded}"><span class="rm-chevron">${expanded ? '⌄' : '›'}</span><strong>${esc(model)}</strong>${pending ? dot : ''}</button><small class="rm-outline">${esc(power?.name || '待绑定动力源')} · ${esc(power?.version || '待核验')}</small></td><td><div class="rm-model-tags">${related.map((p, i) => `<button class="rm-model-tag" data-rm-view="${esc(items[i].id)}">${esc(p.name)}${complete(items[i]) ? '' : dot}</button>`).join('') || tag('未关联韵律')}</div>${items.length !== all.length ? `<small>匹配 ${items.length} / 全部 ${all.length} 条韵律</small>` : ''}</td><td>${progress(all)}${pending ? `<small>${all.filter(c => !complete(c)).length} 个待补录</small>` : ''}</td><td><div class="rm-summary">${statusSummary(all)}</div></td><td><span>${esc((all.map(c => c.time).sort().pop() || power?.time || '').slice(0, 16))}</span><small>${esc(all.map(c => c.updater).sort().pop() || '刘媛媛')}</small></td><td><div class="rm-actions"><button class="rm-link" data-rm-toggle="model:${esc(model)}">${expanded ? '收起韵律' : '管理韵律'}</button></div></td></tr>${expanded ? childRowsByModel(model, items) : ''}`;
     }).join('') : visibleParents.map(p => {
       const all = parentConfigs(p.id), items = matchingConfigs(p), pending = !all.length || all.some(c => !complete(c)), expanded = state.expanded.has(p.id);
-      return `<tr class="rm-parent-row${expanded ? ' is-expanded' : ''}"><td><button class="rm-name-button" data-rm-toggle="${esc(p.id)}" aria-expanded="${expanded}"><span class="rm-chevron">${expanded ? '⌄' : '›'}</span><strong>${esc(p.name)}</strong>${pending ? dot : ''}</button><small class="rm-outline">${esc(p.outline)}</small></td><td><div class="rm-model-tags">${items.map(c => `<button class="rm-model-tag" data-rm-view="${esc(c.id)}">${esc(c.model)}${complete(c) ? '' : dot}</button>`).join('') || tag('未关联型号')}</div>${items.length !== all.length ? `<small>匹配 ${items.length} / 全部 ${all.length} 个型号</small>` : ''}</td><td>${progress(all)}${pending ? `<small>${all.filter(c => !complete(c)).length} 个待补录</small>` : ''}</td><td><div class="rm-summary">${statusSummary(all)}</div></td><td><span>${esc((all.map(c => c.time).sort().pop() || p.time).slice(0, 16))}</span><small>刘媛媛</small></td><td><div class="rm-actions"><button class="rm-link" data-rm-toggle="${esc(p.id)}">${expanded ? '收起型号' : '管理型号'}</button><button class="rm-link" data-rm-base="${esc(p.id)}">${all.some(c => c.everPublished) ? '查看信息' : '编辑信息'}</button>${all.some(c => c.everPublished) ? `<button class="rm-link" data-rm-new-version="${esc(p.id)}">创建新版本</button>` : ''}</div></td></tr>${expanded ? childRows(p, items) : ''}`;
+      return `<tr class="rm-parent-row${expanded ? ' is-expanded' : ''}"><td><button class="rm-name-button" data-rm-toggle="${esc(p.id)}" aria-expanded="${expanded}"><span class="rm-chevron">${expanded ? '⌄' : '›'}</span><strong>${esc(p.name)}</strong>${pending ? dot : ''}</button><small class="rm-outline">${arrangementMarkup(p)}</small></td><td><div class="rm-model-tags">${items.map(c => `<button class="rm-model-tag" data-rm-view="${esc(c.id)}">${esc(c.model)}${complete(c) ? '' : dot}</button>`).join('') || tag('未关联型号')}</div>${items.length !== all.length ? `<small>匹配 ${items.length} / 全部 ${all.length} 个型号</small>` : ''}</td><td>${progress(all)}${pending ? `<small>${all.filter(c => !complete(c)).length} 个待补录</small>` : ''}</td><td><div class="rm-summary">${statusSummary(all)}</div></td><td><span>${esc((all.map(c => c.time).sort().pop() || p.time).slice(0, 16))}</span><small>刘媛媛</small></td><td><div class="rm-actions"><button class="rm-link" data-rm-toggle="${esc(p.id)}">${expanded ? '收起型号' : '管理型号'}</button><button class="rm-link" data-rm-base="${esc(p.id)}">${all.some(c => c.everPublished) ? '查看信息' : '编辑信息'}</button>${all.some(c => c.everPublished) ? `<button class="rm-link" data-rm-new-version="${esc(p.id)}">创建新版本</button>` : ''}</div></td></tr>${expanded ? childRows(p, items) : ''}`;
     }).join('');
     const filterSelect = isModel ? `<select class="control" id="rm-rhythm-filter" aria-label="韵律筛选">${rhythmOptions}</select>` : `<select class="control" id="rm-model-filter" aria-label="型号筛选">${modelOptions}</select>`;
     return `<section class="page-stack rm-page"><header class="page-header-bar"><h1>${label(kind)}库管理</h1><div class="page-header-actions"><button class="btn btn--primary" id="rm-create">新增${label(kind)}</button></div></header><div class="list-page-body"><section class="rm-filter-bar filter-toolbar">${switcher}<input class="control" id="rm-search" type="search" placeholder="${searchPlaceholder}" aria-label="${searchPlaceholder}" value="${esc(state.query)}">${filterSelect}<select class="control" id="rm-complete-filter" aria-label="完整参数筛选"><option value="">全部参数状态</option><option value="missing"${state.completeness === 'missing' ? ' selected' : ''}>待补录</option><option value="complete"${state.completeness === 'complete' ? ' selected' : ''}>已完整</option></select><select class="control" id="rm-status-filter" aria-label="发布状态筛选">${option(['发布', '草稿', '停用'], state.status, '全部发布状态')}</select><button class="btn btn--outline" id="rm-reset">重置</button></section><section class="rm-list list-table-card"><div class="table-shell rm-table-shell"><table class="data-table rm-parent-table"><colgroup><col style="width:300px"><col style="width:235px"><col style="width:180px"><col style="width:195px"><col style="width:160px"><col style="width:180px"></colgroup><thead><tr>${primaryHeader}<th>最近更新</th><th>操作</th></tr></thead><tbody>${rows || `<tr><td colspan="6" class="rm-empty">${empty}</td></tr>`}</tbody></table></div><footer class="pagination-bar"><span>匹配 ${visible.length} 条${isModel ? '型号' : '韵律'} · ${count} 份${isModel ? '韵律配置' : '型号配置'}</span><div class="pagination"><button class="page-button is-active" type="button">1</button></div></footer></section></div></section>`;
@@ -247,14 +302,14 @@
     kind = p.kind; host.render(); window.scrollTo(0, 0);
   }
   function field(name, content, missing = false, wide = false) { return `<label class="rm-field${missing ? ' rm-missing' : ''}${wide ? ' rm-field--wide' : ''}"><span>${name}</span>${content}</label>`; }
-  function lockedStageField(c, index, key) { return c.everPublished && Boolean(c.baselineStages?.[index]?.[key]); }
+  function lockedStageField(c, index, key) { return (['mode', 'duration'].includes(key) && sharedStages(parent(c.parentId)).length > 0) || (c.everPublished && Boolean(c.baselineStages?.[index]?.[key])); }
   function legacyStage(item, index, editing, c) {
     const disabled = key => !editing || lockedStageField(c, index, key) ? ' disabled' : '';
     const control = (key, html) => `<div class="${!item[key] ? 'rm-missing' : ''}">${html}</div>`;
-    return `<div class="rm-stage-card"><div class="rm-stage-heading"><strong>第 ${index + 1} 阶段</strong>${editing && !c.everPublished ? `<button class="rm-link rm-danger" data-rm-remove-stage="${index}">删除阶段</button>` : ''}</div><div class="rm-stage-fields">${field('吮吸方式', `<select class="control" data-rm-stage="${index}" data-rm-key="mode" aria-label="第${index + 1}阶段吮吸方式"${disabled('mode')}>${option(modeNames, item.mode, '请选择')}</select>`, !item.mode)}${field('时长（秒）', `<input class="control" type="number" min="1" max="7200" step="1" data-rm-stage="${index}" data-rm-key="duration" aria-label="第${index + 1}阶段时长" value="${esc(item.duration)}"${disabled('duration')}>`, !item.duration)}${item.mode === '休息' ? '<div class="rm-field"><span>休息阶段</span><p>仅维护时长，无吸乳参数</p></div>' : `${field('频率', `<select class="control" data-rm-stage="${index}" data-rm-key="frequency" aria-label="第${index + 1}阶段频率"${disabled('frequency')}>${option(['低', '中', '高'], item.frequency, '待补充原频率')}</select>`, !item.frequency)}${field('档位', `<input class="control" type="number" min="1" max="20" step="1" data-rm-stage="${index}" data-rm-key="gear" aria-label="第${index + 1}阶段档位" placeholder="待补充原档位" value="${esc(item.gear)}"${disabled('gear')}>`, !item.gear)}`}</div></div>`;
+    return `<div class="rm-stage-card"><div class="rm-stage-heading"><strong>第 ${index + 1} 阶段</strong>${editing && !c.everPublished && !sharedStages(parent(c.parentId)).length ? `<button class="rm-link rm-danger" data-rm-remove-stage="${index}">删除阶段</button>` : ''}</div><div class="rm-stage-fields">${field('吮吸方式', `<select class="control" data-rm-stage="${index}" data-rm-key="mode" aria-label="第${index + 1}阶段吮吸方式"${disabled('mode')}>${option(modeNames, item.mode, '请选择')}</select>`, !item.mode)}${field('时长（秒）', `<input class="control" type="number" min="1" max="7200" step="1" data-rm-stage="${index}" data-rm-key="duration" aria-label="第${index + 1}阶段时长" value="${esc(item.duration)}"${disabled('duration')}>`, !item.duration)}${item.mode === '休息' ? '<div class="rm-field"><span>休息阶段</span><p>仅维护时长，无吸乳参数</p></div>' : `${field('频率', `<select class="control" data-rm-stage="${index}" data-rm-key="frequency" aria-label="第${index + 1}阶段频率"${disabled('frequency')}>${option(['低', '中', '高'], item.frequency, '待补充原频率')}</select>`, !item.frequency)}${field('档位', `<input class="control" type="number" min="1" max="20" step="1" data-rm-stage="${index}" data-rm-key="gear" aria-label="第${index + 1}阶段档位" placeholder="待补充原档位" value="${esc(item.gear)}"${disabled('gear')}>`, !item.gear)}`}</div></div>`;
   }
   function newStage(item, index, editing) {
-    const disabled = editing ? '' : ' disabled';
+    const disabled = editing && !sharedStages(currentParent()).length ? '' : ' disabled';
     const controls = [
       field('模式', `<select class="control" data-rm-stage="${index}" data-rm-key="mode" aria-label="第${index + 1}段模式"${disabled}>${option(['刺激', '吸乳', '休息'], item.mode)}</select>`),
       field('执行时长（秒）', `<input class="control" type="number" min="1" max="7200" data-rm-stage="${index}" data-rm-key="duration" value="${esc(item.duration)}" aria-label="第${index + 1}段时长"${disabled}>`)
@@ -264,7 +319,7 @@
       controls.push(field('模式 ID / 固定版本', `<div class="rm-fixed-reference"><strong>${esc(item.modeRef || '待解析')}</strong><span>${esc(item.modeVersion || '待核验')}</span></div>`, !item.modeRef));
       for (const [name, value] of [['解析频率（CPM）', item.frequency], ['解析吸力（kPa）', item.suction], ['解析档位', item.gear ? `L${item.gear}` : ''], ['建压时长（ms）', item.modeSnapshot?.pressureTime], ['间歇时长（ms）', item.modeSnapshot?.intervalTime]]) controls.push(field(name, `<input class="control" value="${esc(value || '')}" placeholder="待核验" disabled>`, !value));
     }
-    return `<div class="rm-stage-card"><div class="rm-stage-heading"><strong>第 ${index + 1} 段 · ${esc(item.mode)}${item.mode === '休息' ? '' : '模式'}</strong>${editing ? `<button class="rm-link rm-danger" data-rm-remove-stage="${index}">删除模式</button>` : item.modeRef ? '' : '<span class="rm-pending">待核验</span>'}</div><div class="rm-stage-fields">${controls.join('')}</div>${item.mode !== '休息' ? `<p class="rm-stage-source">来源：${esc(item.modeOrigin || '待核验')} · ${esc(item.parameterOrigin || '完整模式快照缺失')}</p>` : ''}</div>`;
+    return `<div class="rm-stage-card"><div class="rm-stage-heading"><strong>第 ${index + 1} 段 · ${esc(item.mode)}${item.mode === '休息' ? '' : '模式'}</strong>${editing && !sharedStages(currentParent()).length ? `<button class="rm-link rm-danger" data-rm-remove-stage="${index}">删除模式</button>` : item.modeRef ? '' : '<span class="rm-pending">待核验</span>'}</div><div class="rm-stage-fields">${controls.join('')}</div>${item.mode !== '休息' ? `<p class="rm-stage-source">来源：${esc(item.modeOrigin || '待核验')} · ${esc(item.parameterOrigin || '完整模式快照缺失')}</p>` : ''}</div>`;
   }
   function powerDetails(c) {
     const snap = c.power.snapshot || {}, values = snap.config || {};
@@ -279,7 +334,7 @@
     const c = selected(), p = currentParent(); if (!c || !p) { resetView(); return listView(); }
     const editing = state.view === 'edit', d = state.draft, supplemental = editing && p.kind === 'legacy' && c.everPublished && !complete(c);
     const editable = !c.supersededBy;
-    return `<section class="page-stack rm-page"><header class="page-header-bar"><div class="page-header-title"><button class="back-button" id="rm-back" aria-label="返回韵律列表">‹</button><h1>${esc(p.name)} <span class="rm-title-divider">/</span> ${esc(c.model)}</h1></div><div class="page-header-actions"><button class="btn btn--outline" id="rm-back-secondary">${editing ? '取消' : '返回列表'}</button>${editing ? `${supplemental ? '<button class="btn btn--outline" id="rm-save-draft">保存补录草稿</button>' : ''}<button class="btn btn--primary" id="rm-save">${supplemental ? '提交完整参数' : '保存版本草稿'}</button>` : editable && !complete(c) ? `<button class="btn btn--primary" data-rm-edit="${esc(c.id)}">补充参数</button>` : editable && !c.everPublished ? `<button class="btn btn--primary" data-rm-edit="${esc(c.id)}">编辑草稿</button>` : `<button class="btn btn--primary" data-rm-new-version="${esc(p.id)}" data-rm-version-config="${esc(c.id)}">创建新版本</button>`}</div></header><div class="form-page rm-detail">${versionPanel(c, editing)}<section class="form-card rm-card"><div class="form-card__header rm-detail-header"><div><h2>基础信息</h2></div>${complete(c) ? tag('完整参数已保存', 'success') : `<span class="rm-pending">${dot}完整参数待补录</span>`}</div><div class="rm-meta-grid">${[['所属韵律', p.name], ['当前型号', c.model], ['韵律版本', versionName(c)], ['动力源方案', c.power.name], ['固定方案版本', c.power.version + (c.power.sample ? ' · 原型示例' : '')], ['发布状态', modelState(c)], ['参数来源', c.origin], ['最近更新', c.time]].map(([name, val]) => `<div class="rm-meta-item"><span>${esc(name)}</span><strong>${esc(val)}</strong></div>`).join('')}</div>${powerDetails(c)}</section>${p.kind === 'legacy' ? `<div class="rm-notice${supplemental ? ' rm-notice--warning' : ''}">${supplemental && c.everPublished ? '补录原系统参数，已知字段只读，不改变设备执行内容。可暂存草稿，完整提交后清除红点。' : c.everPublished ? '已发布参数只读；如需调整，请创建新版本。' : '完整参数保存后，可按当前型号独立发布。'}</div>` : c.everPublished ? `<div class="rm-notice">已发布参数只读；模式或动力源变化不覆盖当前快照。如需调整，请创建新版本。</div>` : ''}${state.error ? `<div class="rm-error" role="alert">${esc(state.error)}</div>` : ''}<section class="form-card rm-card"><div class="form-card__header rm-detail-header"><div><h2>${p.kind === 'legacy' ? '阶段编排与完整执行参数' : '模式组合与解析结果'}</h2><p>${p.kind === 'legacy' ? '高亮字段待补录，空值不代表默认参数。' : '参数按当前型号解析，示例值仅用于原型演示。'}</p></div><strong>总时长 <span id="rm-total">${time(seconds(d.stages))}</span></strong></div><div class="rm-stage-stack">${d.stages.map((item, index) => p.kind === 'legacy' ? legacyStage(item, index, editing, c) : newStage(item, index, editing)).join('') || '<div class="rm-empty">尚未配置阶段，请添加。</div>'}</div>${editing && !c.everPublished ? `<div class="rm-stage-toolbar"><button class="btn btn--outline" id="rm-add-stage">＋ 添加${p.kind === 'new' ? '模式' : '阶段'}</button>${p.kind === 'new' ? '<span>更换模式后按本型号重新解析参数</span>' : ''}</div>` : ''}${supplemental && c.everPublished ? `<label class="rm-confirm-original"><input type="checkbox" id="rm-original-confirm"${d.originalConfirmed ? ' checked' : ''}><span>我已核对，补录内容与 ${esc(c.model)} 原系统执行参数一致</span></label>` : ''}</section>${editing ? '<p class="rm-detail-footer">仅保存当前型号的版本草稿。</p>' : ''}</div></section>`;
+    return `<section class="page-stack rm-page"><header class="page-header-bar"><div class="page-header-title"><button class="back-button" id="rm-back" aria-label="返回韵律列表">‹</button><h1>${esc(p.name)} <span class="rm-title-divider">/</span> ${esc(c.model)}</h1></div><div class="page-header-actions"><button class="btn btn--outline" id="rm-back-secondary">${editing ? '取消' : '返回列表'}</button>${editing ? `${supplemental ? '<button class="btn btn--outline" id="rm-save-draft">保存补录草稿</button>' : ''}<button class="btn btn--primary" id="rm-save">${supplemental ? '提交完整参数' : '保存版本草稿'}</button>` : editable && !complete(c) ? `<button class="btn btn--primary" data-rm-edit="${esc(c.id)}">补充参数</button>` : editable && !c.everPublished ? `<button class="btn btn--primary" data-rm-edit="${esc(c.id)}">编辑草稿</button>` : `<button class="btn btn--primary" data-rm-new-version="${esc(p.id)}" data-rm-version-config="${esc(c.id)}">创建新版本</button>`}</div></header><div class="form-page rm-detail">${versionPanel(c, editing)}<section class="form-card rm-card"><div class="form-card__header rm-detail-header"><div><h2>基础信息</h2></div>${complete(c) ? tag('完整参数已保存', 'success') : `<span class="rm-pending">${dot}完整参数待补录</span>`}</div><div class="rm-meta-grid">${[['所属韵律', p.name], ['当前型号', c.model], ['韵律版本', versionName(c)], ['动力源方案', c.power.name], ['固定方案版本', c.power.version + (c.power.sample ? ' · 原型示例' : '')], ['发布状态', modelState(c)], ['参数来源', c.origin], ['最近更新', c.time]].map(([name, val]) => `<div class="rm-meta-item"><span>${esc(name)}</span><strong>${esc(val)}</strong></div>`).join('')}</div>${powerDetails(c)}</section>${p.kind === 'legacy' ? `<div class="rm-notice${supplemental ? ' rm-notice--warning' : ''}">${supplemental && c.everPublished ? '补录原系统参数，已知字段只读，不改变设备执行内容。可暂存草稿，完整提交后清除红点。' : c.everPublished ? '已发布参数只读；如需调整，请创建新版本。' : '完整参数保存后，可按当前型号独立发布。'}</div>` : c.everPublished ? `<div class="rm-notice">已发布参数只读；模式或动力源变化不覆盖当前快照。如需调整，请创建新版本。</div>` : ''}${state.error ? `<div class="rm-error" role="alert">${esc(state.error)}</div>` : ''}<section class="form-card rm-card"><div class="form-card__header rm-detail-header"><div><h2>${p.kind === 'legacy' ? '阶段编排与完整执行参数' : '模式组合与解析结果'}</h2><p>${p.kind === 'legacy' ? '各型号共用模式顺序与时长，仅补录本型号的执行参数。' : '各型号共用模式顺序与时长，具体执行参数按型号解析。'}</p></div><strong>总时长 <span id="rm-total">${time(seconds(d.stages))}</span></strong></div><div class="rm-stage-stack">${d.stages.map((item, index) => p.kind === 'legacy' ? legacyStage(item, index, editing, c) : newStage(item, index, editing)).join('') || '<div class="rm-empty">尚未配置阶段，请添加。</div>'}</div>${editing && !c.everPublished && !sharedStages(p).length ? `<div class="rm-stage-toolbar"><button class="btn btn--outline" id="rm-add-stage">＋ 添加${p.kind === 'new' ? '模式' : '阶段'}</button>${p.kind === 'new' ? '<span>更换模式后按本型号重新解析参数</span>' : ''}</div>` : ''}${supplemental && c.everPublished ? `<label class="rm-confirm-original"><input type="checkbox" id="rm-original-confirm"${d.originalConfirmed ? ' checked' : ''}><span>我已核对，补录内容与 ${esc(c.model)} 原系统执行参数一致</span></label>` : ''}</section>${editing ? '<p class="rm-detail-footer">仅保存当前型号的版本草稿。</p>' : ''}</div></section>`;
   }
   function modalView() {
     const m = state.modal; if (!m) return '';
@@ -288,7 +343,7 @@
     if (m.type === 'base' || m.type === 'create') {
       title = m.type === 'create' ? `新增${label(kind)}` : `${immutable ? '查看' : '编辑'}韵律基础信息`;
       const disabled = immutable ? ' disabled' : '';
-      const template = kind === 'new' ? `<div class="rm-field rm-field--wide"><span>共性模式编排 *</span><div class="rm-stage-stack">${(m.template || []).map((s, i) => `<div class="rm-stage-card"><div class="rm-stage-fields">${field(`第 ${i + 1} 段模式`, `<select class="control" data-rm-template="${i}" data-rm-key="mode"${disabled}>${option(['刺激', '吸乳', '休息'], s.mode)}</select>`)}${field('执行时长（秒）', `<input class="control" type="number" min="1" max="7200" step="1" data-rm-template="${i}" data-rm-key="duration" value="${esc(s.duration)}"${disabled}>`)}${immutable ? '' : `<button class="rm-link rm-danger" data-rm-remove-template="${i}">删除</button>`}</div></div>`).join('')}</div>${immutable ? '' : '<button class="btn btn--outline" id="rm-add-template">＋ 添加模式</button>'}<small>共性模式与时长；具体参数按型号解析。</small></div>` : field('编排概览 *', `<textarea class="control" id="rm-base-outline" rows="3" maxlength="300"${disabled}>${esc(m.outline || '')}</textarea>`, false, true);
+      const template = `<div class="rm-field rm-field--wide"><span>共用模式编排 *</span><div class="rm-stage-stack">${(m.template || []).map((s, i) => `<div class="rm-stage-card"><div class="rm-stage-fields">${field(`第 ${i + 1} 段模式`, `<select class="control" data-rm-template="${i}" data-rm-key="mode"${disabled}>${option(kind === 'legacy' ? modeNames : ['刺激', '吸乳', '休息'], s.mode)}</select>`)}${field('执行时长（秒）', `<input class="control" type="number" min="1" max="7200" step="1" data-rm-template="${i}" data-rm-key="duration" value="${esc(s.duration)}"${disabled}>`)}${immutable ? '' : `<button class="rm-link rm-danger" data-rm-remove-template="${i}">删除</button>`}</div></div>`).join('')}</div>${immutable ? '' : '<button class="btn btn--outline" id="rm-add-template">＋ 添加模式</button>'}<small>各型号共用模式顺序与时长，具体下发参数独立维护。</small></div>`;
       body = `<div class="rm-form-grid">${field('韵律名称 *', `<input class="control" id="rm-base-name" maxlength="60" value="${esc(m.name || '')}"${disabled}>`, false, true)}${field('内容说明 *', `<textarea class="control" id="rm-base-description" rows="3" maxlength="300"${disabled}>${esc(m.description || '')}</textarea>`, false, true)}${template}</div>${immutable ? '<p class="rm-notice">已发布的韵律基础信息只读；型号执行参数可通过“创建新版本”调整。</p>' : ''}`;
       submit = immutable ? '' : '<button class="btn btn--primary" id="rm-modal-submit">保存韵律</button>';
     } else if (m.type === 'associate') {
@@ -324,6 +379,7 @@
     const c = selected(), p = currentParent(), d = state.draft; if (!c || !p || !d) return;
     if (c.supersededBy || (c.everPublished && complete(c))) return;
     state.error = validate(d, p.kind);
+    if (!state.error && sharedStages(p).length && scheduleKey(d.stages) !== scheduleKey(sharedStages(p))) state.error = '模式顺序与时长由韵律共用编排维护，型号内仅调整执行参数。';
     if (!state.error && !c.everPublished && !d.changeSummary?.trim()) state.error = '请填写版本说明。';
     if (!state.error && c.everPublished && !complete(c) && !d.originalConfirmed) state.error = '请先确认补录参数与原系统执行参数一致；未核对时可保存补录草稿。';
     if (!state.error && c.everPublished) {
@@ -340,6 +396,7 @@
   }
   function publish(id) {
     const c = config(id), p = parent(c?.parentId); if (!c || !p || c.everPublished || !complete(c)) { host.showToast('请先补齐并保存完整参数。'); return; }
+    if (sharedStages(p).length && scheduleKey(c.stages) !== scheduleKey(sharedStages(p))) { host.showToast('该草稿与韵律的共用编排不一致，请核对模式顺序与时长后再发布。'); return; }
     if (p.kind === 'new' && !sourceIsReady(c)) { host.showToast('绑定动力源方案尚未发布或仅为示例，暂不可发布韵律。'); return; }
     host.showDialog(`确认演示发布 ${p.name} / ${c.model} 的 ${versionName(c)}？${c.previousId ? '原版本将保留为只读历史。' : ''}本次仅更新本地原型状态，其他型号不受影响。`, () => {
       const next = clone(db), row = next.configs.find(item => item.id === id);
@@ -361,22 +418,24 @@
     const next = clone(db); let focusParent = '';
     if (m.type === 'create' || m.type === 'base') {
       m.name = document.querySelector('#rm-base-name').value.trim(); m.description = document.querySelector('#rm-base-description').value.trim();
-      if (kind === 'new') {
+      {
         if (!m.template?.length || m.template.some(s => !s.mode || !Number.isInteger(Number(s.duration)) || Number(s.duration) < 1) || seconds(m.template) > 7200) { m.error = '请维护至少一个模式，各段为正整数秒，总时长不超过 120 分钟。'; host.render(); return; }
         m.outline = m.template.map(s => `${s.mode} ${time(s.duration)}`).join(' → ');
-      } else m.outline = document.querySelector('#rm-base-outline').value.trim();
+      }
       if (!m.name || !m.description || !m.outline) { m.error = '请完整填写韵律名称、内容说明和编排概览。'; host.render(); return; }
       if (db.parents.some(p => p.kind === kind && p.id !== m.parentId && p.name === m.name)) { m.error = '同类韵律名称已存在，请使用可区分的名称。'; host.render(); return; }
       if (m.type === 'base') {
         if (parentConfigs(m.parentId).some(c => c.everPublished)) return;
         Object.assign(next.parents.find(p => p.id === m.parentId), { name: m.name, description: m.description, outline: m.outline, template: clone(m.template || []), time: now() }); focusParent = m.parentId;
+        for (const c of next.configs.filter(item => item.parentId === m.parentId)) c.stages = kind === 'new' ? resolvedStages(c.model, m.template) : applySchedule(c.stages, m.template);
       } else { focusParent = uid('rhythm'); next.parents.unshift({ id: focusParent, kind, name: m.name, description: m.description, outline: m.outline, template: clone(m.template || []), tag: '官方', time: now() }); }
     } else if (m.type === 'associate') {
       const model = document.querySelector('#rm-associate-model').value;
       if (!model || parentConfigs(m.parentId).some(c => c.model === model)) { m.error = '请选择尚未关联的型号。'; host.render(); return; }
-      const p = parent(m.parentId), existing = parentConfigs(p.id)[0];
-      const template = p.kind === 'new' ? clone(p.template || []) : existing ? existing.stages.map(s => stage(s.mode, s.duration)) : [];
-      const stages = p.kind === 'new' ? resolvedStages(model, template) : template;
+      const p = parent(m.parentId);
+      const template = clone(sharedStages(p));
+      if (!validSchedule(template)) { m.error = '请先补充韵律的共用模式编排和时长。'; host.render(); return; }
+      const stages = p.kind === 'new' ? resolvedStages(model, template) : template.map(s => stage(s.mode, s.duration));
       const configId = uid('config');
       next.configs.push({ id: configId, seriesId: configId, versionNumber: 1, changeSummary: '初始配置草稿', parentId: p.id, model, power: powerFor(model), stages, status: '草稿', everPublished: false, baselineStages: null, origin: p.kind === 'new' ? '原型模式示例目录 · 完整参数快照' : '新关联型号 · 完整参数待补录', time: now(), updater: '刘媛媛' }); focusParent = p.id;
     } else if (m.type === 'version') {

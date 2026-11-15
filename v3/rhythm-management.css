@@ -27,6 +27,7 @@
 .rm-name-button:hover { color: var(--primary); }
 .rm-chevron { flex: 0 0 10px; width: 10px; color: var(--muted); font-size: 18px; line-height: 1; }
 .rm-outline { padding-left: 17px; }
+.rm-arrangement-step { display: inline-block; white-space: nowrap; }
 .rm-model-tags { display: flex; flex-wrap: wrap; gap: 5px; }
 .rm-model-tag { display: inline-flex; align-items: center; gap: 4px; padding: 2px 6px; border: 1px solid var(--line); border-radius: 4px; color: #606266; background: #fff; font-size: 12px; line-height: 1.6; white-space: nowrap; cursor: pointer; }
 .rm-model-tag:hover { border-color: #c6e2ff; color: var(--primary); }
