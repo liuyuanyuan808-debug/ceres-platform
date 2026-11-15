@@ -107,6 +107,7 @@
 .rm-modal-body .rm-notice, .rm-modal-body > p { margin: 14px 0 0; color: var(--muted); font-size: 12px; line-height: 1.6; }
 .rm-modal-body .rm-error { margin-top: 12px; }
 .rm-modal-description { margin: 0 0 16px !important; color: var(--muted); font-size: 12px; line-height: 1.6; }
+.rm-modal-hint { display: block; margin-top: 8px; color: var(--muted); font-size: 12px; line-height: 1.6; }
 .rm-modal-footer { padding: 12px 20px 18px; display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid var(--line); }
 .rm-page button:focus-visible, .rm-modal button:focus-visible { outline: 2px solid #a0cfff; outline-offset: 2px; }
 .dialog-body { height: auto; min-height: 40px; }
