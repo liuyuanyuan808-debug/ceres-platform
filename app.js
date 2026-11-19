@@ -363,6 +363,7 @@
     const code=reviewCode(),side=reviewSide();
     if(action==='trigger-fault'||action==='repeat')issues.receive(code,side);
     else if(action==='trigger-multiple')for(const [faultCode,faultSide] of [['E05','L'],['E05','R'],['E53','L'],['E53','R']])issues.receive(faultCode,faultSide);
+    else if(action==='trigger-same-side')for(const faultCode of ['E05','E53'])issues.receive(faultCode,'L');
     else if(action==='recover'){const f=issues.data.faults.find(f=>f.code===code&&f.side===side);if(f)issues.recover(f.id);}
     else if(/^recover:(L|R):(E05|E53)$/.test(action)){
       const [,faultSide,faultCode]=action.split(':'),fault=issues.data.faults.find(f=>f.code===faultCode&&f.side===faultSide);

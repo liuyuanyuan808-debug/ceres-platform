@@ -85,16 +85,14 @@ window.REVIEW_DATA = {
     {
       "id": "faults",
       "number": "01",
-      "title": "异常的识别和展示",
-      "description": "识别异常、说明限制，并正确处理恢复。"
+      "title": "设备异常",
+      "defaultFeature": "function-fault"
     },
     {
       "id": "submission",
       "number": "02",
       "title": "问题提交",
-      "description": "点击 Tab 切换四个环节，操作状态保留。",
-      "presentation": "tabs",
-      "navLabel": "问题提交"
+      "defaultFeature": "validation"
     }
   ],
   "definitionFields": [
@@ -147,59 +145,76 @@ window.REVIEW_DATA = {
   },
   "features": [
     {
-      "id": "recognition",
+      "id": "function-fault",
       "number": "1.1",
       "group": "faults",
-      "title": "异常识别与故障态",
-      "summary": "选择 E05 / E53，点击触发异常，再在手机内确认或关闭。",
-      "caseSelectable": true,
-      "note": "仅演示 E05 / E53，其他错误码见需求文档。",
+      "title": "单个功能受限异常",
+      "tabLabel": "单个功能受限异常",
+      "fixedCase": "E53",
+      "summary": "以 E53 演示：仅加热受限，吸奶与调档可继续。",
+      "defaultState": "demo",
+      "note": "E53 为跨型号组件样例，未新增加热控件。",
       "states": [
         {
-          "id": "fault",
-          "title": "异常出现 → 确认后",
-          "description": "确认 / 关闭提示后，故障标记仍保留，可点击查看。",
+          "id": "demo",
+          "title": "E53 · 未检测到法兰",
           "preset": "normal",
-          "extraActions": [
-            [
-              "repeat",
-              "重复上报",
-              "has-fault"
-            ],
-            [
-              "new-round",
-              "恢复后重新触发",
-              "has-fault"
-            ]
-          ],
-          "hint": "点击“触发异常”，在当前手机内查看效果。",
-          "targetByCase": {
-            "E05": "#confirm-blocking",
-            "E53": "#dismiss-event"
+          "flow": "single-fault",
+          "hint": "点击触发异常，按手机内提示继续。",
+          "hints": {
+            "idle": "点击“触发异常”，在当前手机内查看效果。",
+            "active": "点击 × 关闭事件提醒，故障与加热限制仍保留。",
+            "confirmed": "可查看温馨提示、尝试 Sync，或模拟设备确认恢复。",
+            "recovered": "异常已恢复；不会自动启动吸奶或 Sync，可再次触发。"
           },
-          "targetAfterConfirm": "[data-device-note=\"{side}\"]",
           "actions": [
             [
               "trigger-fault",
               "触发 {code} 异常",
               "no-fault"
+            ],
+            [
+              "show-tip",
+              "查看温馨提示",
+              "confirmed"
+            ],
+            [
+              "recover",
+              "模拟异常恢复",
+              "has-fault"
             ]
           ],
-          "tabLabel": "异常提醒"
+          "extraActions": [
+            [
+              "try-sync",
+              "尝试开启 Sync",
+              "confirmed"
+            ],
+            [
+              "repeat",
+              "重复上报",
+              "has-fault"
+            ]
+          ],
+          "targetByCase": {
+            "E05": "#confirm-blocking",
+            "E53": "#dismiss-event"
+          },
+          "targetAfterConfirm": "[data-device-note=\"{side}\"]"
         }
       ],
       "definitions": {
         "trigger": [
           [
-            "设备上报异常时。",
+            "收到对应侧的有效异常上报。",
             "7.2.1.3.1"
           ]
         ],
         "rules": [
           [
-            "E05 阻断确认；E53 提醒可关闭。",
-            "7.2.1.2.1",
-            "7.2.1.4"
+            "仅加热受限，吸奶与调档可继续。",
+            "7.2.1.4",
+            "7.2.1.3.2"
           ]
         ],
         "copy": [
@@ -210,141 +225,168 @@ window.REVIEW_DATA = {
         ],
         "boundaries": [
           [
-            "确认或关闭提示，不代表故障已恢复。",
-            "7.2.1.1"
+            "确认或关闭提示，不解除故障与限制。",
+            "7.2.1.2.1",
+            "7.2.1.3.2"
           ]
         ],
         "dependencies": [
           [
-            "点击故障文字，查看温馨提示。",
+            "受限操作显示温馨提示，Sync 保持关闭。",
             "7.2.1.3.2"
           ]
         ],
         "checks": [
           [
-            "确认不清除故障，同一轮不重复提示。",
-            "7.2.1.2.1",
-            "7.2.1.3.1"
+            "仅设备确认解除后恢复，不自动启动。",
+            "7.2.1.3.3"
           ]
         ]
-      },
-      "navLabel": "异常识别与故障态",
-      "copyKey": "marker",
-      "defaultState": "fault"
+      }
     },
     {
-      "id": "warm-tip",
+      "id": "device-fault",
       "number": "1.2",
       "group": "faults",
-      "title": "温馨提示与受限操作",
-      "summary": "在当前手机内点击故障文字、调档或 Sync，查看温馨提示。",
-      "caseSelectable": true,
-      "note": "E53 通过故障文字和 Sync 演示，未新增加热按钮。",
+      "title": "单个设备级异常",
+      "tabLabel": "单个设备级异常",
+      "fixedCase": "E05",
+      "summary": "以 E05 演示：左侧设备暂停使用，右侧仍可操作。",
+      "defaultState": "demo",
+      "note": "确认弹窗后，仍需设备明确确认恢复。",
       "states": [
         {
-          "id": "operation",
-          "title": "故障说明 / 受限操作",
-          "description": "点击故障标记；E05 也可尝试调节左侧档位。",
-          "preset": "fault-status",
-          "extraActions": [],
-          "hint": "点击故障文字，显示温馨提示。",
-          "target": "[data-device-note=\"{side}\"]",
+          "id": "demo",
+          "title": "E05 · 电池温度过高",
+          "preset": "normal",
+          "flow": "single-fault",
+          "hint": "点击触发异常，按手机内提示继续。",
+          "hints": {
+            "idle": "点击“触发异常”，在当前手机内查看效果。",
+            "active": "点击“我知道了”，确认后左侧仍暂停使用。",
+            "confirmed": "可点击故障文字、尝试左侧调档，或模拟设备确认恢复。",
+            "recovered": "异常已恢复；不会自动启动吸奶或 Sync，可再次触发。"
+          },
           "actions": [
+            [
+              "trigger-fault",
+              "触发 {code} 异常",
+              "no-fault"
+            ],
             [
               "show-tip",
-              "显示温馨提示"
-            ]
-          ],
-          "tabLabel": "温馨提示"
-        },
-        {
-          "id": "sync",
-          "title": "尝试开启 Sync",
-          "description": "点击 Sync；异常未解除时仍保持关闭。",
-          "preset": "fault-status",
-          "extraActions": [
+              "查看温馨提示",
+              "confirmed"
+            ],
             [
-              "add-other-code",
-              "模拟双侧异常"
+              "recover",
+              "模拟异常恢复",
+              "has-fault"
             ]
           ],
-          "hint": "点击 Sync，查看不能开启的原因。",
-          "target": ".sync-control",
-          "actions": [
+          "extraActions": [
             [
               "try-sync",
-              "尝试开启 Sync"
-            ]
-          ],
-          "tabLabel": "Sync 受限"
-        }
-      ],
-      "definitions": {
-        "trigger": [
-          [
-            "查看故障、尝试受限操作或开启 Sync 时。",
-            "7.2.1.2.1"
-          ]
-        ],
-        "rules": [
-          [
-            "受限操作不执行，正常侧仍可操作。",
-            "7.2.1.3.2"
-          ]
-        ],
-        "copy": [
-          [
-            "{warm}",
-            "7.2.1.4"
-          ]
-        ],
-        "boundaries": [
-          [
-            "连续操作只更新一条，不重复弹窗。",
-            "7.2.1.2.1"
-          ]
-        ],
-        "dependencies": [
-          [
-            "异常未解除时，Sync 保持关闭。",
-            "7.2.1.3.2"
-          ]
-        ],
-        "checks": [
-          [
-            "显示温馨提示，故障限制仍保留。",
-            "7.2.1.2.1",
-            "7.2.1.3.2"
-          ]
-        ]
-      },
-      "navLabel": "温馨提示与受限操作",
-      "copyKey": "warm"
-    },
-    {
-      "id": "recovery",
-      "number": "1.3",
-      "group": "faults",
-      "title": "多设备、多异常与恢复",
-      "summary": "左右设备同时存在 E05 / E53，可查看提示或逐项恢复。",
-      "note": "以左右两台设备演示共存与恢复。E53 为跨型号组件样例，不代表 M5 Ultra 实际支持。",
-      "states": [
-        {
-          "id": "notifications",
-          "title": "双设备 · 多条提示",
-          "description": "左右各有 E05 和 E53，阻断弹窗依次确认，事件提醒独立关闭。",
-          "preset": "normal",
-          "hint": "点击“触发双侧异常”，查看排队弹窗与独立提醒。",
-          "target": "#confirm-blocking",
-          "targetAfterQueue": "#dismiss-event",
-          "showFaults": true,
-          "extraActions": [
+              "尝试开启 Sync",
+              "confirmed"
+            ],
             [
               "repeat",
               "重复上报",
               "has-fault"
             ]
           ],
+          "targetByCase": {
+            "E05": "#confirm-blocking",
+            "E53": "#dismiss-event"
+          },
+          "targetAfterConfirm": "[data-device-note=\"{side}\"]"
+        }
+      ],
+      "definitions": {
+        "trigger": [
+          [
+            "收到对应侧的有效异常上报。",
+            "7.2.1.3.1"
+          ]
+        ],
+        "rules": [
+          [
+            "异常侧暂停使用，正常侧仍可操作。",
+            "7.2.1.4",
+            "7.2.1.3.2"
+          ]
+        ],
+        "copy": [
+          [
+            "{message}",
+            "7.2.1.4"
+          ]
+        ],
+        "boundaries": [
+          [
+            "确认或关闭提示，不解除故障与限制。",
+            "7.2.1.2.1",
+            "7.2.1.3.2"
+          ]
+        ],
+        "dependencies": [
+          [
+            "受限操作显示温馨提示，Sync 保持关闭。",
+            "7.2.1.3.2"
+          ]
+        ],
+        "checks": [
+          [
+            "仅设备确认解除后恢复，不自动启动。",
+            "7.2.1.3.3"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "multiple-faults",
+      "number": "1.3",
+      "group": "faults",
+      "title": "多个异常",
+      "summary": "选择同侧或双侧场景，查看提示共存、弹窗排队与逐项恢复。",
+      "note": "E53 为跨型号组件样例，不代表当前 M5 Ultra 支持该错误码。",
+      "states": [
+        {
+          "id": "dual",
+          "title": "双侧多个异常",
+          "tabLabel": "双侧多个异常",
+          "preset": "normal",
+          "flow": "multiple-faults",
+          "hint": "点击触发异常，查看提示与故障状态。",
+          "hints": {
+            "idle": "点击触发异常，查看提示与故障状态。",
+            "blocking": "依次确认阻断弹窗；也可模拟对应异常恢复。",
+            "reminders": "事件提醒独立保留，可分别关闭或逐项恢复。",
+            "retained": "提示已关闭，故障仍保留；可按侧别逐项恢复。",
+            "recovered": "异常已全部恢复，不会自动启动吸奶或 Sync。"
+          },
+          "caseLabel": "左右设备 · 多异常共存",
+          "recoverItems": true,
+          "recoveryTargets": [
+            [
+              "L",
+              "E05"
+            ],
+            [
+              "L",
+              "E53"
+            ],
+            [
+              "R",
+              "E05"
+            ],
+            [
+              "R",
+              "E53"
+            ]
+          ],
+          "showFaults": true,
           "actions": [
             [
               "trigger-multiple",
@@ -352,23 +394,65 @@ window.REVIEW_DATA = {
               "no-fault"
             ]
           ],
-          "tabLabel": "多条提示"
+          "extraActions": [
+            [
+              "repeat",
+              "再次上报左侧 E05",
+              "has-fault"
+            ]
+          ],
+          "target": "#confirm-blocking",
+          "targetAfterQueue": "#dismiss-event"
         },
         {
-          "id": "multiple",
-          "title": "同侧多异常 · 逐项恢复",
-          "description": "点击某个恢复按钮，只解除对应设备的这一个异常。",
-          "preset": "multi-faults-quiet",
-          "hint": "先恢复左 E05，观察故障文字变为“暂不可加热”。",
+          "id": "same-side",
+          "title": "同侧多个异常",
+          "tabLabel": "同侧多个异常",
+          "preset": "normal",
+          "flow": "multiple-faults",
+          "hint": "点击触发异常，查看提示与故障状态。",
+          "hints": {
+            "idle": "点击触发异常，查看提示与故障状态。",
+            "blocking": "依次确认阻断弹窗；也可模拟对应异常恢复。",
+            "reminders": "事件提醒独立保留，可分别关闭或逐项恢复。",
+            "retained": "提示已关闭，故障仍保留；可按侧别逐项恢复。",
+            "recovered": "异常已全部恢复，不会自动启动吸奶或 Sync。"
+          },
+          "caseLabel": "左侧设备 · 多异常共存",
           "recoverItems": true,
+          "recoveryTargets": [
+            [
+              "L",
+              "E05"
+            ],
+            [
+              "L",
+              "E53"
+            ]
+          ],
           "showFaults": true,
-          "tabLabel": "逐项恢复"
+          "actions": [
+            [
+              "trigger-same-side",
+              "触发同侧异常",
+              "no-fault"
+            ]
+          ],
+          "extraActions": [
+            [
+              "repeat",
+              "再次上报左侧 E05",
+              "has-fault"
+            ]
+          ],
+          "target": "#confirm-blocking",
+          "targetAfterQueue": "#dismiss-event"
         }
       ],
       "definitions": {
         "trigger": [
           [
-            "左右设备同时上报多个异常。",
+            "同侧或双侧同时上报多个异常。",
             "7.2.1.2.1"
           ]
         ],
@@ -404,15 +488,16 @@ window.REVIEW_DATA = {
           ]
         ]
       },
-      "navLabel": "多设备与多异常",
-      "multipleCases": true
+      "multipleCases": true,
+      "tabLabel": "多个异常",
+      "defaultState": "dual"
     },
     {
       "id": "validation",
       "number": "2.1",
       "group": "submission",
-      "title": "入口与提交校验",
-      "summary": "点击手机内“问题提交”，查看不同校验结果。",
+      "title": "提交校验",
+      "summary": "点击手机内“问题提交”，查看有日志、无日志或断网等反馈。",
       "note": "账号 / 归属异常的具体提示文案，文档未定义。",
       "states": [
         {
@@ -496,15 +581,14 @@ window.REVIEW_DATA = {
           ]
         ]
       },
-      "navLabel": "提交校验",
-      "tabLabel": "入口校验"
+      "tabLabel": "提交校验"
     },
     {
       "id": "submitting",
       "number": "2.2",
       "group": "submission",
-      "title": "提交中与防重复",
-      "summary": "开始提交后入口禁用，新增日志留到下次提交。",
+      "title": "提交过程",
+      "summary": "演示提交中、防重复、期间新增日志，以及返回和跨日后的任务保持。",
       "states": [
         {
           "id": "busy",
@@ -518,6 +602,11 @@ window.REVIEW_DATA = {
               "begin-long",
               "开始提交",
               "fresh"
+            ],
+            [
+              "finish",
+              "模拟提交成功",
+              "busy"
             ]
           ],
           "tabLabel": "提交中"
@@ -543,6 +632,138 @@ window.REVIEW_DATA = {
             ]
           ],
           "tabLabel": "新增日志"
+        },
+        {
+          "id": "return",
+          "title": "返回 / 重新载入",
+          "description": "开始任务，返回再进入，或重新载入此手机。",
+          "preset": "submit-entry",
+          "extraActions": [
+            [
+              "reload",
+              "验证重新载入后恢复"
+            ]
+          ],
+          "hint": "开始后，点手机返回，再点设置重新进入。",
+          "target": "#back",
+          "actions": [
+            [
+              "begin-long",
+              "开始提交",
+              "fresh"
+            ],
+            [
+              "finish",
+              "模拟提交成功",
+              "busy"
+            ]
+          ],
+          "targetWhen": "submitting",
+          "returnTarget": "#settings",
+          "tabLabel": "返回与重进",
+          "definitions": {
+            "trigger": [
+              [
+                "提交期间返回页面、中断或跨日。",
+                "7.2.2.3.4"
+              ]
+            ],
+            "rules": [
+              [
+                "返回后读取原任务，不重复提交。",
+                "7.2.2.3.4"
+              ]
+            ],
+            "copy": [
+              [
+                "提交中… / 问题提交",
+                "7.2.2.2.2"
+              ]
+            ],
+            "boundaries": [
+              [
+                "跨日不清除尚未结束的任务数据。",
+                "7.2.2.3.4"
+              ]
+            ],
+            "dependencies": [
+              [
+                "中断后，需要用户手动重试。",
+                "7.2.2.3.4"
+              ]
+            ],
+            "checks": [
+              [
+                "任务状态准确，不误报成功。",
+                "7.2.2.3.4"
+              ]
+            ]
+          }
+        },
+        {
+          "id": "midnight",
+          "title": "跨 UTC 日切",
+          "description": "任务跨日后，固定的在途日志仍可确认。",
+          "preset": "submit-entry",
+          "extraActions": [],
+          "hint": "按按钮依次体验：开始提交 → 跨日 → 确认结果。",
+          "showCounts": true,
+          "actions": [
+            [
+              "begin-long",
+              "开始提交",
+              "fresh"
+            ],
+            [
+              "next-day",
+              "模拟跨日",
+              "before-day"
+            ],
+            [
+              "finish",
+              "确认提交成功",
+              "after-day"
+            ]
+          ],
+          "tabLabel": "跨日恢复",
+          "definitions": {
+            "trigger": [
+              [
+                "提交期间返回页面、中断或跨日。",
+                "7.2.2.3.4"
+              ]
+            ],
+            "rules": [
+              [
+                "返回后读取原任务，不重复提交。",
+                "7.2.2.3.4"
+              ]
+            ],
+            "copy": [
+              [
+                "提交中… / 问题提交",
+                "7.2.2.2.2"
+              ]
+            ],
+            "boundaries": [
+              [
+                "跨日不清除尚未结束的任务数据。",
+                "7.2.2.3.4"
+              ]
+            ],
+            "dependencies": [
+              [
+                "中断后，需要用户手动重试。",
+                "7.2.2.3.4"
+              ]
+            ],
+            "checks": [
+              [
+                "任务状态准确，不误报成功。",
+                "7.2.2.3.4"
+              ]
+            ]
+          }
         }
       ],
       "definitions": {
@@ -566,13 +787,14 @@ window.REVIEW_DATA = {
         ],
         "boundaries": [
           [
-            "重复点击，不会创建新任务。",
-            "7.2.2.3.1"
+            "返回或重进不重复提交，跨日保留在途数据。",
+            "7.2.2.3.1",
+            "7.2.2.3.4"
           ]
         ],
         "dependencies": [
           [
-            "提交期间新增的日志，下次再提交。",
+            "期间新增日志继续缓存，下次再提交。",
             "7.2.2.3.1"
           ]
         ],
@@ -584,15 +806,14 @@ window.REVIEW_DATA = {
           ]
         ]
       },
-      "navLabel": "提交中",
-      "tabLabel": "提交中"
+      "tabLabel": "提交过程"
     },
     {
       "id": "result",
       "number": "2.3",
       "group": "submission",
-      "title": "提交结果与手动重试",
-      "summary": "分别演示成功和失败；失败后可在手机内重试。",
+      "title": "结果与重试",
+      "summary": "演示成功、失败或中断；未成功的日志保留，等待手动重试。",
       "note": "结果为本地模拟，未连接真实上传和客服服务。",
       "states": [
         {
@@ -601,7 +822,7 @@ window.REVIEW_DATA = {
           "description": "模拟云端确认，显示成功并清理对应数据。",
           "preset": "submit-entry",
           "extraActions": [],
-          "hint": "点击下方按钮，演示一次成功提交。",
+          "hint": "点击演示按钮，演示一次成功提交。",
           "actions": [
             [
               "success",
@@ -628,6 +849,62 @@ window.REVIEW_DATA = {
           ],
           "targetWhen": "retry",
           "tabLabel": "失败与重试"
+        },
+        {
+          "id": "interrupted",
+          "title": "任务中断",
+          "description": "中断后恢复入口，再次点击手动重试。",
+          "preset": "submit-entry",
+          "extraActions": [],
+          "hint": "模拟中断后，在手机内手动重试。",
+          "actions": [
+            [
+              "interrupt",
+              "模拟提交中断",
+              "fresh"
+            ]
+          ],
+          "tabLabel": "任务中断",
+          "target": "#problem-submit",
+          "targetWhen": "retry",
+          "definitions": {
+            "trigger": [
+              [
+                "提交任务中断，尚未确认成功。",
+                "7.2.2.3.4"
+              ]
+            ],
+            "rules": [
+              [
+                "恢复可点击入口，等待用户手动重试。",
+                "7.2.2.3.4"
+              ]
+            ],
+            "copy": [
+              [
+                "提交中… / 问题提交",
+                "7.2.2.2.2"
+              ]
+            ],
+            "boundaries": [
+              [
+                "跨日不清除尚未结束的任务数据。",
+                "7.2.2.3.4"
+              ]
+            ],
+            "dependencies": [
+              [
+                "中断后，需要用户手动重试。",
+                "7.2.2.3.4"
+              ]
+            ],
+            "checks": [
+              [
+                "任务状态准确，不误报成功。",
+                "7.2.2.3.4"
+              ]
+            ]
+          }
         }
       ],
       "definitions": {
@@ -672,130 +949,53 @@ window.REVIEW_DATA = {
           ]
         ]
       },
-      "navLabel": "提交结果",
-      "tabLabel": "提交结果"
-    },
-    {
-      "id": "task-recovery",
-      "number": "2.4",
-      "group": "submission",
-      "title": "页面返回与中断恢复",
-      "summary": "演示返回、中断和跨日，查看任务如何继续。",
-      "note": "跨日只调整演示时钟，不改变系统时间。",
-      "states": [
-        {
-          "id": "return",
-          "title": "返回 / 重新载入",
-          "description": "开始任务，返回再进入，或重新载入此手机。",
-          "preset": "submit-entry",
-          "extraActions": [
-            [
-              "reload",
-              "验证重新载入后恢复"
-            ]
-          ],
-          "hint": "开始后，点手机返回，再点设置重新进入。",
-          "target": "#back",
-          "actions": [
-            [
-              "begin-long",
-              "开始提交",
-              "fresh"
-            ]
-          ],
-          "targetWhen": "submitting",
-          "returnTarget": "#settings",
-          "tabLabel": "返回与重进"
-        },
-        {
-          "id": "interrupted",
-          "title": "任务中断",
-          "description": "中断后恢复入口，再次点击手动重试。",
-          "preset": "submit-entry",
-          "extraActions": [],
-          "hint": "模拟中断后，在手机内手动重试。",
-          "actions": [
-            [
-              "interrupt",
-              "模拟提交中断",
-              "fresh"
-            ]
-          ],
-          "tabLabel": "任务中断"
-        },
-        {
-          "id": "midnight",
-          "title": "跨 UTC 日切",
-          "description": "任务跨日后，固定的在途日志仍可确认。",
-          "preset": "submit-entry",
-          "extraActions": [],
-          "hint": "按按钮依次体验：开始提交 → 跨日 → 确认结果。",
-          "showCounts": true,
-          "actions": [
-            [
-              "begin-long",
-              "开始提交",
-              "fresh"
-            ],
-            [
-              "next-day",
-              "模拟跨日",
-              "before-day"
-            ],
-            [
-              "finish",
-              "确认提交成功",
-              "after-day"
-            ]
-          ],
-          "tabLabel": "跨日恢复"
-        }
-      ],
-      "definitions": {
-        "trigger": [
-          [
-            "提交期间返回页面、中断或跨日。",
-            "7.2.2.3.4"
-          ]
-        ],
-        "rules": [
-          [
-            "返回后读取原任务，不重复提交。",
-            "7.2.2.3.4"
-          ]
-        ],
-        "copy": [
-          [
-            "提交中… / 问题提交",
-            "7.2.2.2.2"
-          ]
-        ],
-        "boundaries": [
-          [
-            "跨日不清除尚未结束的任务数据。",
-            "7.2.2.3.4"
-          ]
-        ],
-        "dependencies": [
-          [
-            "中断后，需要用户手动重试。",
-            "7.2.2.3.4"
-          ]
-        ],
-        "checks": [
-          [
-            "任务状态准确，不误报成功。",
-            "7.2.2.3.4"
-          ]
-        ]
-      },
-      "navLabel": "返回与恢复",
-      "tabLabel": "返回与恢复"
+      "tabLabel": "结果与重试"
     }
   ],
   "workspace": {
-    "version": "20261119-11",
-    "defaultFeature": "recognition",
-    "defaultSubmission": "validation"
+    "version": "20261119-12",
+    "instancePrefix": "single-v12",
+    "defaultFeature": "function-fault",
+    "defaultSubmission": "validation",
+    "aliases": {
+      "recognition": {
+        "byCase": {
+          "E05": "device-fault",
+          "E53": "function-fault"
+        },
+        "scene": "demo"
+      },
+      "warm-tip": {
+        "byCase": {
+          "E05": "device-fault",
+          "E53": "function-fault"
+        },
+        "scene": "demo"
+      },
+      "recovery": {
+        "feature": "multiple-faults",
+        "scene": "dual"
+      },
+      "submission-review": {
+        "feature": "validation"
+      },
+      "task-recovery": {
+        "feature": "submitting",
+        "scenes": {
+          "return": {
+            "feature": "submitting",
+            "scene": "return"
+          },
+          "midnight": {
+            "feature": "submitting",
+            "scene": "midnight"
+          },
+          "interrupted": {
+            "feature": "result",
+            "scene": "interrupted"
+          }
+        }
+      }
+    }
   }
 };
