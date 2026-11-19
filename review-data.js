@@ -362,7 +362,7 @@ window.REVIEW_DATA = {
           "hints": {
             "idle": "点击触发异常，查看提示与故障状态。",
             "blocking": "依次确认阻断弹窗；也可模拟对应异常恢复。",
-            "reminders": "事件提醒独立保留，可分别关闭或逐项恢复。",
+            "reminders": "多条提醒叠层显示，关闭当前条后显示下一条。",
             "retained": "提示已关闭，故障仍保留；可按侧别逐项恢复。",
             "recovered": "异常已全部恢复，不会自动启动吸奶或 Sync。"
           },
@@ -414,7 +414,7 @@ window.REVIEW_DATA = {
           "hints": {
             "idle": "点击触发异常，查看提示与故障状态。",
             "blocking": "依次确认阻断弹窗；也可模拟对应异常恢复。",
-            "reminders": "事件提醒独立保留，可分别关闭或逐项恢复。",
+            "reminders": "多条提醒叠层显示，关闭当前条后显示下一条。",
             "retained": "提示已关闭，故障仍保留；可按侧别逐项恢复。",
             "recovered": "异常已全部恢复，不会自动启动吸奶或 Sync。"
           },
@@ -953,8 +953,8 @@ window.REVIEW_DATA = {
     }
   ],
   "workspace": {
-    "version": "20261119-12",
-    "instancePrefix": "single-v12",
+    "version": "20261119-13",
+    "instancePrefix": "single-v13",
     "defaultFeature": "function-fault",
     "defaultSubmission": "validation",
     "aliases": {

@@ -60,7 +60,7 @@
     const toast=$('#issue-toast');clearTimeout(toastTimer);toast.textContent=message;toast.hidden=false;toastTimer=setTimeout(()=>toast.hidden=true,3400);
   }
   function resetWarmTip(){clearTimeout(warmTipTimer);$('p',warmTip).innerHTML=defaultWarmTip;phone.classList.remove('has-operation-tip');}
-  function positionWarmTip(){if(!phone.classList.contains('has-operation-tip')||eventReminder.hidden)return;const bottom=Math.max(...[eventReminder,...$$('.extra-event',phone)].map(el=>el.offsetTop+el.offsetHeight));phone.style.setProperty('--operation-tip-top',`${Math.max(112,bottom+4)}px`);}
+  function positionWarmTip(){if(!phone.classList.contains('has-operation-tip')||eventReminder.hidden)return;const bottom=eventReminder.offsetTop+eventReminder.offsetHeight+(eventReminder.classList.contains('has-next')?7:0);phone.style.setProperty('--operation-tip-top',`${Math.max(112,bottom+4)}px`);}
   function faultWarmFor(side){return issues.data.faults.filter(f=>!side||f.side===side).map(f=>`${f.side==='L'?'左侧':'右侧'}设备：${issues.definitions[f.code].warm}`).join('\n');}
   function trySync(){if(issues.data.faults.length)showWarmTip(['L','R'].map(side=>{const faults=issues.data.faults.filter(f=>f.side===side);return faults.length?`${side==='L'?'左侧':'右侧'}设备存在异常，暂不可开启 Sync。${[...new Set(faults.map(f=>issues.definitions[f.code].remedy))].join('；')}`:'';}).filter(Boolean).join('\n'));}
   function showWarmTip(message){
@@ -68,7 +68,7 @@
     $('p',warmTip).textContent=`“ ${message} ”`;phone.classList.add('has-operation-tip');positionWarmTip();
     warmTipTimer=setTimeout(resetWarmTip,3400);
   }
-  function hideEvent(){eventReminder.hidden=true;phone.classList.remove('event-reminder-open');$('#demo-event').setAttribute('aria-pressed','false');}
+  function hideEvent(){eventReminder.hidden=true;eventReminder.classList.remove('has-next');eventReminder.dataset.reminderCount='0';phone.classList.remove('event-reminder-open','has-queued-events');$('#demo-event').setAttribute('aria-pressed','false');}
   function closeEvent(){const id=eventReminder.dataset.faultId;if(id)issues.dismiss(id);else hideEvent();}
   function setEventExpanded(expanded){
     eventReminder.classList.toggle('collapsed',!expanded);
@@ -76,33 +76,29 @@
     $('#event-reminder-toggle').setAttribute('aria-expanded',String(expanded));
     $('#event-reminder-description').hidden=!expanded;
     positionWarmTip();
-    positionEventStack();
-  }
-  function positionEventStack(){
-    let top=eventReminder.hidden?62:eventReminder.offsetTop+eventReminder.offsetHeight+8;
-    for(const el of $$('.extra-event',phone)){el.style.top=`${top}px`;top+=el.offsetHeight+8;}
-    phone.classList.toggle('multiple-events',!!$('.extra-event',phone));phone.style.setProperty('--event-content-top',`${top+8}px`);positionWarmTip();
   }
   function hideBlocking(){
     if(eventBlocker.hidden)return;
     eventBlocker.hidden=true;phone.classList.remove('blocking-open');
     for(const [element,inert] of blockingInert)element.inert=inert;
-    for(const element of $$('.extra-event',phone))element.inert=false;
     blockingInert=[];$('#demo-blocking').setAttribute('aria-pressed','false');
     if(blockingFocus?.isConnected)blockingFocus.focus({preventScroll:true});
     blockingFocus=null;
   }
   function syncFaultNotifications(){
-    $$('.extra-event',phone).forEach(el=>el.remove());
     const reminders=issues.data.faults.filter(f=>f.code==='E53'&&!f.dismissed),reminder=reminders[0];
     if(state.page==='control'&&reminder){
       if(eventReminder.dataset.faultId!==reminder.id){eventReminder.dataset.faultId=reminder.id;setEventExpanded(true);}
+      const queued=reminders.length>1,badge=$('.event-symbol',eventReminder);
+      badge.textContent=queued?String(reminders.length):'!';badge.classList.toggle('has-count',queued);
+      eventReminder.dataset.reminderCount=String(reminders.length);eventReminder.classList.toggle('has-next',queued);phone.classList.toggle('has-queued-events',queued);
+      eventReminder.setAttribute('aria-description',queued?`共 ${reminders.length} 条事件提醒，关闭当前提醒后显示下一条。`:'1 条事件提醒。');
       $('#event-reminder-title').textContent=`${reminder.side==='L'?'左侧':'右侧'}设备异常`;
       $('#event-reminder-description').textContent=issues.definitions.E53.message;
-      eventReminder.classList.add('fault-description');eventReminder.hidden=false;phone.classList.add('event-reminder-open');$('#demo-event').setAttribute('aria-pressed','true');
+      $('#dismiss-event').setAttribute('aria-label',`关闭${reminder.side==='L'?'左侧':'右侧'}事件提醒`);
+      eventReminder.hidden=false;phone.classList.add('event-reminder-open');$('#demo-event').setAttribute('aria-pressed','true');
     }else hideEvent();
-    if(state.page==='control')for(const f of reminders.slice(1)){const extra=document.createElement('aside');extra.className='extra-event';extra.innerHTML=`<h3><span class="event-symbol">!</span>${f.side==='L'?'左侧':'右侧'}设备异常</h3><p>${issues.definitions[f.code].message}</p><button aria-label="关闭${f.side==='L'?'左侧':'右侧'}事件提醒">×</button>`;$('button',extra).addEventListener('click',()=>issues.dismiss(f.id));extra.inert=!eventBlocker.hidden;phone.append(extra);}
-    positionEventStack();
+    positionWarmTip();
     const next=issues.data.faults.find(f=>f.code==='E05'&&!f.acknowledged);
     if(state.page!=='control'||!next){hideBlocking();return;}
     if(!eventBlocker.hidden&&eventBlocker.dataset.faultId===next.id)return;
@@ -179,7 +175,7 @@
   function injectFault(code,side){if(state.page!=='control')showPage('control');issues.receive(code,side);}
   $('#demo-event').addEventListener('click',()=>injectFault('E53','R'));
   $('#event-reminder-toggle').addEventListener('click',()=>setEventExpanded($('#event-reminder-toggle').getAttribute('aria-expanded')!=='true'));
-  $('#dismiss-event').addEventListener('click',()=>{closeEvent();$('#demo-event').focus({preventScroll:true});});
+  $('#dismiss-event').addEventListener('click',()=>{closeEvent();if(!eventReminder.hidden)$('#dismiss-event').focus({preventScroll:true});else if(!embedded)$('#demo-event').focus({preventScroll:true});});
   $('#demo-blocking').addEventListener('click',()=>injectFault('E05','L'));
   $('#confirm-blocking').addEventListener('click',()=>issues.acknowledge(eventBlocker.dataset.faultId));
   $('#demo-recover').addEventListener('click',()=>issues.recoverAll());
