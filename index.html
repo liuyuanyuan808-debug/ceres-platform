@@ -1,15 +1,34 @@
 <!doctype html>
 <html lang="zh-CN">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Ceres · 韵律库管理原型</title>
-  <link rel="icon" href="data:,">
-  <script>window.location.replace('./v3/' + window.location.search + (window.location.hash || '#legacy-rhythms'));</script>
-  <style>body{font:14px/1.7 -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;margin:64px;color:#34445b}a{color:#337ecc}</style>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#f6f7f9">
+  <title>吸奶器 · 交互评审工作台</title><link rel="icon" href="assets/mode-stimulation.png"><link rel="stylesheet" href="review.css?v=20261119-1000">
 </head>
 <body>
-  <p><a href="./v3/#legacy-rhythms">打开 Ceres 韵律库管理原型</a></p>
-  <p><a href="./v2.1/">查看 2.1 期历史原型</a></p>
+  <header class="workspace-header"><a class="workspace-brand" href="#"><span class="brand-mark" aria-hidden="true">▤</span><span>产品评审<span class="brand-separator">/</span><strong>吸奶器</strong></span></a><div class="header-actions"><span id="document-revision" class="document-revision"></span><a id="document-link" target="_blank" rel="noopener">查看需求文档 ↗</a><button id="toggle-definitions" aria-pressed="false">收起定义</button></div></header>
+  <div class="workspace-grid">
+    <aside class="feature-index"><p class="column-caption">功能索引</p><nav id="feature-navigation" aria-label="功能索引"></nav><div class="index-footer"><span class="live-dot"></span> 同一手机 · 切换场景</div></aside>
+    <main id="review-workspace" class="review-workspace">
+      <section class="prototype-cell" aria-label="交互原型">
+        <div id="feature-tabs" class="feature-tabs" role="tablist" aria-label="问题提交的四个环节" hidden></div>
+        <header class="demo-heading"><div class="feature-title"><span id="feature-number"></span><h1 id="feature-title"></h1></div><p id="feature-summary"></p></header>
+        <div id="scenario-tabs" class="scenario-tabs" role="tablist" aria-label="演示场景"></div>
+        <section id="demo-scene" class="demo-stage" role="tabpanel" tabindex="0">
+          <aside class="event-panel" aria-label="演示操作">
+            <div id="case-picker" class="case-picker" role="group" aria-label="演示案例"></div>
+            <div class="event-heading"><span>当前场景</span><button id="reset-scene" title="重置当前场景">重来 ↻</button></div>
+            <h2 id="scene-title"></h2>
+            <p id="interaction-guide" class="interaction-guide"></p>
+            <div id="event-actions" class="event-actions"></div>
+            <p id="frame-status" class="frame-status" aria-live="polite"></p>
+            <details id="case-note" class="case-note" hidden><summary>案例说明</summary><p></p></details>
+          </aside>
+          <div id="phone-stage" class="phone-stage"><div id="phone-viewport" class="phone-viewport"><div id="review-phone" class="phone-shell"><iframe id="app-demo" title="App 交互原型"></iframe><div id="interaction-marker" class="interaction-marker" hidden aria-hidden="true"><span>点击</span></div></div></div></div>
+        </section>
+      </section>
+      <aside id="definitions" class="definition-cell"><header class="definition-heading"><h2>补充定义</h2><span id="definition-context"></span></header><div id="definition-body" class="definition-body"></div></aside>
+    </main>
+  </div>
+  <script src="review-data.js?v=20261119-1000"></script><script src="review.js?v=20261119-1000"></script>
 </body>
 </html>
