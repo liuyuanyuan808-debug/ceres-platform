@@ -63,7 +63,6 @@
   function resetWarmTip(){clearTimeout(warmTipTimer);$('p',warmTip).innerHTML=defaultWarmTip;phone.classList.remove('has-operation-tip');}
   function positionWarmTip(){if(!phone.classList.contains('has-operation-tip')||eventReminder.hidden)return;const bottom=eventReminder.offsetTop+eventReminder.offsetHeight+(eventReminder.classList.contains('has-next')?7:0);phone.style.setProperty('--operation-tip-top',`${Math.max(112,bottom+4)}px`);}
   function faultWarmFor(side){return issues.data.faults.filter(f=>!side||f.side===side).map(f=>`${f.side==='L'?'左侧':'右侧'}设备：${withErrorCode(issues.definitions[f.code].warm,f.code)}`).join('\n');}
-  function trySync(){if(issues.data.faults.length)showWarmTip(['L','R'].map(side=>{const faults=issues.data.faults.filter(f=>f.side===side);return faults.length?`${side==='L'?'左侧':'右侧'}设备存在异常，暂不可开启 Sync。${faults.map(f=>withErrorCode(issues.definitions[f.code].remedy,f.code)).join('；')}`:'';}).filter(Boolean).join('\n'));}
   function showWarmTip(message){
     clearTimeout(warmTipTimer);clearTimeout(toastTimer);$('#issue-toast').hidden=true;
     $('p',warmTip).textContent=`“ ${message} ”`;phone.classList.add('has-operation-tip');positionWarmTip();
@@ -201,7 +200,7 @@
   }
   function hero(){return `<section class="hero ${v3Model?'v3-model':''}" aria-label="Connected breast pumps">
     ${v3Model?'<img class="v3-device" src="assets/v3-device.png" alt="V3 大主机">':'<img class="hero-pump left" src="assets/pump-left.png" alt="Left M5 Ultra breast pump"><img class="hero-pump right" src="assets/pump-right.png" alt="Right M5 Ultra breast pump">'}
-    <button class="sync-control" aria-label="Sync" aria-disabled="true"><span class="sync-icon"><img src="assets/icon-sync.png" alt=""></span><span>Sync</span></button>
+
     ${['L','R'].map(s=>`<div class="device-state ${s==='L'?'left':'right'}"><div class="battery-row">${s}${battery(s)}</div><div class="timer" data-timer="${s}">${formatTime(state.elapsedSides[s])}</div><button class="device-note" data-device-note="${s}" aria-label="查看${s==='L'?'左侧':'右侧'}设备故障说明"></button></div>`).join('')}</section>`;}
   function modeCard(){return `<section class="card mode-card" aria-label="Pumping mode"><div class="mode-heading">${icons.modes}<span>Manual</span><span style="margin-left:auto">${icons.chevron}</span></div><div class="mode-switch">${['stimulation','expression','mixed'].map(m=>`<button class="mode-option ${state.mode===m?'active':''}" data-mode="${m}" aria-pressed="${state.mode===m}"><img src="assets/mode-${m}.png" alt=""><span>${m[0].toUpperCase()+m.slice(1)}</span></button>`).join('')}</div></section>`;}
   function levelColumn(side){const value=state.levels[side];return `<div class="level-column"><div class="level-caption">${side}</div><div class="level-rail" data-level="${side}" role="slider" tabindex="0" aria-label="${side==='L'?'Left':'Right'} suction level" aria-valuemin="1" aria-valuemax="9" aria-valuenow="${value}">${levelTicks(value)}<div class="level-thumb" style="top:${(9-value)/8*184}px">${levelText(value)}</div><div class="drag-bubble" hidden>${value}</div></div></div>`;}
@@ -217,7 +216,6 @@
     bindControl(); renderActions();
   }
   function bindControl(){
-    $('.sync-control',content).addEventListener('click',trySync);
     $$('[data-device-note]',content).forEach(note=>note.addEventListener('click',()=>showWarmTip(faultWarmFor(note.dataset.deviceNote))));
     $$('.mode-option',content).forEach(btn=>btn.addEventListener('click',()=>{
       if(state.mode===btn.dataset.mode)return;
