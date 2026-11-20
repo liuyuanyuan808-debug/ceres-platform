@@ -40,6 +40,7 @@
 
   const clamp = (n,min,max) => Math.max(min,Math.min(max,n));
   const formatTime = seconds => `${String(Math.floor(seconds/60)).padStart(2,'0')}:${String(seconds%60).padStart(2,'0')}`;
+  const withErrorCode = (text, code) => { const value=String(text||''); return value.endsWith('。') ? `${value.slice(0,-1)}（${code}）。` : `${value}（${code}）`; };
   const toggle = (id, value, label) => `<button id="${id}" class="toggle" role="switch" aria-label="${label}" aria-checked="${value}"></button>`;
   const battery = side => `<span class="device-battery ${side==='R'?'right':''}" aria-hidden="true"></span>`;
   function resize(){
@@ -61,8 +62,8 @@
   }
   function resetWarmTip(){clearTimeout(warmTipTimer);$('p',warmTip).innerHTML=defaultWarmTip;phone.classList.remove('has-operation-tip');}
   function positionWarmTip(){if(!phone.classList.contains('has-operation-tip')||eventReminder.hidden)return;const bottom=eventReminder.offsetTop+eventReminder.offsetHeight+(eventReminder.classList.contains('has-next')?7:0);phone.style.setProperty('--operation-tip-top',`${Math.max(112,bottom+4)}px`);}
-  function faultWarmFor(side){return issues.data.faults.filter(f=>!side||f.side===side).map(f=>`${f.side==='L'?'左侧':'右侧'}设备：${issues.definitions[f.code].warm}`).join('\n');}
-  function trySync(){if(issues.data.faults.length)showWarmTip(['L','R'].map(side=>{const faults=issues.data.faults.filter(f=>f.side===side);return faults.length?`${side==='L'?'左侧':'右侧'}设备存在异常，暂不可开启 Sync。${[...new Set(faults.map(f=>issues.definitions[f.code].remedy))].join('；')}`:'';}).filter(Boolean).join('\n'));}
+  function faultWarmFor(side){return issues.data.faults.filter(f=>!side||f.side===side).map(f=>`${f.side==='L'?'左侧':'右侧'}设备：${withErrorCode(issues.definitions[f.code].warm,f.code)}`).join('\n');}
+  function trySync(){if(issues.data.faults.length)showWarmTip(['L','R'].map(side=>{const faults=issues.data.faults.filter(f=>f.side===side);return faults.length?`${side==='L'?'左侧':'右侧'}设备存在异常，暂不可开启 Sync。${faults.map(f=>withErrorCode(issues.definitions[f.code].remedy,f.code)).join('；')}`:'';}).filter(Boolean).join('\n'));}
   function showWarmTip(message){
     clearTimeout(warmTipTimer);clearTimeout(toastTimer);$('#issue-toast').hidden=true;
     $('p',warmTip).textContent=`“ ${message} ”`;phone.classList.add('has-operation-tip');positionWarmTip();
@@ -94,7 +95,7 @@
       eventReminder.dataset.reminderCount=String(reminders.length);eventReminder.classList.toggle('has-next',queued);phone.classList.toggle('has-queued-events',queued);
       eventReminder.setAttribute('aria-description',queued?`共 ${reminders.length} 条事件提醒，关闭当前提醒后显示下一条。`:'1 条事件提醒。');
       $('#event-reminder-title').textContent=`${reminder.side==='L'?'左侧':'右侧'}设备异常`;
-      $('#event-reminder-description').textContent=issues.definitions.E53.message;
+      $('#event-reminder-description').textContent=withErrorCode(issues.definitions.E53.message,'E53');
       $('#dismiss-event').setAttribute('aria-label',`关闭${reminder.side==='L'?'左侧':'右侧'}事件提醒`);
       eventReminder.hidden=false;phone.classList.add('event-reminder-open');$('#demo-event').setAttribute('aria-pressed','true');
     }else hideEvent();
@@ -105,7 +106,7 @@
     hideBlocking();cancelHold();blockingFocus=document.activeElement;
     eventBlocker.dataset.faultId=next.id;
     $('#blocking-title').textContent=`${next.side==='L'?'左侧':'右侧'}设备异常`;
-    $('#blocking-description').textContent=issues.definitions.E05.message;
+    $('#blocking-description').textContent=withErrorCode(issues.definitions.E05.message,'E05');
     blockingInert=[...phone.children].filter(el=>el!==eventBlocker&&el.id!=='issue-toast').map(el=>[el,el.inert]);
     for(const [element] of blockingInert)element.inert=true;
     eventBlocker.hidden=false;phone.classList.add('blocking-open');$('#demo-blocking').setAttribute('aria-pressed','true');$('#confirm-blocking').focus({preventScroll:true});
@@ -115,7 +116,7 @@
       const blocked=issues.blocked(side),rail=$(`[data-level="${side}"]`);
       if(rail){rail.setAttribute('aria-disabled',String(blocked));rail.tabIndex=0;rail.classList.toggle('restricted',blocked);}
       const note=$(`[data-device-note="${side}"]`);
-      if(note){note.textContent=blocked?`${issues.definitions.E05.marker||'设备暂不可用'} ›`:issues.heatingRestricted(side)?`${issues.definitions.E53.marker||'暂不可加热'} ›`:'';note.disabled=!note.textContent;}
+      if(note){note.textContent=blocked?`${withErrorCode(issues.definitions.E05.marker||'设备暂不可用','E05')} ›`:issues.heatingRestricted(side)?`${withErrorCode(issues.definitions.E53.marker||'暂不可加热','E53')} ›`:'';note.disabled=!note.textContent;}
     }
   }
   function submissionMarkup(){const busy=issues.data.task?.status==='submitting';return `<span class="problem-copy"><span class="problem-title">${busy?'提交中…':'问题提交'}</span><span class="problem-subtitle">提交设备问题信息，供客服排查</span></span>${busy?'<span class="submit-spinner" aria-hidden="true"></span>':icons.chevron}`;}
@@ -178,6 +179,8 @@
   $('#dismiss-event').addEventListener('click',()=>{closeEvent();if(!eventReminder.hidden)$('#dismiss-event').focus({preventScroll:true});else if(!embedded)$('#demo-event').focus({preventScroll:true});});
   $('#demo-blocking').addEventListener('click',()=>injectFault('E05','L'));
   $('#confirm-blocking').addEventListener('click',()=>issues.acknowledge(eventBlocker.dataset.faultId));
+  $('#close-blocking').addEventListener('click',hideBlocking);
+  $('#contact-blocking').addEventListener('click',()=>showFeedback(withErrorCode('请联系客服处理该设备异常','E05')));
   $('#demo-recover').addEventListener('click',()=>issues.recoverAll());
   $$('[data-submission-group]').forEach(button=>button.addEventListener('click',()=>selectSubmissionGroup(button.dataset.submissionGroup)));
   $('#demo-case').addEventListener('change',event=>{const group=$('[data-submission-group][aria-pressed="true"]').dataset.submissionGroup;selectSubmissionGroup(group,event.target.value);});
@@ -325,7 +328,7 @@
   function showSuccess(){const layer=$('#success-layer');layer.hidden=false;layer.innerHTML='<img class="success-bunny" src="assets/bunny.webp" alt="Pink rabbit holding flowers"><div class="logged-label">Logged</div><img class="logged-underline" src="assets/logged-underline.png" alt="">';setTimeout(()=>{layer.hidden=true;layer.innerHTML='';showPage('control');},1800);}
   document.addEventListener('keydown',e=>{
     if(!eventBlocker.hidden){
-      if(e.key==='Tab'){e.preventDefault();$('#confirm-blocking').focus();}
+      if(e.key==='Tab'){e.preventDefault();const focusables=[$('#contact-blocking'),$('#close-blocking')].filter(Boolean);const index=focusables.indexOf(document.activeElement);focusables[(index+1)%focusables.length]?.focus();}
       if(e.key==='Escape')e.preventDefault();
       return;
     }
