@@ -109,7 +109,7 @@
     $('#blocking-description').textContent=withErrorCode(issues.definitions.E05.message,'E05');
     blockingInert=[...phone.children].filter(el=>el!==eventBlocker&&el.id!=='issue-toast').map(el=>[el,el.inert]);
     for(const [element] of blockingInert)element.inert=true;
-    eventBlocker.hidden=false;phone.classList.add('blocking-open');$('#demo-blocking').setAttribute('aria-pressed','true');$('#confirm-blocking').focus({preventScroll:true});
+    eventBlocker.hidden=false;phone.classList.add('blocking-open');$('#demo-blocking').setAttribute('aria-pressed','true');$('#close-blocking').focus({preventScroll:true});
   }
   function updateFaultControls(){
     for(const side of ['L','R']){
@@ -178,7 +178,6 @@
   $('#event-reminder-toggle').addEventListener('click',()=>setEventExpanded($('#event-reminder-toggle').getAttribute('aria-expanded')!=='true'));
   $('#dismiss-event').addEventListener('click',()=>{closeEvent();if(!eventReminder.hidden)$('#dismiss-event').focus({preventScroll:true});else if(!embedded)$('#demo-event').focus({preventScroll:true});});
   $('#demo-blocking').addEventListener('click',()=>injectFault('E05','L'));
-  $('#confirm-blocking').addEventListener('click',()=>issues.acknowledge(eventBlocker.dataset.faultId));
   $('#close-blocking').addEventListener('click',hideBlocking);
   $('#contact-blocking').addEventListener('click',()=>showFeedback(withErrorCode('请联系客服处理该设备异常','E05')));
   $('#demo-recover').addEventListener('click',()=>issues.recoverAll());
