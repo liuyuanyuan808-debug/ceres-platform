@@ -1,6 +1,9 @@
 (() => {
   'use strict';
   const reviewParams=new URLSearchParams(location.search),embedded=reviewParams.get('embed')==='1',v3Model=reviewParams.get('model')==='v3',hideSync=reviewParams.get('hideSync')==='1';
+  const visibleCopy={U01:'电池电量低于 10%，即将自动关机',F02:'电池电压过低，设备暂停使用',E05:'电池温度过高，设备暂停使用',E11:'系统异常，请长按电源键重启设备',F12:'系统异常，请长按电源键重启设备',U32:'环境温度过低，请在室温下使用',U51:'按键卡滞，请检查按键后使用',F41:'系统异常，请长按电源键重启设备',E42:'系统异常，请长按电源键重启设备'};
+  const displayCode=visibleCopy[reviewParams.get('displayCode')]?reviewParams.get('displayCode'):(reviewParams.get('case')==='E53'?'E53':'E05');
+  const displayMessage=code=>visibleCopy[code]||'';
   if(embedded)document.documentElement.classList.add('embedded');
   const reviewPrefix=`pump-review:${reviewParams.get('instance')||'standalone'}:`;
   const appStorage=embedded?{getItem:key=>sessionStorage.getItem(reviewPrefix+key),setItem:(key,value)=>sessionStorage.setItem(reviewPrefix+key,value),removeItem:key=>sessionStorage.removeItem(reviewPrefix+key)}:localStorage;
@@ -95,7 +98,7 @@
       eventReminder.dataset.reminderCount=String(reminders.length);eventReminder.classList.toggle('has-next',queued);phone.classList.toggle('has-queued-events',queued);
       eventReminder.setAttribute('aria-description',queued?`共 ${reminders.length} 条事件提醒，关闭当前提醒后显示下一条。`:'1 条事件提醒。');
       $('#event-reminder-title').textContent=`${reminder.side==='L'?'左侧':'右侧'}设备异常`;
-      $('#event-reminder-description').textContent=withErrorCode(issues.definitions.E53.message,'E53');
+      $('#event-reminder-description').textContent=withErrorCode(displayMessage(displayCode)||issues.definitions.E53.message,displayCode);
       $('#dismiss-event').setAttribute('aria-label',`关闭${reminder.side==='L'?'左侧':'右侧'}事件提醒`);
       eventReminder.hidden=false;phone.classList.add('event-reminder-open');$('#demo-event').setAttribute('aria-pressed','true');
     }else hideEvent();
@@ -106,7 +109,7 @@
     hideBlocking();cancelHold();blockingFocus=document.activeElement;
     eventBlocker.dataset.faultId=next.id;
     $('#blocking-title').textContent=`${next.side==='L'?'左侧':'右侧'}设备异常`;
-    $('#blocking-description').textContent=withErrorCode(issues.definitions.E05.message,'E05');
+    $('#blocking-description').textContent=withErrorCode(displayMessage(displayCode)||issues.definitions.E05.message,displayCode);
     blockingInert=[...phone.children].filter(el=>el!==eventBlocker&&el.id!=='issue-toast').map(el=>[el,el.inert]);
     for(const [element] of blockingInert)element.inert=true;
     eventBlocker.hidden=false;phone.classList.add('blocking-open');$('#demo-blocking').setAttribute('aria-pressed','true');$('#close-blocking').focus({preventScroll:true});
