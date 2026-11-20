@@ -1,6 +1,6 @@
 (() => {
   'use strict';
-  const reviewParams=new URLSearchParams(location.search),embedded=reviewParams.get('embed')==='1';
+  const reviewParams=new URLSearchParams(location.search),embedded=reviewParams.get('embed')==='1',v3Model=reviewParams.get('model')==='v3';
   if(embedded)document.documentElement.classList.add('embedded');
   const reviewPrefix=`pump-review:${reviewParams.get('instance')||'standalone'}:`;
   const appStorage=embedded?{getItem:key=>sessionStorage.getItem(reviewPrefix+key),setItem:(key,value)=>sessionStorage.setItem(reviewPrefix+key,value),removeItem:key=>sessionStorage.removeItem(reviewPrefix+key)}:localStorage;
@@ -197,8 +197,8 @@
     $('#settings').hidden=state.page!=='control';
     $('#back').setAttribute('aria-disabled',String(state.page==='control'));
   }
-  function hero(){return `<section class="hero" aria-label="Connected breast pumps">
-    <img class="hero-pump left" src="assets/pump-left.png" alt="Left M5 Ultra breast pump"><img class="hero-pump right" src="assets/pump-right.png" alt="Right M5 Ultra breast pump">
+  function hero(){return `<section class="hero ${v3Model?'v3-model':''}" aria-label="Connected breast pumps">
+    ${v3Model?'<img class="v3-device" src="assets/v3-device.png" alt="V3 大主机">':'<img class="hero-pump left" src="assets/pump-left.png" alt="Left M5 Ultra breast pump"><img class="hero-pump right" src="assets/pump-right.png" alt="Right M5 Ultra breast pump">'}
     <button class="sync-control" aria-label="Sync" aria-disabled="true"><span class="sync-icon"><img src="assets/icon-sync.png" alt=""></span><span>Sync</span></button>
     ${['L','R'].map(s=>`<div class="device-state ${s==='L'?'left':'right'}"><div class="battery-row">${s}${battery(s)}</div><div class="timer" data-timer="${s}">${formatTime(state.elapsedSides[s])}</div><button class="device-note" data-device-note="${s}" aria-label="查看${s==='L'?'左侧':'右侧'}设备故障说明"></button></div>`).join('')}</section>`;}
   function modeCard(){return `<section class="card mode-card" aria-label="Pumping mode"><div class="mode-heading">${icons.modes}<span>Manual</span><span style="margin-left:auto">${icons.chevron}</span></div><div class="mode-switch">${['stimulation','expression','mixed'].map(m=>`<button class="mode-option ${state.mode===m?'active':''}" data-mode="${m}" aria-pressed="${state.mode===m}"><img src="assets/mode-${m}.png" alt=""><span>${m[0].toUpperCase()+m.slice(1)}</span></button>`).join('')}</div></section>`;}
