@@ -179,7 +179,7 @@
   $('#dismiss-event').addEventListener('click',()=>{closeEvent();if(!eventReminder.hidden)$('#dismiss-event').focus({preventScroll:true});else if(!embedded)$('#demo-event').focus({preventScroll:true});});
   $('#demo-blocking').addEventListener('click',()=>injectFault('E05','L'));
   $('#close-blocking').addEventListener('click',hideBlocking);
-  $('#contact-blocking').addEventListener('click',()=>showFeedback(withErrorCode('请联系客服处理该设备异常','E05')));
+  $('#contact-blocking').addEventListener('click',()=>{const id=eventBlocker.dataset.faultId;if(id)issues.acknowledge(id);showPage('contact');});
   $('#demo-recover').addEventListener('click',()=>issues.recoverAll());
   $$('[data-submission-group]').forEach(button=>button.addEventListener('click',()=>selectSubmissionGroup(button.dataset.submissionGroup)));
   $('#demo-case').addEventListener('change',event=>{const group=$('[data-submission-group][aria-pressed="true"]').dataset.submissionGroup;selectSubmissionGroup(group,event.target.value);});
@@ -195,7 +195,7 @@
     $('#warm-tip').hidden=!showTip;
     $('#warm-tip-glow').hidden=!showTip;
     if(showTip&&!$('#issue-toast').hidden)showWarmTip($('#issue-toast').textContent);
-    $('#page-title').textContent=state.page==='control'?'Breast Pump Control':'Manage Devices';
+    $('#page-title').textContent=state.page==='control'?'Breast Pump Control':state.page==='contact'?'Contact us':'Manage Devices';
     $('#settings').hidden=state.page!=='control';
     $('#back').setAttribute('aria-disabled',String(state.page==='control'));
   }
@@ -267,9 +267,10 @@
   function beginHold(){if(state.hold||!state.running)return;const started=performance.now();state.hold={started};const animate=now=>{if(!state.hold)return;const progress=clamp((now-started)/2000,0,1);const fill=$('.hold-fill');if(fill)fill.style.width=`${progress*100}%`;if(progress>=1){state.hold=null;endPumping();}else requestAnimationFrame(animate);};requestAnimationFrame(animate);}
   function cancelHold(){state.hold=null;const fill=$('.hold-fill');if(fill)fill.style.width='0';}
   function endPumping(){const duration=Math.max(1,Math.floor((Date.now()-state.startedAt)/1000));state.running=false;state.activeSides={L:false,R:false};state.elapsedSides={L:0,R:0};state.elapsed=0;cancelHold();renderControl();updateFaultControls();content.scrollTop=0;state.record={L:0,R:0,seconds:duration,expanded:false};setTimeout(openRecord,200);}
-  function showPage(page){state.page=page;updateHeader();content.scrollTop=0;if(page==='control')renderControl();else if(page==='manage')renderManage();else renderDetail();renderActions();syncIssueUI();}
+  function renderContact(){content.innerHTML=`<div class="contact-page"><p class="contact-time">${new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}</p><div class="contact-agent"><img src="assets/ceres-avatar.png" alt="Momcozy"><div><strong>Momcozy</strong><span>Contact us</span></div></div><div class="contact-bubble">Hello, welcome to Momcozy. Please select the type of support you need.</div><div class="contact-options"><button>IBCLC (Lactation Consultation and Maternal & Infant Health Care)</button><button>Babymonitor (BM03/BM04) firmware update</button><button>Product and event consultation</button><button>Order status and logistics issues</button><div class="contact-row"><button>After-sales service</button><button>Other inquiries</button></div><button>Baby monitor firmware upgrade and Survey</button><button>Power Adapter Warning for MW05 Portable Bottle Warmer</button></div></div>`;}
+  function showPage(page){state.page=page;updateHeader();content.scrollTop=0;if(page==='control')renderControl();else if(page==='manage')renderManage();else if(page==='contact')renderContact();else renderDetail();renderActions();syncIssueUI();}
   $('#settings').addEventListener('click',()=>showPage('manage'));
-  $('#back').addEventListener('click',()=>{if(state.page==='detail')showPage('manage');else if(state.page==='manage')showPage('control');});
+  $('#back').addEventListener('click',()=>{if(state.page==='contact')showPage('control');else if(state.page==='detail')showPage('manage');else if(state.page==='manage')showPage('control');});
   function renderManage(){
     content.innerHTML=`<div class="manage-page"><button class="device-row" id="device-details"><img class="device-mini" src="assets/pump-left.png" alt=""><img class="device-mini" src="assets/pump-right.png" alt=""><span class="device-summary"><strong>M5 Ultra</strong><span class="mini-batteries"><span>L${battery('L')}</span><span>R${battery('R')}</span></span></span>${icons.chevron}</button><h2 class="section-label">Device Features</h2><section class="features-card"><div class="feature-intro ${state.autoNight?'':'only'}"><strong>Auto-On Night Light</strong><p>The night light is turned on automatically when pumping is paused.</p>${toggle('auto-night-toggle',state.autoNight,'Auto-on night light')}</div><div class="feature-duration" ${state.autoNight?'':'hidden'}><div class="duration-label">Duration</div><div class="duration-options"><button class="duration-option active" aria-pressed="true">10 s</button><button class="duration-option" aria-disabled="true">20 s</button><button class="duration-option" aria-disabled="true">30 s</button><button class="duration-option" aria-disabled="true">Custom</button></div></div></section><h2 class="section-label">General Settings</h2><section class="general-settings"><button class="settings-row" data-dialog="firmware">Firmware Update<span class="right-value">Update Available<i class="update-dot"></i></span>${icons.chevron}</button><button class="settings-row" data-dialog="factory">Restore Factory${icons.chevron}</button><button class="settings-row" data-dialog="power">Power Off Device${icons.chevron}</button></section><h2 class="section-label">帮助与支持</h2><section class="support-settings"><button class="problem-submit" id="problem-submit">${submissionMarkup()}</button></section><button class="delete-device" aria-disabled="true">Delete</button></div>`;
     $('#problem-submit').addEventListener('click',()=>submitProblem());updateSubmissionRow();
