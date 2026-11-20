@@ -116,7 +116,7 @@
       const blocked=issues.blocked(side),rail=$(`[data-level="${side}"]`);
       if(rail){rail.setAttribute('aria-disabled',String(blocked));rail.tabIndex=0;rail.classList.toggle('restricted',blocked);}
       const note=$(`[data-device-note="${side}"]`);
-      if(note){note.textContent=blocked?`${withErrorCode(issues.definitions.E05.marker||'设备暂不可用','E05')} ›`:issues.heatingRestricted(side)?`${withErrorCode(issues.definitions.E53.marker||'暂不可加热','E53')} ›`:'';note.disabled=!note.textContent;}
+      if(note){note.textContent=blocked?`${issues.definitions.E05.marker||'设备暂不可用'} ›`:issues.heatingRestricted(side)?`${issues.definitions.E53.marker||'暂不可加热'} ›`:'';note.disabled=!note.textContent;}
     }
   }
   function submissionMarkup(){const busy=issues.data.task?.status==='submitting';return `<span class="problem-copy"><span class="problem-title">${busy?'提交中…':'问题提交'}</span><span class="problem-subtitle">提交设备问题信息，供客服排查</span></span>${busy?'<span class="submit-spinner" aria-hidden="true"></span>':icons.chevron}`;}
