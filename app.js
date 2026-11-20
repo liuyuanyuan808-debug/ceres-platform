@@ -195,7 +195,7 @@
     $('#warm-tip').hidden=!showTip;
     $('#warm-tip-glow').hidden=!showTip;
     if(showTip&&!$('#issue-toast').hidden)showWarmTip($('#issue-toast').textContent);
-    $('#page-title').textContent=state.page==='control'?'Breast Pump Control':state.page==='contact'?'Contact us':'Manage Devices';
+    if(state.page==='contact')$('#page-title').innerHTML='<span class="contact-header-date">Started Nov 20 at 2:05 PM</span><span class="contact-header-subtitle">Contact us</span>';else $('#page-title').textContent=state.page==='control'?'Breast Pump Control':'Manage Devices';
     $('#settings').hidden=state.page!=='control';
     $('#back').setAttribute('aria-disabled',String(state.page==='control'));
   }
