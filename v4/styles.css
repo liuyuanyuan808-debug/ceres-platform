@@ -10,5 +10,5 @@
 @media(max-width:1200px){.workspace-grid{grid-template-columns:none}.demo-stage{grid-template-columns:250px minmax(350px,1fr)}.phone-stage{min-height:862px}}
 @media(max-width:760px){.workspace-grid{display:block}.review-workspace{padding:20px 14px}.phone-shell{width:404px;max-width:100%;transform-origin:top center;transform:scale(.82);margin-bottom:-150px}.phone-stage{min-height:720px}.original-app{max-width:100%}}
 /* 让客服页在评审工作台中完整显示手机框。 */
-.phone-stage{min-height:0;height:clamp(650px,calc(100vh - 355px),862px);align-items:flex-start;overflow:visible}
+.phone-stage{min-height:0;height:clamp(620px,calc(100vh - 500px),720px);align-items:flex-start;overflow:visible}
 .phone-shell{transform-origin:top center}
