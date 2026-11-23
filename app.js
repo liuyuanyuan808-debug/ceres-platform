@@ -57,6 +57,12 @@
   }
   addEventListener('resize',resize); resize();
   const eventReminder=$('#event-reminder'),eventBlocker=$('#event-blocker');
+  const blockingActions=$('.blocking-actions',eventBlocker);
+  const closeBlockingButton=$('#close-blocking',blockingActions);
+  if(embedded&&reviewParams.get('blockingRetry')==='1'){
+    closeBlockingButton.textContent='重试';
+    blockingActions.prepend(closeBlockingButton);
+  }
   const warmTip=$('#warm-tip'),defaultWarmTip=$('p',warmTip).innerHTML;
   let blockingFocus=null,blockingInert=[],toastTimer=null,warmTipTimer=null;
   function showFeedback(message){
@@ -112,7 +118,7 @@
     $('#blocking-description').textContent=withErrorCode(displayMessage(displayCode)||issues.definitions.E05.message,displayCode);
     blockingInert=[...phone.children].filter(el=>el!==eventBlocker&&el.id!=='issue-toast').map(el=>[el,el.inert]);
     for(const [element] of blockingInert)element.inert=true;
-    eventBlocker.hidden=false;phone.classList.add('blocking-open');$('#demo-blocking').setAttribute('aria-pressed','true');$('#close-blocking').focus({preventScroll:true});
+    eventBlocker.hidden=false;phone.classList.add('blocking-open');$('#demo-blocking').setAttribute('aria-pressed','true');closeBlockingButton.focus({preventScroll:true});
   }
   function updateFaultControls(){
     for(const side of ['L','R']){
@@ -181,7 +187,7 @@
   $('#event-reminder-toggle').addEventListener('click',()=>setEventExpanded($('#event-reminder-toggle').getAttribute('aria-expanded')!=='true'));
   $('#dismiss-event').addEventListener('click',()=>{closeEvent();if(!eventReminder.hidden)$('#dismiss-event').focus({preventScroll:true});else if(!embedded)$('#demo-event').focus({preventScroll:true});});
   $('#demo-blocking').addEventListener('click',()=>injectFault('E05','L'));
-  $('#close-blocking').addEventListener('click',hideBlocking);
+  closeBlockingButton.addEventListener('click',hideBlocking);
   $('#contact-blocking').addEventListener('click',()=>{const id=eventBlocker.dataset.faultId;if(id)issues.acknowledge(id);showPage('contact');});
   $('#demo-recover').addEventListener('click',()=>issues.recoverAll());
   $$('[data-submission-group]').forEach(button=>button.addEventListener('click',()=>selectSubmissionGroup(button.dataset.submissionGroup)));
@@ -332,7 +338,7 @@
   function showSuccess(){const layer=$('#success-layer');layer.hidden=false;layer.innerHTML='<img class="success-bunny" src="assets/bunny.webp" alt="Pink rabbit holding flowers"><div class="logged-label">Logged</div><img class="logged-underline" src="assets/logged-underline.png" alt="">';setTimeout(()=>{layer.hidden=true;layer.innerHTML='';showPage('control');},1800);}
   document.addEventListener('keydown',e=>{
     if(!eventBlocker.hidden){
-      if(e.key==='Tab'){e.preventDefault();const focusables=[$('#contact-blocking'),$('#close-blocking')].filter(Boolean);const index=focusables.indexOf(document.activeElement);focusables[(index+1)%focusables.length]?.focus();}
+      if(e.key==='Tab'){e.preventDefault();const focusables=$$('button',blockingActions);const index=focusables.indexOf(document.activeElement);focusables[(index+1)%focusables.length]?.focus();}
       if(e.key==='Escape')e.preventDefault();
       return;
     }
