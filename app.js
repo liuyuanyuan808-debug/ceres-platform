@@ -154,7 +154,7 @@
       badge.textContent=queued?String(reminders.length):'!';badge.classList.toggle('has-count',queued);
       eventReminder.dataset.reminderCount=String(reminders.length);eventReminder.classList.toggle('has-next',queued);phone.classList.toggle('has-queued-events',queued);
       eventReminder.setAttribute('aria-description',queued?`共 ${reminders.length} 条事件提醒，关闭当前提醒后显示下一条。`:'1 条事件提醒。');
-      $('#event-reminder-title').textContent=`${reminder.side==='L'?'左侧':'右侧'}设备异常`;
+      $('#event-reminder-title').textContent=window.V4FaultReview.deviceTitle(reminder.side);
       const description=$('#event-reminder-description');
       if(deviceFaultReview)window.V4FaultReview.renderMessage(description,v4NotificationCode(reminder));
       else description.textContent=withErrorCode(displayMessage(displayCode)||issues.definitions.E53.message,displayCode);
@@ -167,7 +167,7 @@
     if(!eventBlocker.hidden&&eventBlocker.dataset.faultId===next.id)return;
     hideBlocking();cancelHold();blockingFocus=document.activeElement;
     eventBlocker.dataset.faultId=next.id;
-    $('#blocking-title').textContent=`${next.side==='L'?'左侧':'右侧'}设备${deviceFaultReview?'暂不可用':'异常'}`;
+    $('#blocking-title').textContent=window.V4FaultReview.deviceTitle(next.side);
     const description=$('#blocking-description');
     if(deviceFaultReview)window.V4FaultReview.renderMessage(description,v4NotificationCode(next));
     else description.textContent=withErrorCode(displayMessage(displayCode)||issues.definitions.E05.message,displayCode);

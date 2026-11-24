@@ -1,20 +1,20 @@
 (() => {
   const messages = {
-    U01: ['电量低于 10%，设备即将自动关机。', '请为设备充电。', '充电后'],
-    F02: ['电池电压过低，设备已关机。', '请为设备充电。', '充电后'],
-    E05: ['电池温度过高。', '请关机，放在阴凉处冷却。', '冷却后'],
-    E11: ['电机运行异常。', '请关机，清除泵体或气路异物后重启。', '重启后'],
-    F12: ['电机电路异常。', '请长按电源键重启。', '重启后'],
-    U32: ['环境温度过低。', '请将设备移至室温环境回温。', '回温后'],
-    U51: ['设备按键卡住。', '请清除按键周围的异物后再试。', '按键'],
-    F41: ['设备存储异常。', '请长按电源键重启。', '重启后'],
-    E42: ['设备内部通信异常。', '请长按电源键重启。', '重启后'],
-    E53: ['未检测到法兰，暂不可加热。', '请重新安装并卡紧法兰。', '重装后', '加热'],
+    U01: ['电量低于 10%，设备即将自动关机。', '请为设备充电。'],
+    F02: ['电池电压过低，设备已关机。', '请为设备充电。'],
+    E05: ['电池温度过高。', '请关机，放在阴凉处冷却。'],
+    E11: ['电机运行异常。', '请关机，清除泵体或气路异物后重启。'],
+    F12: ['电机电路异常。', '请长按电源键重启。'],
+    U32: ['环境温度过低。', '请将设备移至室温环境回温。'],
+    U51: ['设备按键卡住。', '请清除按键周围的异物后再试。', '按键仍卡住'],
+    F41: ['设备存储异常。', '请长按电源键重启。'],
+    E42: ['设备内部通信异常。', '请长按电源键重启。'],
+    E53: ['未检测到法兰，暂不可加热。', '请重新安装并卡紧法兰。', '仍无法加热'],
   };
 
-  function messageLines(code) {
-    const [reason, action, condition, affectedFunction = '使用'] = messages[code];
-    return [reason, action, `如果${condition}仍无法${affectedFunction}，请联系客服。`, `（代码：${code}）`];
+  function messageParts(code) {
+    const [reason, action, condition = '仍无法使用'] = messages[code];
+    return [reason, action, `${condition}，`, `请联系客服（代码：${code}）`];
   }
 
   window.V4FaultReview = {
@@ -40,18 +40,26 @@
         ],
       },
     },
+    deviceTitle(side) {
+      return `${side === 'L' ? '左侧' : '右侧'}设备异常`;
+    },
     formatMessage(code) {
-      return messageLines(code).join('\n');
+      const [reason, action, condition, contact] = messageParts(code);
+      return [reason, action, condition + contact].join('\n');
     },
     renderMessage(element, code) {
-      const lines = messageLines(code);
-      const segments = lines.map((text, index) => {
-        const segment = document.createElement('span');
-        segment.className = index === lines.length - 1 ? 'fault-copy-line fault-copy-code' : 'fault-copy-line';
-        segment.textContent = text;
-        return segment;
+      const [reason, action, condition, contact] = messageParts(code);
+      const lines = [reason, action, condition].map(text => {
+        const line = document.createElement('span');
+        line.className = 'fault-copy-line';
+        line.textContent = text;
+        return line;
       });
-      element.replaceChildren(...segments);
+      const contactText = document.createElement('span');
+      contactText.className = 'fault-copy-contact';
+      contactText.textContent = contact;
+      lines[2].append(contactText);
+      element.replaceChildren(...lines);
     },
   };
 })();

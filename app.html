@@ -6,8 +6,8 @@
   <meta name="theme-color" content="#f5f5f3">
   <title>Breast Pump Control</title>
   <link rel="icon" href="assets/mode-stimulation.png">
-  <link rel="stylesheet" href="styles.css?v=20261124-1903">
-  <link rel="stylesheet" href="embed.css?v=20261124-1903">
+  <link rel="stylesheet" href="styles.css?v=20261124-1923">
+  <link rel="stylesheet" href="embed.css?v=20261124-1923">
 </head>
 <body>
   <nav id="demo-controls" aria-label="原型效果演示">
@@ -60,7 +60,7 @@
     <aside id="event-reminder" aria-labelledby="event-reminder-title" hidden>
       <button id="event-reminder-toggle" aria-expanded="true" aria-controls="event-reminder-description">
         <span class="event-symbol" aria-hidden="true">!</span>
-        <span id="event-reminder-title">右侧 · 未检测到法兰</span>
+        <span id="event-reminder-title">右侧设备异常</span>
         <svg class="event-chevron" viewBox="0 0 12 10" aria-hidden="true"><path d="m2 7 4-4 4 4"/></svg>
       </button>
       <p id="event-reminder-description" role="status">未检测到法兰，暂不可加热，请重新安装并卡紧</p>
@@ -68,16 +68,16 @@
     </aside>
     <div id="event-blocker" hidden>
       <section class="blocking-card" role="alertdialog" aria-modal="true" aria-labelledby="blocking-title" aria-describedby="blocking-description">
-        <h2 id="blocking-title">左侧 · 电池温度过高</h2>
+        <h2 id="blocking-title">左侧设备异常</h2>
         <p id="blocking-description">电池温度过高，设备暂停使用（E05）</p>
         <div class="blocking-actions"><button id="contact-blocking">联系客服</button><button id="close-blocking">关闭</button></div>
       </section>
     </div>
     <div id="issue-toast" role="status" hidden></div>
   </main>
-  <script src="review-data.js?v=20261124-1903"></script>
-  <script src="v4/fault-data.js?v=20261124-1903"></script>
-  <script src="issue-model.js?v=20261124-1903"></script>
-  <script src="app.js?v=20261124-1903"></script>
+  <script src="review-data.js?v=20261124-1923"></script>
+  <script src="v4/fault-data.js?v=20261124-1923"></script>
+  <script src="issue-model.js?v=20261124-1923"></script>
+  <script src="app.js?v=20261124-1923"></script>
 </body>
 </html>

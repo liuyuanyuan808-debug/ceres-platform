@@ -1,4 +1,4 @@
-const { models: DATA, renderMessage } = window.V4FaultReview;
+const { models: DATA, deviceTitle, renderMessage } = window.V4FaultReview;
 let model = 'm5';
 let selected = null;
 const $ = selector => document.querySelector(selector);
@@ -40,8 +40,9 @@ function renderPhone(device, fault) {
 function renderCopy(fault) {
   $('.definition-cell').hidden = !fault;
   if (!fault) return;
-  const [code, name, , rule] = fault;
-  $('#copy-card').innerHTML = `<div class="copy-box"><div class="code-large">${code} · ${name}</div><p></p></div>`;
+  const [code, , kind, rule] = fault;
+  const title = deviceTitle(kind === 'blocking' ? 'L' : 'R');
+  $('#copy-card').innerHTML = `<div class="copy-box"><div class="code-large">${title}</div><p></p></div>`;
   renderMessage($('#copy-card p'), code);
   $('#rule-card').innerHTML = `<div class="rule-box"><p>${rule}</p></div>`;
 }
