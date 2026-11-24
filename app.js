@@ -1,6 +1,7 @@
 (() => {
   'use strict';
   const reviewParams=new URLSearchParams(location.search),embedded=reviewParams.get('embed')==='1',v3Model=reviewParams.get('model')==='v3',hideSync=reviewParams.get('hideSync')==='1';
+  const deviceFaultReview=embedded&&reviewParams.get('deviceFaultReview')==='1';
   const visibleCopy={U01:'电池电量低于 10%，即将自动关机',F02:'电池电压过低，设备暂停使用',E05:'电池温度过高，设备暂停使用',E11:'系统异常，请长按电源键重启设备',F12:'系统异常，请长按电源键重启设备',U32:'环境温度过低，请在室温下使用',U51:'按键卡滞，请检查按键后使用',F41:'系统异常，请长按电源键重启设备',E42:'系统异常，请长按电源键重启设备'};
   const displayCode=visibleCopy[reviewParams.get('displayCode')]?reviewParams.get('displayCode'):(reviewParams.get('case')==='E53'?'E53':'E05');
   const displayMessage=code=>visibleCopy[code]||'';
@@ -59,12 +60,14 @@
   const eventReminder=$('#event-reminder'),eventBlocker=$('#event-blocker');
   const blockingActions=$('.blocking-actions',eventBlocker);
   const closeBlockingButton=$('#close-blocking',blockingActions);
-  if(embedded&&reviewParams.get('blockingRetry')==='1'){
-    closeBlockingButton.textContent='重试';
+  if(deviceFaultReview){
+    eventReminder.classList.add('device-fault-review');
+    closeBlockingButton.textContent='我知道了';
     blockingActions.prepend(closeBlockingButton);
   }
   const warmTip=$('#warm-tip'),defaultWarmTip=$('p',warmTip).innerHTML;
   let blockingFocus=null,blockingInert=[],toastTimer=null,warmTipTimer=null;
+  const openedFaults={blocking:null,reminder:null};
   function showFeedback(message){
     if(state.page==='control'){showWarmTip(message);return;}
     const toast=$('#issue-toast');clearTimeout(toastTimer);toast.textContent=message;toast.hidden=false;toastTimer=setTimeout(()=>toast.hidden=true,3400);
@@ -79,7 +82,11 @@
     warmTipTimer=setTimeout(resetWarmTip,3400);
   }
   function hideEvent(){eventReminder.hidden=true;eventReminder.classList.remove('has-next');eventReminder.dataset.reminderCount='0';phone.classList.remove('event-reminder-open','has-queued-events');$('#demo-event').setAttribute('aria-pressed','false');}
-  function closeEvent(){const id=eventReminder.dataset.faultId;if(id)issues.dismiss(id);else hideEvent();}
+  function closeEvent(){
+    const id=eventReminder.dataset.faultId;
+    openedFaults.reminder=null;
+    if(id)issues.dismiss(id);else hideEvent();
+  }
   function setEventExpanded(expanded){
     eventReminder.classList.toggle('collapsed',!expanded);
     phone.classList.toggle('event-reminder-collapsed',!expanded);
@@ -95,8 +102,24 @@
     if(blockingFocus?.isConnected)blockingFocus.focus({preventScroll:true});
     blockingFocus=null;
   }
+  function acknowledgeBlocking(){
+    const id=eventBlocker.dataset.faultId;
+    openedFaults.blocking=null;
+    if(id)issues.acknowledge(id);
+  }
+  function showDeviceFault(side){
+    if(!deviceFaultReview){showWarmTip(faultWarmFor(side));return;}
+    const kind=issues.blocked(side)?'blocking':'reminder';
+    const fault=issues.data.faults.find(item=>item.side===side&&issues.definitions[item.code].kind===kind);
+    if(!fault)return;
+    openedFaults[kind]=fault.id;
+    resetWarmTip();
+    syncFaultNotifications();
+    if(kind==='reminder')setEventExpanded(true);
+  }
   function syncFaultNotifications(){
-    const reminders=issues.data.faults.filter(f=>f.code==='E53'&&!f.dismissed),reminder=reminders[0];
+    const reminders=issues.data.faults.filter(f=>f.code==='E53'&&(!f.dismissed||f.id===openedFaults.reminder));
+    const reminder=reminders.find(f=>f.id===openedFaults.reminder)||reminders[0];
     if(state.page==='control'&&reminder){
       if(eventReminder.dataset.faultId!==reminder.id){eventReminder.dataset.faultId=reminder.id;setEventExpanded(true);}
       const queued=reminders.length>1,badge=$('.event-symbol',eventReminder);
@@ -109,13 +132,14 @@
       eventReminder.hidden=false;phone.classList.add('event-reminder-open');$('#demo-event').setAttribute('aria-pressed','true');
     }else hideEvent();
     positionWarmTip();
-    const next=issues.data.faults.find(f=>f.code==='E05'&&!f.acknowledged);
+    const next=issues.data.faults.find(f=>f.id===openedFaults.blocking)||issues.data.faults.find(f=>f.code==='E05'&&!f.acknowledged);
     if(state.page!=='control'||!next){hideBlocking();return;}
     if(!eventBlocker.hidden&&eventBlocker.dataset.faultId===next.id)return;
     hideBlocking();cancelHold();blockingFocus=document.activeElement;
     eventBlocker.dataset.faultId=next.id;
     $('#blocking-title').textContent=`${next.side==='L'?'左侧':'右侧'}设备异常`;
-    $('#blocking-description').textContent=withErrorCode(displayMessage(displayCode)||issues.definitions.E05.message,displayCode);
+    const description=displayMessage(displayCode)||issues.definitions.E05.message;
+    $('#blocking-description').textContent=withErrorCode(deviceFaultReview?`${description}，或联系客服`:description,displayCode);
     blockingInert=[...phone.children].filter(el=>el!==eventBlocker&&el.id!=='issue-toast').map(el=>[el,el.inert]);
     for(const [element] of blockingInert)element.inert=true;
     eventBlocker.hidden=false;phone.classList.add('blocking-open');$('#demo-blocking').setAttribute('aria-pressed','true');closeBlockingButton.focus({preventScroll:true});
@@ -125,7 +149,11 @@
       const blocked=issues.blocked(side),rail=$(`[data-level="${side}"]`);
       if(rail){rail.setAttribute('aria-disabled',String(blocked));rail.tabIndex=0;rail.classList.toggle('restricted',blocked);}
       const note=$(`[data-device-note="${side}"]`);
-      if(note){note.textContent=blocked?`${issues.definitions.E05.marker||'设备暂不可用'} ›`:issues.heatingRestricted(side)?`${issues.definitions.E53.marker||'暂不可加热'} ›`:'';note.disabled=!note.textContent;}
+      if(note){
+        const reminderMarker=deviceFaultReview?'相关功能不可用':(issues.definitions.E53.marker||'暂不可加热');
+        note.textContent=blocked?`${issues.definitions.E05.marker||'设备暂不可用'} ›`:issues.heatingRestricted(side)?`${reminderMarker} ›`:'';
+        note.disabled=!note.textContent;
+      }
     }
   }
   function submissionMarkup(){const busy=issues.data.task?.status==='submitting';return `<span class="problem-copy"><span class="problem-title">${busy?'提交中…':'问题提交'}</span><span class="problem-subtitle">提交设备问题信息，供客服排查</span></span>${busy?'<span class="submit-spinner" aria-hidden="true"></span>':icons.chevron}`;}
@@ -187,8 +215,8 @@
   $('#event-reminder-toggle').addEventListener('click',()=>setEventExpanded($('#event-reminder-toggle').getAttribute('aria-expanded')!=='true'));
   $('#dismiss-event').addEventListener('click',()=>{closeEvent();if(!eventReminder.hidden)$('#dismiss-event').focus({preventScroll:true});else if(!embedded)$('#demo-event').focus({preventScroll:true});});
   $('#demo-blocking').addEventListener('click',()=>injectFault('E05','L'));
-  closeBlockingButton.addEventListener('click',hideBlocking);
-  $('#contact-blocking').addEventListener('click',()=>{const id=eventBlocker.dataset.faultId;if(id)issues.acknowledge(id);showPage('contact');});
+  closeBlockingButton.addEventListener('click',deviceFaultReview?acknowledgeBlocking:hideBlocking);
+  $('#contact-blocking').addEventListener('click',()=>{acknowledgeBlocking();showPage('contact');});
   $('#demo-recover').addEventListener('click',()=>issues.recoverAll());
   $$('[data-submission-group]').forEach(button=>button.addEventListener('click',()=>selectSubmissionGroup(button.dataset.submissionGroup)));
   $('#demo-case').addEventListener('change',event=>{const group=$('[data-submission-group][aria-pressed="true"]').dataset.submissionGroup;selectSubmissionGroup(group,event.target.value);});
@@ -228,7 +256,7 @@
   }
   function bindControl(){
     if(!hideSync)$('.sync-control',content).addEventListener('click',trySync);
-    $$('[data-device-note]',content).forEach(note=>note.addEventListener('click',()=>showWarmTip(faultWarmFor(note.dataset.deviceNote))));
+    $$('[data-device-note]',content).forEach(note=>note.addEventListener('click',()=>showDeviceFault(note.dataset.deviceNote)));
     $$('.mode-option',content).forEach(btn=>btn.addEventListener('click',()=>{
       if(state.mode===btn.dataset.mode)return;
       if(['L','R'].every(side=>issues.blocked(side)))return;

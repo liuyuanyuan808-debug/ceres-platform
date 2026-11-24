@@ -8,3 +8,6 @@ html.embedded,html.embedded body{width:390px;height:848px;min-width:0;min-height
 #phone.has-operation-tip #warm-tip{height:auto;min-height:54px;padding-bottom:10px}
 #phone.has-operation-tip #warm-tip p{white-space:pre-line;font-size:11.5px;line-height:17px}
 .sync-control[aria-disabled="true"]{cursor:pointer}
+#event-reminder.device-fault-review{left:68px;right:68px}
+#event-reminder.device-fault-review:not(.collapsed){height:auto;min-height:66px}
+#event-reminder.device-fault-review p{white-space:normal;overflow-wrap:anywhere}
