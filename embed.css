@@ -16,20 +16,16 @@ html.embedded,html.embedded body{width:390px;height:848px;min-width:0;min-height
   white-space:normal;
 }
 #event-reminder.device-fault-review.has-next p{margin-inline-start:26px}
+#event-reminder.device-fault-review .event-symbol{background:#a56b00}
 .fault-copy-line{display:block;text-align:start}
 .fault-copy-contact{white-space:nowrap}
 #phone.device-fault-review .blocking-card{padding:22px 20px 14px}
 #phone.device-fault-review .blocking-card h2{margin:0 0 10px;text-align:start}
 #phone.device-fault-review .blocking-card p{margin:0 0 18px}
-#phone.device-fault-review.event-reminder-open:not(.event-reminder-collapsed):not(.has-operation-tip) #page-content{
+#phone.device-fault-review.event-reminder-open:not(.event-reminder-collapsed) #page-content{
   top:var(--event-content-top,148px);
 }
-#phone.device-fault-review.has-operation-tip #page-content{
-  top:calc(112px + var(--operation-tip-height,54px));
-}
-#phone.device-fault-review.event-reminder-open.has-operation-tip #page-content{
-  top:calc(var(--operation-tip-top,148px) + var(--operation-tip-height,54px));
-}
+#phone.device-fault-review.has-queued-events.event-reminder-collapsed #page-content{top:120px}
 
 .device-illustration > img{display:block;width:100%;height:100%;object-fit:contain}
 .hero.v3-model .v3-device.device-illustration{
@@ -43,7 +39,7 @@ html.embedded,html.embedded body{width:390px;height:848px;min-width:0;min-height
 }
 .device-fault-badge > span{
   display:grid;place-items:center;width:26px;height:26px;border:2px solid #fffaf3;
-  border-radius:50%;background:#9a6108;color:#fff;
+  border-radius:50%;background:#a56b00;color:#fff;
   font-size:16px;font-weight:750;line-height:1;
 }
 .device-fault-badge[data-severity="blocking"] > span{background:#a4323f}

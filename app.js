@@ -2,16 +2,19 @@
   'use strict';
   const reviewParams=new URLSearchParams(location.search),embedded=reviewParams.get('embed')==='1',v3Model=reviewParams.get('model')==='v3',hideSync=reviewParams.get('hideSync')==='1';
   const deviceFaultReview=embedded&&reviewParams.get('deviceFaultReview')==='1';
-  const selectedReviewFault=deviceFaultReview
-    ?window.V4FaultReview.models[v3Model?'v3':'m5'].codes.find(([code])=>code===reviewParams.get('displayCode'))
-    :null;
+  const v4Review=deviceFaultReview?window.V4FaultReview:null;
+  const reviewFaults=v4Review?.models[v3Model?'v3':'m5'].codes;
+  const selectedReviewFault=reviewFaults?.find(([code])=>code===reviewParams.get('displayCode'));
+  const faultDefinitions=reviewFaults&&Object.fromEntries(reviewFaults.map(([code,name,kind])=>[
+    code,{name,kind,message:v4Review.formatMessage(code)}
+  ]));
   const visibleCopy={U01:'电池电量低于 10%，即将自动关机',F02:'电池电压过低，设备暂停使用',E05:'电池温度过高，设备暂停使用',E11:'系统异常，请长按电源键重启设备',F12:'系统异常，请长按电源键重启设备',U32:'环境温度过低，请在室温下使用',U51:'按键卡滞，请检查按键后使用',F41:'系统异常，请长按电源键重启设备',E42:'系统异常，请长按电源键重启设备'};
   const displayCode=visibleCopy[reviewParams.get('displayCode')]?reviewParams.get('displayCode'):(reviewParams.get('case')==='E53'?'E53':'E05');
   const displayMessage=code=>visibleCopy[code]||'';
   if(embedded)document.documentElement.classList.add('embedded');
   const reviewPrefix=`pump-review:${reviewParams.get('instance')||'standalone'}:`;
   const appStorage=embedded?{getItem:key=>sessionStorage.getItem(reviewPrefix+key),setItem:(key,value)=>sessionStorage.setItem(reviewPrefix+key,value),removeItem:key=>sessionStorage.removeItem(reviewPrefix+key)}:localStorage;
-  const reviewSignature=[reviewParams.get('preset'),reviewParams.get('case')].join('|');
+  const reviewSignature=[reviewParams.get('preset'),reviewParams.get('case'),...(deviceFaultReview?[selectedReviewFault?.[0]]:[])].join('|');
   const reviewReset=reviewParams.get('reset');
   const freshReview=embedded&&(appStorage.getItem('signature')!==reviewSignature||(reviewReset&&appStorage.getItem('lastReset')!==reviewReset));
   if(freshReview){appStorage.removeItem(window.PrototypeIssueModel.storageKey);appStorage.removeItem('review-ui');appStorage.setItem('clockOffset','0');}
@@ -25,7 +28,7 @@
   const reviewUIKeys=['page','mode','levels','night','nightPreference','brightness','autoNight','running','startedAt','elapsed','activeSides','elapsedSides','sideStartedAt','checks'];
   if(embedded&&!freshReview)try{const saved=JSON.parse(appStorage.getItem('review-ui')||'null');if(saved){for(const key of reviewUIKeys)if(key in saved)state[key]=saved[key];restoredReviewUI=true;}}catch{}
   if(embedded)addEventListener('pagehide',()=>{const saved=Object.fromEntries(reviewUIKeys.map(key=>[key,state[key]]));saved.scrollTop=content.scrollTop;appStorage.setItem('review-ui',JSON.stringify(saved));});
-  const issues=window.PrototypeIssueModel.create({storage:appStorage,now:reviewNow});
+  const issues=window.PrototypeIssueModel.create({storage:appStorage,now:reviewNow,faultDefinitions});
   const svg = (body, cls='', box='0 0 24 24') => `<svg class="${cls}" viewBox="${box}" aria-hidden="true">${body}</svg>`;
   const icons = {
     back:svg('<path d="m14 4-8 8 8 8"/>'),
@@ -70,18 +73,12 @@
     blockingActions.prepend(closeBlockingButton);
   }
   const warmTip=$('#warm-tip'),defaultWarmTip=$('p',warmTip).innerHTML;
-  if(deviceFaultReview){
-    const noticeResize=new ResizeObserver(()=>{
-      phone.style.setProperty('--operation-tip-height',`${warmTip.offsetHeight}px`);
-      positionFaultNotifications();
-    });
-    noticeResize.observe(eventReminder);
-    noticeResize.observe(warmTip);
-  }
+  if(deviceFaultReview)new ResizeObserver(positionFaultNotifications).observe(eventReminder);
   let blockingFocus=null,blockingInert=[],toastTimer=null,warmTipTimer=null;
-  const openedFaults={blocking:null,reminder:null};
+  let openedBlockingId=null;
+  let reminderReplay=null;
   function showFeedback(message){
-    if(state.page==='control'){showWarmTip(message);return;}
+    if(state.page==='control'&&!deviceFaultReview){showWarmTip(message);return;}
     const toast=$('#issue-toast');clearTimeout(toastTimer);toast.textContent=message;toast.hidden=false;toastTimer=setTimeout(()=>toast.hidden=true,3400);
   }
   function resetWarmTip(){clearTimeout(warmTipTimer);$('p',warmTip).innerHTML=defaultWarmTip;phone.classList.remove('has-operation-tip');}
@@ -93,18 +90,17 @@
     }
     positionWarmTip();
   }
-  function v4NotificationCode(fault){
-    return selectedReviewFault?.[2]===issues.definitions[fault.code].kind?selectedReviewFault[0]:fault.code;
-  }
   function faultWarmFor(side){
-    return issues.data.faults.filter(f=>!side||f.side===side).map(fault=>{
-      const message=deviceFaultReview
-        ?window.V4FaultReview.formatMessage(v4NotificationCode(fault))
-        :withErrorCode(issues.definitions[fault.code].warm,fault.code);
-      return `${fault.side==='L'?'左侧':'右侧'}设备：${message}`;
+    return issues.data.faults.filter(fault=>!side||fault.side===side).map(fault=>{
+      const message=withErrorCode(issues.definitions[fault.code].warm,fault.code);
+      const sideName=fault.side==='L'?'左侧':'右侧';
+      return sideName+'设备：'+message;
     }).join('\n');
   }
-  function trySync(){if(issues.data.faults.length)showWarmTip(['L','R'].map(side=>{const faults=issues.data.faults.filter(f=>f.side===side);return faults.length?`${side==='L'?'左侧':'右侧'}设备存在异常，暂不可开启 Sync。${faults.map(f=>withErrorCode(issues.definitions[f.code].remedy,f.code)).join('；')}`:'';}).filter(Boolean).join('\n'));}
+  function showFaultWarmTip(...sides){
+    if(!deviceFaultReview)showWarmTip(sides.length?sides.map(faultWarmFor).join('\n'):faultWarmFor());
+  }
+  function trySync(){if(!deviceFaultReview&&issues.data.faults.length)showWarmTip(['L','R'].map(side=>{const faults=issues.data.faults.filter(f=>f.side===side);return faults.length?`${side==='L'?'左侧':'右侧'}设备存在异常，暂不可开启 Sync。${faults.map(f=>withErrorCode(issues.definitions[f.code].remedy,f.code)).join('；')}`:'';}).filter(Boolean).join('\n'));}
   function showWarmTip(message){
     clearTimeout(warmTipTimer);clearTimeout(toastTimer);$('#issue-toast').hidden=true;
     $('p',warmTip).textContent=`“ ${message} ”`;phone.classList.add('has-operation-tip');positionWarmTip();
@@ -113,8 +109,10 @@
   function hideEvent(){eventReminder.hidden=true;eventReminder.classList.remove('has-next');eventReminder.dataset.reminderCount='0';phone.classList.remove('event-reminder-open','has-queued-events');$('#demo-event').setAttribute('aria-pressed','false');}
   function closeEvent(){
     const id=eventReminder.dataset.faultId;
-    openedFaults.reminder=null;
-    if(id)issues.dismiss(id);else hideEvent();
+    if(id){
+      reminderReplay?.seen.add(id);
+      issues.dismiss(id);
+    }else hideEvent();
   }
   function setEventExpanded(expanded){
     eventReminder.classList.toggle('collapsed',!expanded);
@@ -133,21 +131,35 @@
   }
   function acknowledgeBlocking(){
     const id=eventBlocker.dataset.faultId;
-    openedFaults.blocking=null;
+    openedBlockingId=null;
     if(id)issues.acknowledge(id);
   }
   function showDeviceFault(side){
-    const kind=issues.blocked(side)?'blocking':'reminder';
-    const fault=issues.data.faults.find(item=>item.side===side&&issues.definitions[item.code].kind===kind);
-    if(!fault)return;
-    openedFaults[kind]=fault.id;
+    const blockingFault=issues.data.faults.find(fault=>fault.side===side&&issues.definitions[fault.code].kind==='blocking');
+    if(blockingFault)openedBlockingId=blockingFault.id;
+    else{
+      if(reminderReplay?.side!==side)reminderReplay={side,seen:new Set()};
+      setEventExpanded(true);
+    }
     resetWarmTip();
     syncFaultNotifications();
-    if(kind==='reminder')setEventExpanded(true);
+  }
+  function remindersForDisplay(){
+    const active=issues.data.faults.filter(fault=>issues.definitions[fault.code].kind==='reminder');
+    if(!deviceFaultReview)return active.filter(fault=>!fault.dismissed);
+    const available=active.filter(fault=>!issues.blocked(fault.side));
+    if(reminderReplay){
+      const replay=available.filter(fault=>fault.side===reminderReplay.side&&!reminderReplay.seen.has(fault.id));
+      if(replay.length)return replay;
+      reminderReplay=null;
+    }
+    const pending=available.filter(fault=>!fault.dismissed);
+    const firstSide=pending[0]?.side;
+    return pending.filter(fault=>fault.side===firstSide);
   }
   function syncFaultNotifications(){
-    const reminders=issues.data.faults.filter(f=>f.code==='E53'&&(!f.dismissed||f.id===openedFaults.reminder));
-    const reminder=reminders.find(f=>f.id===openedFaults.reminder)||reminders[0];
+    const reminders=remindersForDisplay();
+    const reminder=reminders[0];
     if(state.page==='control'&&reminder){
       if(eventReminder.dataset.faultId!==reminder.id){eventReminder.dataset.faultId=reminder.id;setEventExpanded(true);}
       const queued=reminders.length>1,badge=$('.event-symbol',eventReminder);
@@ -156,20 +168,21 @@
       eventReminder.setAttribute('aria-description',queued?`共 ${reminders.length} 条事件提醒，关闭当前提醒后显示下一条。`:'1 条事件提醒。');
       $('#event-reminder-title').textContent=window.V4FaultReview.deviceTitle(reminder.side);
       const description=$('#event-reminder-description');
-      if(deviceFaultReview)window.V4FaultReview.renderMessage(description,v4NotificationCode(reminder));
+      if(deviceFaultReview)v4Review.renderMessage(description,reminder.code);
       else description.textContent=withErrorCode(displayMessage(displayCode)||issues.definitions.E53.message,displayCode);
       $('#dismiss-event').setAttribute('aria-label',`关闭${reminder.side==='L'?'左侧':'右侧'}事件提醒`);
       eventReminder.hidden=false;phone.classList.add('event-reminder-open');$('#demo-event').setAttribute('aria-pressed','true');
     }else hideEvent();
     positionFaultNotifications();
-    const next=issues.data.faults.find(f=>f.id===openedFaults.blocking)||issues.data.faults.find(f=>f.code==='E05'&&!f.acknowledged);
+    const blocking=issues.data.faults.filter(fault=>issues.definitions[fault.code].kind==='blocking');
+    const next=blocking.find(fault=>fault.id===openedBlockingId)||blocking.find(fault=>!fault.acknowledged);
     if(state.page!=='control'||!next){hideBlocking();return;}
     if(!eventBlocker.hidden&&eventBlocker.dataset.faultId===next.id)return;
     hideBlocking();cancelHold();blockingFocus=document.activeElement;
     eventBlocker.dataset.faultId=next.id;
     $('#blocking-title').textContent=window.V4FaultReview.deviceTitle(next.side);
     const description=$('#blocking-description');
-    if(deviceFaultReview)window.V4FaultReview.renderMessage(description,v4NotificationCode(next));
+    if(deviceFaultReview)v4Review.renderMessage(description,next.code);
     else description.textContent=withErrorCode(displayMessage(displayCode)||issues.definitions.E05.message,displayCode);
     blockingInert=[...phone.children].filter(el=>el!==eventBlocker&&el.id!=='issue-toast').map(el=>[el,el.inert]);
     for(const [element] of blockingInert)element.inert=true;
@@ -187,7 +200,8 @@
       }
       const badge=$(`[data-device-fault="${side}"]`);
       if(badge){
-        badge.hidden=!blocked&&!restricted;
+        const hasReminder=issues.data.faults.some(fault=>fault.side===side&&issues.definitions[fault.code].kind==='reminder');
+        badge.hidden=!blocked&&!hasReminder;
         badge.dataset.severity=blocked?'blocking':'reminder';
         badge.setAttribute('aria-controls',blocked?'event-blocker':'event-reminder');
         const sideName=side==='L'?'左侧':'右侧';
@@ -268,7 +282,7 @@
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)issues.prune();});
   function updateHeader(){
     phone.dataset.page=state.page;
-    const showTip=state.page==='control';
+    const showTip=state.page==='control'&&!deviceFaultReview;
     if(!showTip)resetWarmTip();
     phone.classList.toggle('has-warm-tip',showTip);
     $('#warm-tip').hidden=!showTip;
@@ -307,7 +321,7 @@
   }
   function bindControl(){
     if(!hideSync)$('.sync-control',content).addEventListener('click',trySync);
-    $$('[data-device-note]',content).forEach(note=>note.addEventListener('click',()=>showWarmTip(faultWarmFor(note.dataset.deviceNote))));
+    $$('[data-device-note]',content).forEach(note=>note.addEventListener('click',()=>showFaultWarmTip(note.dataset.deviceNote)));
     $$('[data-device-fault]',content).forEach(badge=>badge.addEventListener('click',()=>showDeviceFault(badge.dataset.deviceFault)));
     $$('.mode-option',content).forEach(btn=>btn.addEventListener('click',()=>{
       if(state.mode===btn.dataset.mode)return;
@@ -326,17 +340,17 @@
   function bindLevel(rail){
     const side=rail.dataset.level;
     const setFromPointer=e=>{const r=rail.getBoundingClientRect();state.levels[side]=clamp(Math.round(9-(e.clientY-r.top)/r.height*8),1,9);updateLevel(side);};
-    rail.addEventListener('pointerdown',e=>{e.preventDefault();if(issues.blocked(side)){showWarmTip(faultWarmFor(side));return;}rail.setPointerCapture(e.pointerId);rail.classList.add('dragging');$('.drag-bubble',rail).hidden=false;setFromPointer(e);});
-    rail.addEventListener('pointermove',e=>{if(rail.hasPointerCapture(e.pointerId))setFromPointer(e);});
+    rail.addEventListener('pointerdown',e=>{e.preventDefault();if(issues.blocked(side)){showFaultWarmTip(side);return;}rail.setPointerCapture(e.pointerId);rail.classList.add('dragging');$('.drag-bubble',rail).hidden=false;setFromPointer(e);});
+    rail.addEventListener('pointermove',e=>{if(!issues.blocked(side)&&rail.hasPointerCapture(e.pointerId))setFromPointer(e);});
     const finish=()=>{rail.classList.remove('dragging');$('.drag-bubble',rail).hidden=true;};
     rail.addEventListener('pointerup',finish);rail.addEventListener('pointercancel',finish);
-    rail.addEventListener('keydown',e=>{if(!['ArrowUp','ArrowDown','Home','End'].includes(e.key))return;e.preventDefault();if(issues.blocked(side)){showWarmTip(faultWarmFor(side));return;}state.levels[side]=e.key==='Home'?1:e.key==='End'?9:clamp(state.levels[side]+(e.key==='ArrowUp'?1:-1),1,9);updateLevel(side);});
+    rail.addEventListener('keydown',e=>{if(!['ArrowUp','ArrowDown','Home','End'].includes(e.key))return;e.preventDefault();if(issues.blocked(side)){showFaultWarmTip(side);return;}state.levels[side]=e.key==='Home'?1:e.key==='End'?9:clamp(state.levels[side]+(e.key==='ArrowUp'?1:-1),1,9);updateLevel(side);});
   }
   function bindBoth(rail){
     let startY, startL, startR;
     rail.addEventListener('pointerdown',e=>{e.preventDefault();rail.setPointerCapture(e.pointerId);startY=e.clientY;startL=state.levels.L;startR=state.levels.R;});
     rail.addEventListener('pointermove',e=>{if(!rail.hasPointerCapture(e.pointerId))return;const scale=phone.getBoundingClientRect().width/402;const dy=(startY-e.clientY)/scale;const delta=Math.round(dy/17);if(!issues.blocked('L'))state.levels.L=clamp(startL+delta,1,9);if(!issues.blocked('R'))state.levels.R=clamp(startR+delta,1,9);rail.setAttribute('aria-valuenow',issues.blocked('L')?state.levels.R:state.levels.L);$('.both-thumb',rail).style.transform=`translateY(${clamp(-dy,-73,73)}px)`;updateLevel('L');updateLevel('R');});
-    const notifyAdjustment=()=>{const blocked=['L','R'].filter(side=>issues.blocked(side));if(blocked.length)showWarmTip(blocked.map(faultWarmFor).join('\n'));};
+    const notifyAdjustment=()=>{const blocked=['L','R'].filter(side=>issues.blocked(side));if(blocked.length)showFaultWarmTip(...blocked);};
     const finish=()=>{$('.both-thumb',rail).style.transform='';notifyAdjustment();};rail.addEventListener('pointerup',finish);rail.addEventListener('pointercancel',finish);
     rail.addEventListener('keydown',e=>{if(!['ArrowUp','ArrowDown'].includes(e.key))return;e.preventDefault();for(const side of ['L','R']){if(issues.blocked(side))continue;state.levels[side]=clamp(state.levels[side]+(e.key==='ArrowUp'?1:-1),1,9);updateLevel(side);}rail.setAttribute('aria-valuenow',issues.blocked('L')?state.levels.R:state.levels.L);notifyAdjustment();});
   }
@@ -346,10 +360,10 @@
     else{actions.innerHTML='<div class="running-actions"><button class="hold-end" aria-label="Hold to end pumping"><span class="hold-fill"></span><span class="hold-label"><i class="stop-square"></i>Hold To End</span></button><button class="pause" aria-label="Pause pumping" aria-disabled="true"><i></i><i></i></button></div>';const button=$('.hold-end');button.addEventListener('pointerdown',e=>{e.preventDefault();button.setPointerCapture(e.pointerId);beginHold();});button.addEventListener('pointerup',cancelHold);button.addEventListener('pointercancel',cancelHold);button.addEventListener('keydown',e=>{if((e.key===' '||e.key==='Enter')&&!e.repeat){e.preventDefault();beginHold();}});button.addEventListener('keyup',cancelHold);button.addEventListener('blur',cancelHold);}
   }
   function startPumping(){
-    if(['L','R'].every(side=>issues.blocked(side))){showWarmTip(faultWarmFor());return;}
+    if(['L','R'].every(side=>issues.blocked(side))){showFaultWarmTip();return;}
     state.running=true;state.elapsed=0;state.startedAt=Date.now();
     for(const side of ['L','R']){state.activeSides[side]=!issues.blocked(side);state.elapsedSides[side]=0;state.sideStartedAt[side]=state.startedAt;}
-    const blocked=['L','R'].filter(side=>issues.blocked(side));if(blocked.length)showWarmTip(blocked.map(faultWarmFor).join('\n'));
+    const blocked=['L','R'].filter(side=>issues.blocked(side));if(blocked.length)showFaultWarmTip(...blocked);
     updateNight();renderActions();updateTimers();
   }
   function updateTimers(){for(const side of ['L','R'])if(state.activeSides[side])state.elapsedSides[side]=Math.floor((Date.now()-state.sideStartedAt[side])/1000);state.elapsed=Math.max(state.elapsedSides.L,state.elapsedSides.R);$$('[data-timer]').forEach(t=>t.textContent=formatTime(state.elapsedSides[t.dataset.timer]));}
@@ -425,20 +439,26 @@
     if(e.key==='Escape'&&state.dialog&&!state.saving)closeModal();
     if(e.key==='Tab'&&modal.classList.contains('active')){const focusable=$$('button:not(:disabled):not([aria-disabled="true"]),[tabindex="0"]',modal);const first=focusable[0],last=focusable.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();last?.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first?.focus();}}
   });
-  function reviewCode(){return reviewParams.get('case')==='E53'?'E53':'E05';}
-  function reviewSide(){return reviewCode()==='E53'?'R':'L';}
+  function reviewCode(){return selectedReviewFault?.[0]||(reviewParams.get('case')==='E53'?'E53':'E05');}
+  function reviewSide(){return issues.definitions[reviewCode()].kind==='reminder'?'R':'L';}
   function reviewSnapshot(){return {instance:reviewParams.get('instance'),page:state.page,code:reviewCode(),faults:issues.data.faults.length,faultItems:issues.data.faults.map(f=>({code:f.code,side:f.side,acknowledged:f.acknowledged,dismissed:f.dismissed})),pending:issues.data.pending.length,cloud:issues.data.cloud.length,taskStatus:issues.data.task?.status||null,taskId:issues.data.task?.id||null,inflight:issues.data.task?.status==='submitting'?issues.data.task.logs.length:0,dayAdvanced:reviewClockOffset>0};}
   function postReviewSnapshot(){if(embedded&&parent!==window)parent.postMessage({type:'review-state',snapshot:reviewSnapshot()},location.origin);}
-  function quietFault(code,side){const fault=issues.receive(code,side);if(code==='E05')issues.acknowledge(fault.id);else issues.dismiss(fault.id);}
+  function quietFault(code,side){const fault=issues.receive(code,side);if(issues.definitions[code].kind==='blocking')issues.acknowledge(fault.id);else issues.dismiss(fault.id);}
   function prepareReviewSubmission(options={}){if(issues.data.task?.status==='submitting')return;issues.prepare({code:'E05',side:'L',...options});openSubmissionPage();}
   function applyReviewPreset(){
     const preset=reviewParams.get('preset')||'normal',code=reviewCode(),side=reviewSide();
     if(preset.startsWith('submit-'))prepareReviewSubmission({empty:preset==='submit-empty',network:preset!=='submit-offline',bluetooth:preset!=='submit-bluetooth'});
     else if(preset==='fault-status')quietFault(code,side);
     else if(preset==='fault-open')issues.receive(code,side);
-    else if(preset==='event-open'||preset==='event-collapsed'){issues.receive('E53','R');if(preset==='event-collapsed')setEventExpanded(false);}
-    else if(preset==='event-closed')quietFault('E53','R');
-    else if(preset==='blocking-open')issues.receive('E05','L');
+    else if(preset==='event-open'||preset==='event-collapsed'){
+      issues.receive(selectedReviewFault?.[0]||'E53','R');
+      if(preset==='event-collapsed')setEventExpanded(false);
+    }
+    else if(deviceFaultReview&&!v3Model&&preset==='reminder-queue'){
+      for(const reminderCode of v4Review.reminderQueue)quietFault(reminderCode,'R');
+    }
+    else if(preset==='event-closed')quietFault(selectedReviewFault?.[0]||'E53','R');
+    else if(preset==='blocking-open')issues.receive(selectedReviewFault?.[0]||'E05','L');
     else if(preset==='blocking-queue'){issues.receive('E05','L');issues.receive('E05','R');}
     else if(preset==='mixed-faults'){quietFault('E05','L');quietFault('E53','R');}
     else if(preset==='multi-faults-open'||preset==='multi-faults-quiet'){
@@ -452,17 +472,20 @@
     const code=reviewCode(),side=reviewSide();
     if(action==='trigger-fault'||action==='repeat')issues.receive(code,side);
     else if(action==='trigger-multiple')for(const [faultCode,faultSide] of [['E05','L'],['E05','R'],['E53','L'],['E53','R']])issues.receive(faultCode,faultSide);
-    else if(action==='trigger-same-side')for(const faultCode of ['E05','E53'])issues.receive(faultCode,'L');
+    else if(action==='trigger-same-side')for(const faultCode of ['E05',deviceFaultReview?'U51':'E53'])issues.receive(faultCode,'L');
     else if(action==='recover'){const f=issues.data.faults.find(f=>f.code===code&&f.side===side);if(f)issues.recover(f.id);}
-    else if(/^recover:(L|R):(E05|E53)$/.test(action)){
+    else if(/^recover:(L|R):[A-Z][0-9]{2}$/.test(action)){
       const [,faultSide,faultCode]=action.split(':'),fault=issues.data.faults.find(f=>f.code===faultCode&&f.side===faultSide);
       if(fault)issues.recover(fault.id);
     }
     else if(action==='recover-all')issues.recoverAll();
     else if(action==='new-round'){const f=issues.data.faults.find(f=>f.code===code&&f.side===side);if(f)issues.recover(f.id);issues.receive(code,side);}
     else if(action==='add-peer')issues.receive(code,side==='L'?'R':'L');
-    else if(action==='add-other-code')quietFault(code==='E05'?'E53':'E05',code==='E05'?'R':'L');
-    else if(action==='show-tip')showWarmTip(faultWarmFor(side));
+    else if(action==='add-other-code'){
+      const otherCode=side==='L'?'E53':'E05';
+      quietFault(otherCode,side==='L'?'R':'L');
+    }
+    else if(action==='show-tip')showFaultWarmTip(side);
     else if(action==='try-sync')trySync();
     else if(action==='to-settings')openSubmissionPage();
     else if(action==='to-control')showPage('control');

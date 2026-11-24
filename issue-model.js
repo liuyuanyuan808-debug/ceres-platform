@@ -10,6 +10,7 @@
     E53:{name:'未检测到法兰',kind:'reminder',message:'未检测到法兰，暂不可加热，请重新安装并卡紧',warm:'未检测到法兰，相关功能不可用，请重新安装并卡紧',remedy:'请重新安装并卡紧',...globalThis.REVIEW_DATA?.cases?.E53}
   };
   function create(options={}){
+    const faultDefinitions=options.faultDefinitions?{...definitions,...options.faultDefinitions}:definitions;
     const storage=options.storage,now=options.now||Date.now;
     const schedule=options.schedule||setTimeout,cancel=options.cancel||clearTimeout;
     const fresh=()=>({version:1,sequence:0,pending:[],cloud:[],faults:[],task:null,network:true,accountValid:true,bluetooth:true,nextResult:'success',accountId:'prototype-account',deviceId:'prototype-device'});
@@ -22,12 +23,12 @@
     function emit(event={type:'update'}){persist();for(const listener of listeners)listener(event);}
     function id(prefix){data.sequence++;return `${prefix}-${now()}-${data.sequence}`;}
     function append(code,side,faultState='occurred',timestamp=now()){
-      const definition=definitions[code];
+      const definition=faultDefinitions[code];
       const row={id:id('demo-log'),timestamp:new Date(timestamp).toISOString(),event_id:'prototype_device_fault_received',content:{fault_state:faultState,error_code:code,raw_message:definition.message},device_id:`prototype-${side.toLowerCase()}`,device_group_id:data.deviceId,side,owner:data.accountId};
       data.pending.push(row);prune();return row;
     }
     function receive(code,side){
-      if(!definitions[code]||!['L','R'].includes(side))throw new Error('Unsupported prototype fault');
+      if(!Object.hasOwn(faultDefinitions,code)||!['L','R'].includes(side))throw new Error('Unsupported prototype fault');
       append(code,side);
       let fault=data.faults.find(item=>item.code===code&&item.side===side);
       const repeated=Boolean(fault);
@@ -97,13 +98,13 @@
     function reset(){if(timer!==null)cancel(timer);timer=null;data=fresh();emit({type:'reset'});}
     prune();persist();arm();armDayChange();
     return {
-      get data(){return data;},definitions,
+      get data(){return data;},definitions:faultDefinitions,
       subscribe(listener){listeners.add(listener);return ()=>listeners.delete(listener);},
       receive,recover,recoverAll,acknowledge,dismiss,submit,interrupt,configure,prepare,reset,
       complete(result='success'){if(data.task?.status!=='submitting')return;if(timer!==null)cancel(timer);timer=null;data.task.result=result;finishTask();},
       appendDemoLog(code='E53',side='R',timestamp=now()){const row=append(code,side,'occurred',timestamp);emit({type:'log_received'});return row;},
       prune(){prune();emit({type:'day_check'});},
-      blocked(side){return data.faults.some(f=>f.code==='E05'&&f.side===side);},
+      blocked(side){return data.faults.some(f=>faultDefinitions[f.code]?.kind==='blocking'&&f.side===side);},
       heatingRestricted(side){return data.faults.some(f=>f.code==='E53'&&f.side===side);},
       dispose(){if(timer!==null)cancel(timer);if(dayTimer!==null)cancel(dayTimer);listeners.clear();}
     };

@@ -1,6 +1,7 @@
-const { models: DATA, deviceTitle, renderMessage } = window.V4FaultReview;
+const { models: DATA, deviceTitle, reminderQueue, renderMessage } = window.V4FaultReview;
 let model = 'm5';
 let selected = null;
+const queuePreset = 'reminder-queue';
 const $ = selector => document.querySelector(selector);
 
 function renderList() {
@@ -8,7 +9,9 @@ function renderList() {
   const fault = device.codes.find(([code]) => code === selected);
   $('#summary').textContent = `${device.name} · 选择正常状态或错误码，点击设备上的叹号可查看异常提示。`;
   $('#count').textContent = `${device.codes.length} 个`;
-  $('#normal-state').setAttribute('aria-pressed', String(!fault));
+  $('#normal-state').setAttribute('aria-pressed', String(!selected));
+  $('#reminder-queue').hidden = model !== 'm5';
+  $('#reminder-queue').setAttribute('aria-pressed', String(selected === queuePreset));
   $('#error-list').innerHTML = device.codes.map(([code, name, kind]) => {
     const active = code === selected;
     const kindLabel = kind === 'blocking' ? '阻断式提示' : '事件提醒';
@@ -27,6 +30,7 @@ function renderPhone(device, fault) {
     deviceFaultReview: '1',
   });
   if (model === 'v3') params.set('model', 'v3');
+  if (selected === queuePreset) params.set('preset', queuePreset);
   if (fault) {
     const [code, , kind] = fault;
     const blocking = kind === 'blocking';
@@ -38,6 +42,20 @@ function renderPhone(device, fault) {
 }
 
 function renderCopy(fault) {
+  if (selected === queuePreset) {
+    $('.definition-cell').hidden = false;
+    $('#copy-card').replaceChildren();
+    for (const code of reminderQueue) {
+      const card = document.createElement('div');
+      card.className = 'copy-box';
+      card.innerHTML = '<div class="code-large"></div><p></p>';
+      card.firstElementChild.textContent = deviceTitle('R');
+      renderMessage(card.lastElementChild, code);
+      $('#copy-card').append(card);
+    }
+    $('#rule-card').innerHTML = '<div class="rule-box"><p>点击右侧橘黄色叹号，按异常首次收到的顺序查看。关闭当前提醒，继续查看下一条。</p></div>';
+    return;
+  }
   $('.definition-cell').hidden = !fault;
   if (!fault) return;
   const [code, , kind, rule] = fault;
@@ -49,6 +67,10 @@ function renderCopy(fault) {
 
 $('#normal-state').addEventListener('click', () => {
   selected = null;
+  renderList();
+});
+$('#reminder-queue').addEventListener('click', () => {
+  selected = queuePreset;
   renderList();
 });
 $('#error-list').addEventListener('click', event => {

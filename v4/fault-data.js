@@ -18,6 +18,7 @@
   }
 
   window.V4FaultReview = {
+    reminderQueue: ['U32', 'U51'],
     models: {
       m5: {
         name: 'M5 Ultra',

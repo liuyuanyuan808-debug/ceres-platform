@@ -20,3 +20,5 @@
 .copy-box p{font-size:15px}
 .fault-copy-line{display:block;text-align:start}
 .fault-copy-contact{white-space:nowrap}
+
+.queue-option{margin:12px 0 0}.queue-option[hidden]{display:none}.copy-box+.copy-box{margin-top:12px}
