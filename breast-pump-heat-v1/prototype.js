@@ -1,5 +1,4 @@
 const heatSwitch = document.getElementById('heat-switch');
-const heatStatus = document.getElementById('heat-status');
 const heatTime = document.getElementById('heat-time');
 const heatToast = document.getElementById('heat-toast');
 const pumpButton = document.getElementById('pause-pump');
@@ -28,7 +27,6 @@ function render() {
   const heatEnabled = heatRemaining > 0;
   heatSwitch.setAttribute('aria-checked', String(heatEnabled));
 
-  heatStatus.hidden = !heatEnabled || !pumping;
   heatTime.hidden = !heatEnabled;
 
   heatTime.textContent = 'Remaining ' + formatTime(heatRemaining);
@@ -41,7 +39,7 @@ function render() {
 function updateHeatToast() {
   window.clearTimeout(heatToastTimeout);
   const heatPaused = !pumping && heatRemaining > 0;
-  heatToast.textContent = heatPaused ? 'Heating paused' : '';
+  heatToast.textContent = heatPaused ? 'Pausing the pump also pauses heating.' : '';
 
   if (heatPaused) {
     heatToastTimeout = window.setTimeout(() => {

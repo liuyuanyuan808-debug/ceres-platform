@@ -29,33 +29,10 @@ body {
   pointer-events: none;
 }
 
-.heat-status, .heat-time, .heat-toast, .heat-switch, .pump-button {
+.heat-time, .heat-toast, .heat-switch, .pump-button {
   /* Coordinates are measured against the 670 px wide source image. */
   --pixel: calc(100cqw / 670);
   position: absolute;
-}
-
-.heat-status {
-  top: calc(1183 * var(--pixel));
-  right: calc(62 * var(--pixel));
-  display: flex;
-  align-items: center;
-  gap: calc(6 * var(--pixel));
-  padding: calc(2 * var(--pixel)) calc(10 * var(--pixel));
-  border-radius: calc(13 * var(--pixel));
-  background: #f5e6e8;
-  color: #87434b;
-  font-size: calc(19 * var(--pixel));
-  font-weight: 600;
-  line-height: 1.25;
-}
-
-.heat-status::before {
-  content: "";
-  width: calc(7 * var(--pixel));
-  height: calc(7 * var(--pixel));
-  border-radius: 50%;
-  background: currentColor;
 }
 
 .heat-toast {
