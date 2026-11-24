@@ -108,8 +108,6 @@ body {
   height: calc(57 * var(--pixel));
 }
 
-.heat-switch:disabled { cursor: default; }
-
 .switch-on {
   position: absolute;
   inset: calc(1 * var(--pixel)) calc(12 * var(--pixel)) calc(10 * var(--pixel));

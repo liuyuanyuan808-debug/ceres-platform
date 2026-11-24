@@ -25,7 +25,6 @@ function render() {
   const heatEnabled = heatRemaining > 0;
   const status = pumping ? 'Heating' : 'Paused';
   heatSwitch.setAttribute('aria-checked', String(heatEnabled));
-  heatSwitch.disabled = !pumping && !heatEnabled;
 
   heatStatus.hidden = !heatEnabled;
   heatTime.hidden = !heatEnabled;
