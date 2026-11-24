@@ -4,19 +4,20 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Breast Pump · 交互原型 1</title>
-  <link rel="stylesheet" href="styles.css?v=20261124-2006">
-  <script src="prototype.js?v=20261124-2006" defer></script>
+  <link rel="stylesheet" href="styles.css?v=20261124-2012">
+  <script src="prototype.js?v=20261124-2012" defer></script>
 </head>
 <body>
   <main class="pump-screen" aria-label="Breast Pump">
     <img class="original-screen" src="assets/original-screen-clear.png" width="670" height="1466"
          alt="Breast Pump control screen. Right pump connected, Standard Mode, Stimulation, Level 1, Heat set to Low for 15 minutes.">
     <section class="heat-controls" aria-label="Heat">
-      <span class="heat-status" id="heat-status" role="status" hidden></span>
+      <span class="heat-status" id="heat-status" role="status" hidden>Heating</span>
       <span class="heat-time" id="heat-time" hidden></span>
       <button class="heat-switch" id="heat-switch" type="button" role="switch" aria-checked="false" aria-label="Heat">
         <span class="switch-on" aria-hidden="true"></span>
       </button>
+      <div class="heat-toast" id="heat-toast" role="status"></div>
     </section>
     <button class="pump-button" id="pause-pump" type="button" aria-label="Pause pumping" title="Pause pumping">
       <span class="resume-icon" aria-hidden="true"></span>

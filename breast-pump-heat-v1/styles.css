@@ -29,7 +29,7 @@ body {
   pointer-events: none;
 }
 
-.heat-status, .heat-time, .heat-switch, .pump-button {
+.heat-status, .heat-time, .heat-toast, .heat-switch, .pump-button {
   /* Coordinates are measured against the 670 px wide source image. */
   --pixel: calc(100cqw / 670);
   position: absolute;
@@ -58,18 +58,22 @@ body {
   background: currentColor;
 }
 
-.heat-status[data-paused="true"] {
-  background: #eee9ea;
-  color: #605357;
+.heat-toast {
+  bottom: calc(314 * var(--pixel));
+  inset-inline: 0;
+  width: max-content;
+  max-width: 90%;
+  margin-inline: auto;
+  border-radius: 100vmax;
+  background: #3c3d3e;
+  color: #fff;
+  font-size: max(14px, calc(22 * var(--pixel)));
+  line-height: 1.35;
+  text-align: center;
 }
 
-.heat-status[data-paused="true"]::before {
-  width: calc(10 * var(--pixel));
-  height: calc(12 * var(--pixel));
-  border: solid currentColor;
-  border-width: 0 calc(3 * var(--pixel));
-  border-radius: 0;
-  background: transparent;
+.heat-toast:not(:empty) {
+  padding: 6px 14px;
 }
 
 .heat-time {
