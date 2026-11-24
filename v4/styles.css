@@ -17,4 +17,5 @@
 .normal-option:hover{border-color:#c78ba0}
 .normal-option[aria-pressed="true"]{border-color:#dfb7c5;background:var(--rose-soft);color:var(--rose)}
 .definition-cell[hidden]{display:none}
-.fault-copy-fragment{white-space:nowrap}
+.fault-copy-line{display:block;text-align:start}
+.fault-copy-code{margin-top:6px;color:#6f7b8c;font-size:.875em;white-space:nowrap;text-spacing-trim:trim-start}

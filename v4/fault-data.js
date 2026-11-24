@@ -1,19 +1,21 @@
 (() => {
   const messages = {
-    U01: '电池电量低于 10%，设备即将自动关机。请为设备充电。如果充电后仍无法使用，',
-    F02: '电池电压过低，设备已关机。请为设备充电。如果充电后仍无法使用，',
-    E05: '电池温度过高。请关闭设备，放在阴凉处冷却。如果冷却后仍无法使用，',
-    E11: '设备电机运行异常。请关闭设备，检查泵体和气路是否有异物，清理后重启设备。如果重启后仍无法使用，',
-    F12: '设备电机异常。请长按设备的电源键重启。如果重启后仍无法使用，',
-    U32: '环境温度过低。请将设备移至室温环境，待设备回温后再使用。如果回温后仍无法使用，',
-    U51: '设备按键卡住。请检查按键周围是否有异物，清理后再试。如果按键仍无法使用，',
-    F41: '设备存储异常。请长按设备的电源键重启。如果重启后仍无法使用，',
-    E42: '设备内部通信异常。请长按设备的电源键重启。如果重启后仍无法使用，',
-    E53: '设备未检测到法兰，暂不可加热。请重新安装法兰并卡紧。如果重新安装后仍无法加热，',
+    U01: ['电量低于 10%，设备即将自动关机。', '请为设备充电。', '充电后'],
+    F02: ['电池电压过低，设备已关机。', '请为设备充电。', '充电后'],
+    E05: ['电池温度过高。', '请关机，放在阴凉处冷却。', '冷却后'],
+    E11: ['电机运行异常。', '请关机，清除泵体或气路异物后重启。', '重启后'],
+    F12: ['电机电路异常。', '请长按电源键重启。', '重启后'],
+    U32: ['环境温度过低。', '请将设备移至室温环境回温。', '回温后'],
+    U51: ['设备按键卡住。', '请清除按键周围的异物后再试。', '按键'],
+    F41: ['设备存储异常。', '请长按电源键重启。', '重启后'],
+    E42: ['设备内部通信异常。', '请长按电源键重启。', '重启后'],
+    E53: ['未检测到法兰，暂不可加热。', '请重新安装并卡紧法兰。', '重装后', '加热'],
   };
 
-  const contact = '请联系客服。';
-  const codeLabel = code => `（代码：${code}）`;
+  function messageLines(code) {
+    const [reason, action, condition, affectedFunction = '使用'] = messages[code];
+    return [reason, action, `如果${condition}仍无法${affectedFunction}，请联系客服。`, `（代码：${code}）`];
+  }
 
   window.V4FaultReview = {
     models: {
@@ -39,16 +41,17 @@
       },
     },
     formatMessage(code) {
-      return messages[code] + contact + codeLabel(code);
+      return messageLines(code).join('\n');
     },
     renderMessage(element, code) {
-      const segments = [contact, codeLabel(code)].map(text => {
+      const lines = messageLines(code);
+      const segments = lines.map((text, index) => {
         const segment = document.createElement('span');
-        segment.className = 'fault-copy-fragment';
+        segment.className = index === lines.length - 1 ? 'fault-copy-line fault-copy-code' : 'fault-copy-line';
         segment.textContent = text;
         return segment;
       });
-      element.replaceChildren(messages[code], ...segments);
+      element.replaceChildren(...segments);
     },
   };
 })();
