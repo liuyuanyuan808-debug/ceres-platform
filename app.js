@@ -100,7 +100,25 @@
   function showFaultWarmTip(...sides){
     if(!deviceFaultReview)showWarmTip(sides.length?sides.map(faultWarmFor).join('\n'):faultWarmFor());
   }
-  function trySync(){if(!deviceFaultReview&&issues.data.faults.length)showWarmTip(['L','R'].map(side=>{const faults=issues.data.faults.filter(f=>f.side===side);return faults.length?`${side==='L'?'左侧':'右侧'}设备存在异常，暂不可开启 Sync。${faults.map(f=>withErrorCode(issues.definitions[f.code].remedy,f.code)).join('；')}`:'';}).filter(Boolean).join('\n'));}
+  function showRestrictedOperation(...sides){
+    if(!deviceFaultReview){showFaultWarmTip(...sides);return;}
+    const fault=issues.data.faults.find(item=>sides.includes(item.side)&&issues.definitions[item.code].kind==='blocking');
+    if(fault)showDeviceFault(fault.side);
+  }
+  function trySync(){
+    if(deviceFaultReview){
+      const fault=issues.data.faults.find(item=>issues.blocked(item.side))||issues.data.faults[0];
+      if(fault)showDeviceFault(fault.side);
+      return;
+    }
+    if(issues.data.faults.length)showWarmTip(['L','R'].map(side=>{
+      const faults=issues.data.faults.filter(fault=>fault.side===side);
+      if(!faults.length)return '';
+      const sideName=side==='L'?'左侧':'右侧';
+      const remedies=faults.map(fault=>withErrorCode(issues.definitions[fault.code].remedy,fault.code)).join('；');
+      return sideName+'设备存在异常，暂不可开启 Sync。'+remedies;
+    }).filter(Boolean).join('\n'));
+  }
   function showWarmTip(message){
     clearTimeout(warmTipTimer);clearTimeout(toastTimer);$('#issue-toast').hidden=true;
     $('p',warmTip).textContent=`“ ${message} ”`;phone.classList.add('has-operation-tip');positionWarmTip();
@@ -134,11 +152,15 @@
     openedBlockingId=null;
     if(id)issues.acknowledge(id);
   }
-  function showDeviceFault(side){
-    const blockingFault=issues.data.faults.find(fault=>fault.side===side&&issues.definitions[fault.code].kind==='blocking');
+  function showDeviceFault(side,reminderCode){
+    const matching=issues.data.faults.filter(fault=>fault.side===side);
+    const blockingFault=matching.find(fault=>issues.definitions[fault.code].kind==='blocking');
     if(blockingFault)openedBlockingId=blockingFault.id;
     else{
-      if(reminderReplay?.side!==side)reminderReplay={side,seen:new Set()};
+      if(!matching.length)return;
+      if(reminderReplay?.side!==side||reminderReplay.code!==reminderCode){
+        reminderReplay={side,code:reminderCode,seen:new Set()};
+      }
       setEventExpanded(true);
     }
     resetWarmTip();
@@ -149,7 +171,9 @@
     if(!deviceFaultReview)return active.filter(fault=>!fault.dismissed);
     const available=active.filter(fault=>!issues.blocked(fault.side));
     if(reminderReplay){
-      const replay=available.filter(fault=>fault.side===reminderReplay.side&&!reminderReplay.seen.has(fault.id));
+      const replay=available.filter(fault=>fault.side===reminderReplay.side
+        &&(!reminderReplay.code||fault.code===reminderReplay.code)
+        &&!reminderReplay.seen.has(fault.id));
       if(replay.length)return replay;
       reminderReplay=null;
     }
@@ -325,9 +349,14 @@
     $$('[data-device-fault]',content).forEach(badge=>badge.addEventListener('click',()=>showDeviceFault(badge.dataset.deviceFault)));
     $$('.mode-option',content).forEach(btn=>btn.addEventListener('click',()=>{
       if(state.mode===btn.dataset.mode)return;
-      if(['L','R'].every(side=>issues.blocked(side)))return;
+      const blocked=['L','R'].filter(side=>issues.blocked(side));
+      if(blocked.length===2){
+        if(deviceFaultReview)showRestrictedOperation(...blocked);
+        return;
+      }
       state.mode=btn.dataset.mode;for(const side of ['L','R'])if(!issues.blocked(side))state.levels[side]=1;
       $$('.mode-option',content).forEach(b=>{b.classList.toggle('active',b.dataset.mode===state.mode);b.setAttribute('aria-pressed',String(b.dataset.mode===state.mode));});updateLevel('L');updateLevel('R');
+      if(deviceFaultReview&&blocked.length)showRestrictedOperation(...blocked);
     }));
     $$('.level-rail',content).forEach(bindLevel);
     bindBoth($('.both-rail',content));
@@ -340,18 +369,20 @@
   function bindLevel(rail){
     const side=rail.dataset.level;
     const setFromPointer=e=>{const r=rail.getBoundingClientRect();state.levels[side]=clamp(Math.round(9-(e.clientY-r.top)/r.height*8),1,9);updateLevel(side);};
-    rail.addEventListener('pointerdown',e=>{e.preventDefault();if(issues.blocked(side)){showFaultWarmTip(side);return;}rail.setPointerCapture(e.pointerId);rail.classList.add('dragging');$('.drag-bubble',rail).hidden=false;setFromPointer(e);});
+    rail.addEventListener('pointerdown',e=>{e.preventDefault();if(issues.blocked(side)){showRestrictedOperation(side);return;}rail.setPointerCapture(e.pointerId);rail.classList.add('dragging');$('.drag-bubble',rail).hidden=false;setFromPointer(e);});
     rail.addEventListener('pointermove',e=>{if(!issues.blocked(side)&&rail.hasPointerCapture(e.pointerId))setFromPointer(e);});
     const finish=()=>{rail.classList.remove('dragging');$('.drag-bubble',rail).hidden=true;};
     rail.addEventListener('pointerup',finish);rail.addEventListener('pointercancel',finish);
-    rail.addEventListener('keydown',e=>{if(!['ArrowUp','ArrowDown','Home','End'].includes(e.key))return;e.preventDefault();if(issues.blocked(side)){showFaultWarmTip(side);return;}state.levels[side]=e.key==='Home'?1:e.key==='End'?9:clamp(state.levels[side]+(e.key==='ArrowUp'?1:-1),1,9);updateLevel(side);});
+    rail.addEventListener('keydown',e=>{if(!['ArrowUp','ArrowDown','Home','End'].includes(e.key))return;e.preventDefault();if(issues.blocked(side)){showRestrictedOperation(side);return;}state.levels[side]=e.key==='Home'?1:e.key==='End'?9:clamp(state.levels[side]+(e.key==='ArrowUp'?1:-1),1,9);updateLevel(side);});
   }
   function bindBoth(rail){
     let startY, startL, startR;
     rail.addEventListener('pointerdown',e=>{e.preventDefault();rail.setPointerCapture(e.pointerId);startY=e.clientY;startL=state.levels.L;startR=state.levels.R;});
     rail.addEventListener('pointermove',e=>{if(!rail.hasPointerCapture(e.pointerId))return;const scale=phone.getBoundingClientRect().width/402;const dy=(startY-e.clientY)/scale;const delta=Math.round(dy/17);if(!issues.blocked('L'))state.levels.L=clamp(startL+delta,1,9);if(!issues.blocked('R'))state.levels.R=clamp(startR+delta,1,9);rail.setAttribute('aria-valuenow',issues.blocked('L')?state.levels.R:state.levels.L);$('.both-thumb',rail).style.transform=`translateY(${clamp(-dy,-73,73)}px)`;updateLevel('L');updateLevel('R');});
-    const notifyAdjustment=()=>{const blocked=['L','R'].filter(side=>issues.blocked(side));if(blocked.length)showFaultWarmTip(...blocked);};
-    const finish=()=>{$('.both-thumb',rail).style.transform='';notifyAdjustment();};rail.addEventListener('pointerup',finish);rail.addEventListener('pointercancel',finish);
+    const notifyAdjustment=()=>{const blocked=['L','R'].filter(side=>issues.blocked(side));if(blocked.length)showRestrictedOperation(...blocked);};
+    const finish=()=>{$('.both-thumb',rail).style.transform='';};
+    rail.addEventListener('pointerup',()=>{finish();notifyAdjustment();});
+    rail.addEventListener('pointercancel',()=>{finish();if(!deviceFaultReview)notifyAdjustment();});
     rail.addEventListener('keydown',e=>{if(!['ArrowUp','ArrowDown'].includes(e.key))return;e.preventDefault();for(const side of ['L','R']){if(issues.blocked(side))continue;state.levels[side]=clamp(state.levels[side]+(e.key==='ArrowUp'?1:-1),1,9);updateLevel(side);}rail.setAttribute('aria-valuenow',issues.blocked('L')?state.levels.R:state.levels.L);notifyAdjustment();});
   }
   function renderActions(){
@@ -360,11 +391,18 @@
     else{actions.innerHTML='<div class="running-actions"><button class="hold-end" aria-label="Hold to end pumping"><span class="hold-fill"></span><span class="hold-label"><i class="stop-square"></i>Hold To End</span></button><button class="pause" aria-label="Pause pumping" aria-disabled="true"><i></i><i></i></button></div>';const button=$('.hold-end');button.addEventListener('pointerdown',e=>{e.preventDefault();button.setPointerCapture(e.pointerId);beginHold();});button.addEventListener('pointerup',cancelHold);button.addEventListener('pointercancel',cancelHold);button.addEventListener('keydown',e=>{if((e.key===' '||e.key==='Enter')&&!e.repeat){e.preventDefault();beginHold();}});button.addEventListener('keyup',cancelHold);button.addEventListener('blur',cancelHold);}
   }
   function startPumping(){
-    if(['L','R'].every(side=>issues.blocked(side))){showFaultWarmTip();return;}
+    const blocked=['L','R'].filter(side=>issues.blocked(side));
+    if(blocked.length===2){showRestrictedOperation(...blocked);return;}
     state.running=true;state.elapsed=0;state.startedAt=Date.now();
-    for(const side of ['L','R']){state.activeSides[side]=!issues.blocked(side);state.elapsedSides[side]=0;state.sideStartedAt[side]=state.startedAt;}
-    const blocked=['L','R'].filter(side=>issues.blocked(side));if(blocked.length)showFaultWarmTip(...blocked);
+    for(const side of ['L','R']){state.activeSides[side]=!blocked.includes(side);state.elapsedSides[side]=0;state.sideStartedAt[side]=state.startedAt;}
     updateNight();renderActions();updateTimers();
+    if(blocked.length)showRestrictedOperation(...blocked);
+  }
+  function pressDeviceKey(side){
+    const fault=issues.data.faults.find(item=>item.side===side&&item.code==='U51');
+    if(issues.blocked(side)||fault){showDeviceFault(side,fault?.code);return;}
+    state.levels[side]=clamp(state.levels[side]+1,1,9);
+    updateLevel(side);
   }
   function updateTimers(){for(const side of ['L','R'])if(state.activeSides[side])state.elapsedSides[side]=Math.floor((Date.now()-state.sideStartedAt[side])/1000);state.elapsed=Math.max(state.elapsedSides.L,state.elapsedSides.R);$$('[data-timer]').forEach(t=>t.textContent=formatTime(state.elapsedSides[t.dataset.timer]));}
   setInterval(updateTimers,200);
@@ -485,6 +523,7 @@
       const otherCode=side==='L'?'E53':'E05';
       quietFault(otherCode,side==='L'?'R':'L');
     }
+    else if(deviceFaultReview&&/^press-device-key:(L|R)$/.test(action))pressDeviceKey(action.at(-1));
     else if(action==='show-tip')showFaultWarmTip(side);
     else if(action==='try-sync')trySync();
     else if(action==='to-settings')openSubmissionPage();

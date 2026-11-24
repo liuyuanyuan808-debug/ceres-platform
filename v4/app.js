@@ -42,6 +42,7 @@ function renderPhone(device, fault) {
 }
 
 function renderCopy(fault) {
+  $('[data-device-key]').hidden = selected !== 'U51' && selected !== queuePreset;
   if (selected === queuePreset) {
     $('.definition-cell').hidden = false;
     $('#copy-card').replaceChildren();
@@ -65,6 +66,10 @@ function renderCopy(fault) {
   $('#rule-card').innerHTML = `<div class="rule-box"><p>${rule}</p></div>`;
 }
 
+$('[data-device-key]').addEventListener('click', event => {
+  const action = 'press-device-key:' + event.currentTarget.dataset.deviceKey;
+  $('.original-app').contentWindow.postMessage({type: 'review-command', action}, location.origin);
+});
 $('#normal-state').addEventListener('click', () => {
   selected = null;
   renderList();
