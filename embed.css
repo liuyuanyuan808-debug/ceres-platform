@@ -11,6 +11,16 @@ html.embedded,html.embedded body{width:390px;height:848px;min-width:0;min-height
 #event-reminder.device-fault-review{left:68px;right:68px}
 #event-reminder.device-fault-review:not(.collapsed){height:auto;min-height:66px}
 #event-reminder.device-fault-review p{white-space:normal;overflow-wrap:anywhere}
+.fault-copy-fragment{white-space:nowrap}
+#phone.device-fault-review.event-reminder-open:not(.event-reminder-collapsed):not(.has-operation-tip) #page-content{
+  top:var(--event-content-top,148px);
+}
+#phone.device-fault-review.has-operation-tip #page-content{
+  top:calc(112px + var(--operation-tip-height,54px));
+}
+#phone.device-fault-review.event-reminder-open.has-operation-tip #page-content{
+  top:calc(var(--operation-tip-top,148px) + var(--operation-tip-height,54px));
+}
 
 .device-illustration > img{display:block;width:100%;height:100%;object-fit:contain}
 .hero.v3-model .v3-device.device-illustration{
