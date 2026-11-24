@@ -12,3 +12,8 @@
 /* 让客服页在评审工作台中完整显示手机框。 */
 .phone-stage{min-height:0;height:clamp(560px,calc(100vh - 600px),620px);align-items:flex-start;overflow:visible}
 .phone-shell{transform-origin:top center}
+
+.normal-option{display:block;width:100%;margin-bottom:12px;padding:10px 14px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);text-align:left;font:inherit;font-size:14px;font-weight:600;cursor:pointer}
+.normal-option:hover{border-color:#c78ba0}
+.normal-option[aria-pressed="true"]{border-color:#dfb7c5;background:var(--rose-soft);color:var(--rose)}
+.definition-cell[hidden]{display:none}

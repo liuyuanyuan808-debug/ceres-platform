@@ -108,7 +108,6 @@
     if(id)issues.acknowledge(id);
   }
   function showDeviceFault(side){
-    if(!deviceFaultReview){showWarmTip(faultWarmFor(side));return;}
     const kind=issues.blocked(side)?'blocking':'reminder';
     const fault=issues.data.faults.find(item=>item.side===side&&issues.definitions[item.code].kind===kind);
     if(!fault)return;
@@ -146,15 +145,26 @@
   }
   function updateFaultControls(){
     for(const side of ['L','R']){
-      const blocked=issues.blocked(side),rail=$(`[data-level="${side}"]`);
+      const blocked=issues.blocked(side),restricted=issues.heatingRestricted(side);
+      const rail=$(`[data-level="${side}"]`);
       if(rail){rail.setAttribute('aria-disabled',String(blocked));rail.tabIndex=0;rail.classList.toggle('restricted',blocked);}
       const note=$(`[data-device-note="${side}"]`);
       if(note){
-        const reminderMarker=deviceFaultReview?'相关功能不可用':(issues.definitions.E53.marker||'暂不可加热');
-        note.textContent=blocked?`${issues.definitions.E05.marker||'设备暂不可用'} ›`:issues.heatingRestricted(side)?`${reminderMarker} ›`:'';
+        note.textContent=blocked?`${issues.definitions.E05.marker||'设备暂不可用'} ›`:restricted?`${issues.definitions.E53.marker||'暂不可加热'} ›`:'';
         note.disabled=!note.textContent;
       }
+      const badge=$(`[data-device-fault="${side}"]`);
+      if(badge){
+        badge.hidden=!blocked&&!restricted;
+        badge.dataset.severity=blocked?'blocking':'reminder';
+        badge.setAttribute('aria-controls',blocked?'event-blocker':'event-reminder');
+        const sideName=side==='L'?'左侧':'右侧';
+        const label=blocked?'设备不可用，查看阻断提示':'功能受限，查看异常事件提醒';
+        badge.setAttribute('aria-label',sideName+label);
+      }
+      $(`[data-device-image="${side}"]`)?.classList.toggle('device-unavailable',blocked);
     }
+    $('[data-device-image="main"]')?.classList.toggle('device-unavailable',issues.blocked('L')||issues.blocked('R'));
   }
   function submissionMarkup(){const busy=issues.data.task?.status==='submitting';return `<span class="problem-copy"><span class="problem-title">${busy?'提交中…':'问题提交'}</span><span class="problem-subtitle">提交设备问题信息，供客服排查</span></span>${busy?'<span class="submit-spinner" aria-hidden="true"></span>':icons.chevron}`;}
   function updateSubmissionRow(){const row=$('#problem-submit');if(!row)return;row.disabled=issues.data.task?.status==='submitting';row.setAttribute('aria-busy',String(row.disabled));row.innerHTML=submissionMarkup();}
@@ -236,11 +246,20 @@
     $('#settings').hidden=state.page!=='control';
     $('#back').setAttribute('aria-disabled',String(state.page==='control'));
   }
+  function deviceIllustration(className,src,alt,sides){
+    if(!deviceFaultReview)return `<img class="${className}" src="${src}" alt="${alt}">`;
+    const imageKey=sides.length===1?sides[0]:'main';
+    const badges=sides.map(side=>`<button type="button" class="device-fault-badge" data-device-fault="${side}" hidden><span aria-hidden="true">!</span></button>`).join('');
+    return `<div class="${className} device-illustration" data-device-image="${imageKey}"><img src="${src}" alt="${alt}">${badges}</div>`;
+  }
   function hero(){return `<section class="hero ${v3Model?'v3-model':''}" aria-label="Connected breast pumps">
-    ${v3Model?'<img class="v3-device" src="assets/v3-device.png" alt="V3 大主机">':'<img class="hero-pump left" src="assets/pump-left.png" alt="Left M5 Ultra breast pump"><img class="hero-pump right" src="assets/pump-right.png" alt="Right M5 Ultra breast pump">'}
+    ${v3Model
+      ?deviceIllustration('v3-device','assets/v3-device.png','V3 大主机',['L','R'])
+      :deviceIllustration('hero-pump left','assets/pump-left.png','Left M5 Ultra breast pump',['L'])
+        +deviceIllustration('hero-pump right','assets/pump-right.png','Right M5 Ultra breast pump',['R'])}
 
     ${hideSync?'': '<button class=\"sync-control\" aria-label=\"Sync\" aria-disabled=\"true\"><span class=\"sync-icon\"><img src=\"assets/icon-sync.png\" alt=\"\"></span><span>Sync</span></button>'}
-    ${['L','R'].map(s=>`<div class="device-state ${s==='L'?'left':'right'}"><div class="battery-row">${s}${battery(s)}</div><div class="timer" data-timer="${s}">${formatTime(state.elapsedSides[s])}</div><button class="device-note" data-device-note="${s}" aria-label="查看${s==='L'?'左侧':'右侧'}设备故障说明"></button></div>`).join('')}</section>`;}
+    ${['L','R'].map(s=>`<div class="device-state ${s==='L'?'left':'right'}"><div class="battery-row">${s}${battery(s)}</div><div class="timer" data-timer="${s}">${formatTime(state.elapsedSides[s])}</div>${deviceFaultReview?'':`<button class="device-note" data-device-note="${s}" aria-label="查看${s==='L'?'左侧':'右侧'}设备故障说明"></button>`}</div>`).join('')}</section>`;}
   function modeCard(){return `<section class="card mode-card" aria-label="Pumping mode"><div class="mode-heading">${icons.modes}<span>Manual</span><span style="margin-left:auto">${icons.chevron}</span></div><div class="mode-switch">${['stimulation','expression','mixed'].map(m=>`<button class="mode-option ${state.mode===m?'active':''}" data-mode="${m}" aria-pressed="${state.mode===m}"><img src="assets/mode-${m}.png" alt=""><span>${m[0].toUpperCase()+m.slice(1)}</span></button>`).join('')}</div></section>`;}
   function levelColumn(side){const value=state.levels[side];return `<div class="level-column"><div class="level-caption">${side}</div><div class="level-rail" data-level="${side}" role="slider" tabindex="0" aria-label="${side==='L'?'Left':'Right'} suction level" aria-valuemin="1" aria-valuemax="9" aria-valuenow="${value}">${levelTicks(value)}<div class="level-thumb" style="top:${(9-value)/8*184}px">${levelText(value)}</div><div class="drag-bubble" hidden>${value}</div></div></div>`;}
   function levelText(value){return `${value}${value===9?'<span class="max">max</span>':''}`;}
@@ -256,7 +275,8 @@
   }
   function bindControl(){
     if(!hideSync)$('.sync-control',content).addEventListener('click',trySync);
-    $$('[data-device-note]',content).forEach(note=>note.addEventListener('click',()=>showDeviceFault(note.dataset.deviceNote)));
+    $$('[data-device-note]',content).forEach(note=>note.addEventListener('click',()=>showWarmTip(faultWarmFor(note.dataset.deviceNote))));
+    $$('[data-device-fault]',content).forEach(badge=>badge.addEventListener('click',()=>showDeviceFault(badge.dataset.deviceFault)));
     $$('.mode-option',content).forEach(btn=>btn.addEventListener('click',()=>{
       if(state.mode===btn.dataset.mode)return;
       if(['L','R'].every(side=>issues.blocked(side)))return;
