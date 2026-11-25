@@ -1,14 +1,13 @@
 const heatSwitch = document.getElementById('heat-switch');
+const heatStatus = document.getElementById('heat-status');
 const heatTime = document.getElementById('heat-time');
-const heatToast = document.getElementById('heat-toast');
+const heatNote = document.getElementById('heat-note');
 const pumpButton = document.getElementById('pause-pump');
 
 const heatDuration = 15 * 60_000;
-const heatToastDuration = 2_500;
 let heatRemaining = 0;
 let pumping = true;
 let lastUpdate = performance.now();
-let heatToastTimeout;
 
 function formatTime(milliseconds) {
   const totalSeconds = Math.ceil(milliseconds / 1_000);
@@ -25,9 +24,14 @@ function updateTime() {
 
 function render() {
   const heatEnabled = heatRemaining > 0;
+  const status = pumping ? 'Heating' : 'Paused';
   heatSwitch.setAttribute('aria-checked', String(heatEnabled));
 
+  heatStatus.hidden = !heatEnabled;
   heatTime.hidden = !heatEnabled;
+  heatNote.hidden = pumping || !heatEnabled;
+  heatStatus.dataset.paused = String(!pumping);
+  if (heatStatus.textContent !== status) heatStatus.textContent = status;
 
   heatTime.textContent = 'Remaining ' + formatTime(heatRemaining);
   const pumpAction = pumping ? 'Pause pumping' : 'Resume pumping';
@@ -36,30 +40,16 @@ function render() {
   pumpButton.title = pumpAction;
 }
 
-function updateHeatToast() {
-  window.clearTimeout(heatToastTimeout);
-  const heatPaused = !pumping && heatRemaining > 0;
-  heatToast.textContent = heatPaused ? 'Pausing the pump also pauses heating.' : '';
-
-  if (heatPaused) {
-    heatToastTimeout = window.setTimeout(() => {
-      heatToast.textContent = '';
-    }, heatToastDuration);
-  }
-}
-
 heatSwitch.addEventListener('click', () => {
   updateTime();
   heatRemaining = heatRemaining > 0 ? 0 : heatDuration;
   render();
-  updateHeatToast();
 });
 
 pumpButton.addEventListener('click', () => {
   updateTime();
   pumping = !pumping;
   render();
-  updateHeatToast();
 });
 
 render();
