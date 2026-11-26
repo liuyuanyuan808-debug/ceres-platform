@@ -5,8 +5,9 @@
   const v4Review=deviceFaultReview?window.V4FaultReview:null;
   const reviewFaults=v4Review?.models[v3Model?'v3':'m5'].codes;
   const selectedReviewFault=reviewFaults?.find(([code])=>code===reviewParams.get('displayCode'));
+  const wholeDeviceFaultCodes=new Set(v3Model?['F41','E42']:[]);
   const faultDefinitions=reviewFaults&&Object.fromEntries(reviewFaults.map(([code,name,kind])=>[
-    code,{name,kind,message:v4Review.formatMessage(code)}
+    code,{name,kind,scope:wholeDeviceFaultCodes.has(code)?'device':'side',message:v4Review.formatMessage(code)}
   ]));
   const visibleCopy={U01:'电池电量低于 10%，即将自动关机',F02:'电池电压过低，设备暂停使用',E05:'电池温度过高，设备暂停使用',E11:'系统异常，请长按电源键重启设备',F12:'系统异常，请长按电源键重启设备',U32:'环境温度过低，请在室温下使用',U51:'按键卡滞，请检查按键后使用',F41:'系统异常，请长按电源键重启设备',E42:'系统异常，请长按电源键重启设备'};
   const displayCode=visibleCopy[reviewParams.get('displayCode')]?reviewParams.get('displayCode'):(reviewParams.get('case')==='E53'?'E53':'E05');
@@ -102,7 +103,8 @@
   }
   function showRestrictedOperation(...sides){
     if(!deviceFaultReview){showFaultWarmTip(...sides);return;}
-    const fault=issues.data.faults.find(item=>sides.includes(item.side)&&issues.definitions[item.code].kind==='blocking');
+    const fault=issues.data.faults.find(item=>issues.definitions[item.code].kind==='blocking'
+      &&(sides.includes(item.side)||issues.definitions[item.code].scope==='device'));
     if(fault)showDeviceFault(fault.side);
   }
   function trySync(){
@@ -153,7 +155,7 @@
     if(id)issues.acknowledge(id);
   }
   function showDeviceFault(side,reminderCode){
-    const matching=issues.data.faults.filter(fault=>fault.side===side);
+    const matching=issues.data.faults.filter(fault=>fault.side===side||issues.definitions[fault.code].scope==='device');
     const blockingFault=matching.find(fault=>issues.definitions[fault.code].kind==='blocking');
     if(blockingFault)openedBlockingId=blockingFault.id;
     else{
@@ -213,10 +215,11 @@
     eventBlocker.hidden=false;phone.classList.add('blocking-open');$('#demo-blocking').setAttribute('aria-pressed','true');closeBlockingButton.focus({preventScroll:true});
   }
   function updateFaultControls(){
+    const wholeDeviceFault=issues.data.faults.some(fault=>issues.definitions[fault.code].scope==='device');
     for(const side of ['L','R']){
       const blocked=issues.blocked(side),restricted=issues.heatingRestricted(side);
       const rail=$(`[data-level="${side}"]`);
-      if(rail){rail.setAttribute('aria-disabled',String(blocked));rail.tabIndex=0;rail.classList.toggle('restricted',blocked);}
+      if(rail){const visuallyUnavailable=blocked&&!wholeDeviceFault;rail.setAttribute('aria-disabled',String(visuallyUnavailable));rail.tabIndex=0;rail.classList.toggle('restricted',visuallyUnavailable);}
       const note=$(`[data-device-note="${side}"]`);
       if(note){
         note.textContent=blocked?`${issues.definitions.E05.marker||'设备暂不可用'} ›`:restricted?`${issues.definitions.E53.marker||'暂不可加热'} ›`:'';
@@ -232,9 +235,9 @@
         const label=blocked?'设备不可用，查看阻断提示':'功能受限，查看异常事件提醒';
         badge.setAttribute('aria-label',sideName+label);
       }
-      $(`[data-device-image="${side}"]`)?.classList.toggle('device-unavailable',blocked);
+      $(`[data-device-image="${side}"]`)?.classList.toggle('device-unavailable',blocked&&!wholeDeviceFault);
     }
-    $('[data-device-image="main"]')?.classList.toggle('device-unavailable',issues.blocked('L')||issues.blocked('R'));
+    $('[data-device-image="main"]')?.classList.toggle('device-unavailable',(issues.blocked('L')||issues.blocked('R'))&&!wholeDeviceFault);
   }
   function submissionMarkup(){const busy=issues.data.task?.status==='submitting';return `<span class="problem-copy"><span class="problem-title">${busy?'提交中…':'问题提交'}</span><span class="problem-subtitle">提交设备问题信息，供客服排查</span></span>${busy?'<span class="submit-spinner" aria-hidden="true"></span>':icons.chevron}`;}
   function updateSubmissionRow(){const row=$('#problem-submit');if(!row)return;row.disabled=issues.data.task?.status==='submitting';row.setAttribute('aria-busy',String(row.disabled));row.innerHTML=submissionMarkup();}

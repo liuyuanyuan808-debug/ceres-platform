@@ -104,7 +104,8 @@
       complete(result='success'){if(data.task?.status!=='submitting')return;if(timer!==null)cancel(timer);timer=null;data.task.result=result;finishTask();},
       appendDemoLog(code='E53',side='R',timestamp=now()){const row=append(code,side,'occurred',timestamp);emit({type:'log_received'});return row;},
       prune(){prune();emit({type:'day_check'});},
-      blocked(side){return data.faults.some(f=>faultDefinitions[f.code]?.kind==='blocking'&&f.side===side);},
+      blocked(side){return data.faults.some(f=>faultDefinitions[f.code]?.kind==='blocking'
+        &&(f.side===side||faultDefinitions[f.code]?.scope==='device'));},
       heatingRestricted(side){return data.faults.some(f=>f.code==='E53'&&f.side===side);},
       dispose(){if(timer!==null)cancel(timer);if(dayTimer!==null)cancel(dayTimer);listeners.clear();}
     };
